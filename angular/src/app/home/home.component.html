@@ -1,0 +1,285 @@
+<div class="dashboard-container">
+  <!-- Giao diện khi CHƯA đăng nhập (Trạm Vào Ca Nội Bộ Nhà Hàng) -->
+  <div class="terminal-container" *ngIf="!hasLoggedIn">
+    <div class="terminal-card shadow-sm">
+      <!-- Thương hiệu nhà hàng -->
+      <div class="terminal-brand text-center">
+        <div class="brand-icon-wrapper mx-auto mb-3">
+          <i class="fas fa-utensils"></i>
+        </div>
+        <h3 class="brand-title">TooHungry Restaurant</h3>
+        <span class="system-badge">{{ { key: '::InternalOperationTerminal', defaultValue: 'Trạm Vận Hành Nội Bộ' } | abpLocalization }}</span>
+      </div>
+
+      <!-- Trạng thái hoạt động của nhà hàng (ở TRÊN clock-display-box) -->
+      <div class="restaurant-status-wrapper text-center mt-3 mb-1">
+        <span *ngIf="isRestaurantOpen$ | async" class="restaurant-status-pill status-open">
+          <span class="status-indicator-dot"></span>
+          <span>{{ { key: '::RestaurantOpen', defaultValue: 'Đang mở cửa' } | abpLocalization }}</span>
+        </span>
+        <span *ngIf="!(isRestaurantOpen$ | async)" class="restaurant-status-pill status-closed">
+          <span class="status-indicator-dot"></span>
+          <span>{{ { key: '::RestaurantClosed', defaultValue: 'Đã đóng cửa' } | abpLocalization }}</span>
+        </span>
+      </div>
+
+      <!-- Đồng hồ số thời gian thực & Ngày làm việc -->
+      <div class="clock-display-box text-center my-3">
+        <div class="digital-time">
+          {{ (time$ | async) | date:'HH:mm:ss' }}
+        </div>
+        <div class="calendar-date text-capitalize">
+          <i class="far fa-calendar-alt me-2 text-orange"></i>
+          {{ (time$ | async) | date:'EEEE, dd/MM/yyyy' }}
+        </div>
+      </div>
+
+      <!-- Giờ hoạt động của nhà hàng (ở DƯỚI clock-display-box) -->
+      <div class="operating-hours-box text-center mb-4">
+        <i class="far fa-clock text-orange me-1"></i>
+        <span class="operating-hours-label">{{ { key: '::OperatingHours', defaultValue: 'Giờ hoạt động' } | abpLocalization }}:</span>
+        <strong class="operating-hours-time ms-1">{{ { key: '::OpeningHoursDetail', defaultValue: '09:00 - 23:00' } | abpLocalization }}</strong>
+      </div>
+
+      <!-- Nút Đăng Nhập Vào Hệ Thống -->
+      <div class="action-section">
+        <button class="btn btn-clock-in w-100" (click)="login()">
+          <i class="fas fa-sign-in-alt me-2"></i>
+          <span>{{ { key: '::LoginToSystem', defaultValue: 'ĐĂNG NHẬP VÀO HỆ THỐNG' } | abpLocalization }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nội dung Dashboard khi ĐÃ ĐĂNG NHẬP -->
+  <div *ngIf="hasLoggedIn">
+    <!-- Header Dashboard -->
+    <div class="dashboard-header-card d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
+      <div>
+        <h2 class="fw-bold text-dark mb-1">
+          {{ { key: '::Menu:Home', defaultValue: 'Bảng điều khiển' } | abpLocalization }} <span class="text-orange">TooHungry</span>
+        </h2>
+        <p class="text-muted mb-0">{{ { key: '::DashboardSubtitle', defaultValue: 'Tổng quan tình hình vận hành thực đơn và nhà hàng hôm nay' } | abpLocalization }}</p>
+      </div>
+      <div class="mt-3 mt-md-0 d-flex gap-2">
+        <button class="btn btn-outline-orange shadow-sm" (click)="loadDashboardData()">
+          <i class="fas fa-sync-alt me-1" [class.fa-spin]="isLoading"></i> {{ { key: '::Refresh', defaultValue: 'Làm mới' } | abpLocalization }}
+        </button>
+        <a routerLink="/dishes" class="btn btn-orange shadow-sm">
+          <i class="fas fa-plus me-1"></i> {{ { key: '::ManageDishes', defaultValue: 'Quản lý Món ăn' } | abpLocalization }}
+        </a>
+      </div>
+    </div>
+
+    <!-- 4 Thẻ Thống kê (KPI Cards) -->
+    <div class="row g-3 mb-4">
+      <!-- Món ăn -->
+      <div class="col-sm-6 col-xl-3">
+        <a routerLink="/dishes" class="card stat-card stat-card-interactive h-100 text-decoration-none" [title]="{ key: '::ManageDishes', defaultValue: 'Quản lý Món ăn' } | abpLocalization">
+          <div class="card-body p-4 d-flex align-items-center justify-content-between">
+            <div class="stat-content flex-grow-1 pe-2">
+              <span class="stat-label d-block mb-1">{{ { key: '::DishesInMenu', defaultValue: 'Món ăn trong Menu' } | abpLocalization }}</span>
+              <h2 class="stat-number d-block mb-2 mt-1">{{ stats.totalDishes }}</h2>
+              <span class="badge bg-orange-subtle">
+                <i class="fas fa-arrow-up me-1"></i>{{ { key: '::Serving', defaultValue: 'Đang phục vụ' } | abpLocalization }}
+              </span>
+            </div>
+            <div class="stat-icon-wrapper flex-shrink-0">
+              <i class="fas fa-utensils"></i>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <!-- Danh mục -->
+      <div class="col-sm-6 col-xl-3">
+        <a routerLink="/dish-categories" class="card stat-card stat-card-interactive h-100 text-decoration-none" [title]="{ key: '::ManageDishCategories', defaultValue: 'Quản lý Danh mục món' } | abpLocalization">
+          <div class="card-body p-4 d-flex align-items-center justify-content-between">
+            <div class="stat-content flex-grow-1 pe-2">
+              <span class="stat-label d-block mb-1">{{ { key: '::DishCategories', defaultValue: 'Danh mục món' } | abpLocalization }}</span>
+              <h2 class="stat-number d-block mb-2 mt-1">{{ stats.totalCategories }}</h2>
+              <span class="badge bg-orange-subtle">
+                <i class="fas fa-tags me-1"></i>{{ { key: '::Classification', defaultValue: 'Phân loại' } | abpLocalization }}
+              </span>
+            </div>
+            <div class="stat-icon-wrapper flex-shrink-0">
+              <i class="fas fa-folder-open"></i>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <!-- Đơn hàng -->
+      <div class="col-sm-6 col-xl-3">
+        <a routerLink="/orders" class="card stat-card stat-card-interactive h-100 text-decoration-none" [title]="{ key: '::ManageOrders', defaultValue: 'Quản lý Đơn hàng' } | abpLocalization">
+          <div class="card-body p-4 d-flex align-items-center justify-content-between">
+            <div class="stat-content flex-grow-1 pe-2">
+              <span class="stat-label d-block mb-1">{{ { key: '::TotalOrders', defaultValue: 'Tổng Đơn hàng' } | abpLocalization }}</span>
+              <h2 class="stat-number d-block mb-2 mt-1">{{ stats.totalOrders }}</h2>
+              <span class="badge bg-orange-subtle">
+                <i class="fas fa-receipt me-1"></i>{{ { key: '::CustomerOrders', defaultValue: 'Order khách gọi' } | abpLocalization }}
+              </span>
+            </div>
+            <div class="stat-icon-wrapper flex-shrink-0">
+              <i class="fas fa-clipboard-list"></i>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <!-- Nguyên liệu trong kho -->
+      <div class="col-sm-6 col-xl-3">
+        <a routerLink="/ingredients" class="card stat-card stat-card-interactive h-100 text-decoration-none" [title]="{ key: '::ManageIngredients', defaultValue: 'Quản lý Nguyên liệu' } | abpLocalization">
+          <div class="card-body p-4 d-flex align-items-center justify-content-between">
+            <div class="stat-content flex-grow-1 pe-2">
+              <span class="stat-label d-block mb-1">{{ { key: '::InventoryStock', defaultValue: 'Kho nguyên liệu' } | abpLocalization }}</span>
+              <h2 class="stat-number d-block mb-2 mt-1">{{ stats.totalIngredients }}</h2>
+              <span class="badge bg-orange-subtle">
+                <i class="fas fa-boxes-stacked me-1"></i>{{ { key: '::PortionedStock', defaultValue: 'Hàng định lượng' } | abpLocalization }}
+              </span>
+            </div>
+            <div class="stat-icon-wrapper flex-shrink-0">
+              <i class="fas fa-carrot"></i>
+            </div>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <!-- Bảng Món ăn mới nhất & Phím tắt nhanh -->
+    <div class="row g-4">
+      <!-- Món ăn mới cập nhật -->
+      <div class="col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+          <div
+            class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center"
+          >
+            <h5 class="fw-bold mb-0 text-dark">
+              <i class="fas fa-fire text-orange me-2"></i>{{ { key: '::LatestDishes', defaultValue: 'Món ăn mới nhất' } | abpLocalization }}
+            </h5>
+            <a routerLink="/dishes" class="text-orange text-decoration-none fw-semibold small">
+              {{ { key: '::ViewAll', defaultValue: 'Xem tất cả' } | abpLocalization }} <i class="fas fa-chevron-right ms-1"></i>
+            </a>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table align-middle table-hover mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th class="ps-4">{{ { key: '::DishNameHeader', defaultValue: 'TÊN MÓN' } | abpLocalization }}</th>
+                    <th>{{ { key: '::CategoryHeader', defaultValue: 'DANH MỤC' } | abpLocalization }}</th>
+                    <th>{{ { key: '::CreationDateHeader', defaultValue: 'NGÀY TẠO' } | abpLocalization }}</th>
+                    <th class="pe-4 text-end">{{ { key: '::PriceHeader', defaultValue: 'GIÁ BÁN' } | abpLocalization }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of recentDishes">
+                    <td class="ps-4">
+                      <div class="d-flex align-items-center">
+                        <div class="dish-avatar rounded-3 me-3">
+                          <i class="fas fa-pizza-slice"></i>
+                        </div>
+                        <span class="fw-bold text-dark">{{ item.name }}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <span class="badge bg-orange-subtle text-orange rounded-pill px-3 py-1">
+                        {{ item.dishCategoryName || ({ key: '::DefaultCategory', defaultValue: 'Mặc định' } | abpLocalization) }}
+                      </span>
+                    </td>
+                    <td class="text-muted">{{ item.creationTime | date: 'dd/MM/yyyy' }}</td>
+                    <td class="pe-4 text-end fw-bold text-orange">
+                      {{ item.price | number: '1.0-0' }} VND
+                    </td>
+                  </tr>
+                  <tr *ngIf="recentDishes.length === 0">
+                    <td colspan="4" class="text-center py-5 text-muted">
+                      <i class="fas fa-box-open fs-2 mb-2 d-block opacity-50"></i>
+                      {{ { key: '::NoDishesYet', defaultValue: 'Chưa có món ăn nào trong thực đơn.' } | abpLocalization }}
+                      <a routerLink="/dishes" class="text-orange">{{ { key: '::AddDishNow', defaultValue: 'Thêm món ngay!' } | abpLocalization }}</a>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lối tắt quản trị hệ thống -->
+      <div class="col-lg-4">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+          <div class="card-header bg-white border-0 py-3">
+            <h5 class="fw-bold mb-0 text-dark">
+              <i class="fas fa-bolt text-orange me-2"></i>{{ { key: '::QuickActions', defaultValue: 'Thao tác nhanh' } | abpLocalization }}
+            </h5>
+          </div>
+          <div class="card-body p-3">
+            <div class="d-flex flex-column gap-2">
+              <a
+                routerLink="/dishes"
+                class="quick-action-item p-3 rounded-3 text-decoration-none d-flex align-items-center justify-content-between"
+              >
+                <div class="d-flex align-items-center">
+                  <div class="action-icon me-3">
+                    <i class="fas fa-plus"></i>
+                  </div>
+                  <div>
+                    <h6 class="mb-0 fw-bold text-dark">{{ { key: '::AddDishTitle', defaultValue: 'Thêm Món Ăn' } | abpLocalization }}</h6>
+                    <small class="text-muted">{{ { key: '::AddDishDesc', defaultValue: 'Cập nhật thực đơn mới' } | abpLocalization }}</small>
+                  </div>
+                </div>
+                <i class="fas fa-chevron-right text-muted"></i>
+              </a>
+
+              <a
+                routerLink="/identity/users"
+                class="quick-action-item p-3 rounded-3 text-decoration-none d-flex align-items-center justify-content-between"
+              >
+                <div class="d-flex align-items-center">
+                  <div class="action-icon me-3">
+                    <i class="fas fa-users"></i>
+                  </div>
+                  <div>
+                    <h6 class="mb-0 fw-bold text-dark">{{ { key: '::UserManagementTitle', defaultValue: 'Quản lý Người dùng' } | abpLocalization }}</h6>
+                    <small class="text-muted">{{ { key: '::UserManagementDesc', defaultValue: 'Tài khoản & Phân quyền' } | abpLocalization }}</small>
+                  </div>
+                </div>
+                <i class="fas fa-chevron-right text-muted"></i>
+              </a>
+
+              <a
+                routerLink="/setting-management"
+                class="quick-action-item p-3 rounded-3 text-decoration-none d-flex align-items-center justify-content-between"
+              >
+                <div class="d-flex align-items-center">
+                  <div class="action-icon bg-light text-dark me-3">
+                    <i class="fas fa-cogs"></i>
+                  </div>
+                  <div>
+                    <h6 class="mb-0 fw-bold text-dark">{{ { key: '::SystemSettingsTitle', defaultValue: 'Cài đặt Hệ thống' } | abpLocalization }}</h6>
+                    <small class="text-muted">{{ { key: '::SystemSettingsDesc', defaultValue: 'Ngôn ngữ, email, cấu hình' } | abpLocalization }}</small>
+                  </div>
+                </div>
+                <i class="fas fa-chevron-right text-muted"></i>
+              </a>
+            </div>
+
+            <!-- Banner khuyến nghị thông minh -->
+            <div class="mt-4 p-3 rounded-3 tip-box">
+              <div class="d-flex">
+                <i class="fas fa-lightbulb text-orange fs-4 me-2"></i>
+                <div>
+                  <h6 class="fw-bold mb-1 text-dark">{{ { key: '::ManagementTipTitle', defaultValue: 'Gợi ý quản lý' } | abpLocalization }}</h6>
+                  <small class="text-muted">
+                    {{ { key: '::ManagementTipContent', defaultValue: 'Hãy liên kết các món ăn với nguyên liệu tương ứng trong công thức (Recipe) để hệ thống tự động trừ kho khi tạo Order.' } | abpLocalization }}
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,116 @@
+<div class="account-auth-wrapper">
+  <div class="register-card shadow-sm">
+    <div class="text-center mb-4">
+      <h3 class="register-title mb-1">Đăng ký tài khoản</h3>
+      <div class="register-subtitle">
+        <span>Đã có tài khoản?</span>
+        <a routerLink="/account/login" class="ms-1 fw-bold text-orange">Đăng nhập</a>
+      </div>
+    </div>
+
+    <!-- Form Đăng Ký Tối Giản -->
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+      <!-- 1. TÊN TÀI KHOẢN -->
+      <div class="mb-3">
+        <label for="reg-username" class="field-label">
+          Tên tài khoản (Username)<span class="required-star">*</span>
+        </label>
+        <input
+          id="reg-username"
+          type="text"
+          class="form-control"
+          formControlName="username"
+          placeholder="Nhập tên tài khoản..."
+          autocomplete="username"
+          [class.is-invalid]="hasAttemptedSubmit() && form.get('username')?.invalid"
+        />
+        @if (hasAttemptedSubmit() && form.get('username')?.invalid) {
+          <div class="field-error-msg">
+            @if (form.get('username')?.errors?.['required']) {
+              <span>Tên tài khoản không được để trống!</span>
+            } @else if (form.get('username')?.errors?.['minlength']) {
+              <span>Tên tài khoản phải dài tối thiểu 3 ký tự!</span>
+            } @else if (form.get('username')?.errors?.['maxlength']) {
+              <span>Tên tài khoản tối đa 32 ký tự!</span>
+            } @else if (form.get('username')?.errors?.['invalidUserNamePattern']) {
+              <span>Tên tài khoản chỉ được chứa chữ cái, số, dấu '.', '_', '-'.</span>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- 2. ĐỊA CHỈ EMAIL -->
+      <div class="mb-3">
+        <label for="reg-email" class="field-label">
+          Địa chỉ Email<span class="required-star">*</span>
+        </label>
+        <input
+          id="reg-email"
+          type="email"
+          class="form-control"
+          formControlName="email"
+          placeholder="name@example.com"
+          autocomplete="email"
+          [class.is-invalid]="hasAttemptedSubmit() && form.get('email')?.invalid"
+        />
+        @if (hasAttemptedSubmit() && form.get('email')?.invalid) {
+          <div class="field-error-msg">
+            @if (form.get('email')?.errors?.['required']) {
+              <span>Địa chỉ Email không được để trống!</span>
+            } @else {
+              <span>Địa chỉ Email không đúng định dạng (VD: user@example.com)!</span>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- 3. MẬT KHẨU -->
+      <div class="mb-3">
+        <label for="reg-password" class="field-label">
+          Mật khẩu<span class="required-star">*</span>
+        </label>
+        <div class="custom-pwd-group">
+          <input
+            id="reg-password"
+            [type]="isPasswordVisible() ? 'text' : 'password'"
+            class="form-control"
+            formControlName="password"
+            placeholder="Nhập mật khẩu..."
+            autocomplete="new-password"
+            [class.is-invalid]="hasAttemptedSubmit() && form.get('password')?.invalid"
+          />
+          <button
+            type="button"
+            class="btn-toggle-eye"
+            (click)="togglePasswordVisibility()"
+            title="Ẩn/Hiện mật khẩu"
+            tabindex="-1"
+          >
+            <i class="fa" [class.fa-eye]="isPasswordVisible()" [class.fa-eye-slash]="!isPasswordVisible()"></i>
+          </button>
+        </div>
+        @if (hasAttemptedSubmit() && form.get('password')?.invalid) {
+          <div class="field-error-msg">
+            <span>Mật khẩu phải từ 6 ký tự, gồm chữ hoa, chữ thường, chữ số và ký tự đặc biệt!</span>
+          </div>
+        }
+      </div>
+
+      <!-- Nút Đăng Ký -->
+      <div class="d-grid mt-4">
+        <button
+          type="submit"
+          class="btn btn-register-submit"
+          [disabled]="inProgress()"
+        >
+          @if (inProgress()) {
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            <span>Đang tạo tài khoản...</span>
+          } @else {
+            <span>Đăng ký</span>
+          }
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

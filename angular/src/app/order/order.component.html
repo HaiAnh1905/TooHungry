@@ -1,0 +1,652 @@
+<div class="order-management-page">
+  <!-- 1. TOP HEADER -->
+  <div class="page-header-row d-flex align-items-center justify-content-between flex-wrap gap-3 mb-3">
+    <div>
+      <h2 class="page-title m-0">
+        {{ '::ManageOrders' | abpLocalization }}
+      </h2>
+      <p class="page-subtitle m-0 mt-1">
+        {{ '::ManageOrdersSubtitle' | abpLocalization }}
+      </p>
+    </div>
+  </div>
+
+  <!-- 2. FILTER CARD -->
+  <div class="filter-card-container mb-4">
+    <div class="search-input-wrapper mb-3">
+      <i class="fa fa-search search-icon"></i>
+      <input
+        type="text"
+        class="form-control search-input"
+        [(ngModel)]="searchTerm"
+        (ngModelChange)="onSearchChange()"
+        [placeholder]="'::SearchOrderPlaceholder' | abpLocalization"
+      />
+      @if (searchTerm) {
+        <button type="button" class="btn-clear-search" (click)="searchTerm = ''; onSearchChange()">
+          <i class="fa fa-times-circle"></i>
+        </button>
+      }
+    </div>
+
+    <div class="d-flex align-items-center flex-wrap gap-4 filter-dropdowns-row">
+      <!-- Lọc Trạng thái -->
+      <div class="filter-item d-flex align-items-center gap-2">
+        <span class="filter-label">{{ '::Status' | abpLocalization }}:</span>
+        <app-custom-select
+          [options]="statusFilterOptions"
+          [(ngModel)]="selectedStatus"
+          (selectionChange)="onStatusFilterChange($event)"
+          minWidth="175px"
+        ></app-custom-select>
+      </div>
+
+      <!-- Sắp xếp -->
+      <div class="filter-item d-flex align-items-center gap-2">
+        <span class="filter-label">{{ '::SortBy' | abpLocalization }}:</span>
+        <app-custom-select
+          [options]="sortOptions"
+          [(ngModel)]="sortBy"
+          (selectionChange)="onSortChange($event)"
+          minWidth="185px"
+        ></app-custom-select>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. DATA TABLE CARD & PAGINATION FOOTER -->
+  <div class="data-card-wrapper" #tableWrapper>
+    <ngx-datatable
+      #table
+      class="sedap-modern-table"
+      [rows]="data.items"
+      [count]="data.totalCount"
+      [list]="list"
+      [limit]="list.maxResultCount"
+      [offset]="list.page"
+      [externalPaging]="true"
+      columnMode="force"
+      [headerHeight]="48"
+      [messages]="{
+        emptyMessage: '::NoDataAvailable' | abpLocalization,
+        totalMessage: '::OrderCount' | abpLocalization
+      }"
+      [rowHeight]="52"
+    >
+      <!-- Cột 1: STT -->
+      <ngx-datatable-column
+        [width]="70"
+        [minWidth]="60"
+        [maxWidth]="75"
+        [canAutoResize]="false"
+        [sortable]="false"
+      >
+        <ng-template ngx-datatable-header-template>
+          <span class="w-100 text-center header-title-centered">{{ '::Index' | abpLocalization }}</span>
+        </ng-template>
+        <ng-template let-rowIndex="rowIndex" ngx-datatable-cell-template>
+          <span class="stt-text">{{ list.page * list.maxResultCount + rowIndex + 1 }}</span>
+        </ng-template>
+      </ngx-datatable-column>
+
+      <!-- Cột 2: Mã đơn (OrderNumber) -->
+      <ngx-datatable-column
+        [name]="'::OrderNumber' | abpLocalization"
+        prop="orderNumber"
+        [minWidth]="160"
+        [flexGrow]="1.5"
+        [canAutoResize]="true"
+      >
+        <ng-template let-row="row" ngx-datatable-cell-template>
+          <div class="d-flex align-items-center text-truncate">
+            <div class="theme-avatar-icon">
+              <i class="fa fa-receipt"></i>
+            </div>
+            <span class="main-name-text text-truncate" [title]="row.orderNumber">{{ row.orderNumber }}</span>
+          </div>
+        </ng-template>
+      </ngx-datatable-column>
+
+      <!-- Cột 3: Ngày đặt (OrderDate) -->
+      <ngx-datatable-column
+        [name]="'::OrderDate' | abpLocalization"
+        prop="orderDate"
+        [minWidth]="140"
+        [flexGrow]="1"
+        [canAutoResize]="true"
+      >
+        <ng-template let-row="row" ngx-datatable-cell-template>
+          <span class="date-text">
+            {{ row.orderDate | date: 'dd/MM/yyyy HH:mm' }}
+          </span>
+        </ng-template>
+      </ngx-datatable-column>
+
+      <!-- Cột 4: Trạng thái (Status) -->
+      <ngx-datatable-column
+        [name]="'::Status' | abpLocalization"
+        prop="status"
+        [width]="150"
+        [minWidth]="130"
+        [maxWidth]="170"
+        [canAutoResize]="false"
+      >
+        <ng-template let-row="row" ngx-datatable-cell-template>
+          <span class="status-pill" [ngClass]="getStatusClass(row.status)">
+            {{ getStatusLabel(row.status) | abpLocalization }}
+          </span>
+        </ng-template>
+      </ngx-datatable-column>
+
+      <!-- Cột 5: Tổng tiền (TotalAmount) -->
+      <ngx-datatable-column
+        [name]="'::TotalAmount' | abpLocalization"
+        prop="totalAmount"
+        [width]="180"
+        [minWidth]="150"
+        [maxWidth]="200"
+        [canAutoResize]="false"
+      >
+        <ng-template let-row="row" ngx-datatable-cell-template>
+          <div class="d-flex align-items-center">
+            <span class="amount-text">{{ row.totalAmount | number: '1.0-0' }}</span>
+            <span class="currency-tag-sm ms-2">VND</span>
+          </div>
+        </ng-template>
+      </ngx-datatable-column>
+
+      <!-- Cột 6: Thao tác (Actions) -->
+      <ngx-datatable-column
+        [width]="120"
+        [minWidth]="110"
+        [maxWidth]="130"
+        [canAutoResize]="false"
+        [sortable]="false"
+      >
+        <ng-template ngx-datatable-header-template>
+          <span class="w-100 text-center header-title-centered">{{ '::Actions' | abpLocalization }}</span>
+        </ng-template>
+        <ng-template let-row="row" ngx-datatable-cell-template>
+          <div class="actions-container">
+            @if (row.status !== OrderStatus.Completed && row.status !== OrderStatus.Cancelled) {
+              <button
+                type="button"
+                class="icon-action-btn btn-pay-inline"
+                (click)="goToPayment(row.id)"
+                [title]="'::ConfirmEndMealTitle' | abpLocalization"
+              >
+                <i class="fa fa-receipt"></i>
+              </button>
+            }
+            <button
+              type="button"
+              class="icon-action-btn btn-edit"
+              (click)="editOrder(row.id)"
+              [title]="'::ViewOrder' | abpLocalization"
+            >
+              <i class="fa fa-file-lines fa-file-alt"></i>
+            </button>
+            @if (row.status !== OrderStatus.Completed) {
+              <button
+                type="button"
+                class="icon-action-btn btn-delete"
+                (click)="delete(row.id)"
+                [title]="'::DeleteOrder' | abpLocalization"
+              >
+                <i class="fa fa-trash-alt"></i>
+              </button>
+            }
+          </div>
+        </ng-template>
+      </ngx-datatable-column>
+    </ngx-datatable>
+
+    <!-- 4. CUSTOM FOOTER PAGINATION BAR -->
+    <div class="custom-table-footer d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div class="d-flex align-items-center flex-wrap gap-3">
+        <span class="records-summary-text">
+          {{ '::ShowingRecords' | abpLocalization }}
+          <strong>{{ fromRecord }} - {{ toRecord }}</strong>
+          {{ '::OfTotal' | abpLocalization }}
+          <strong>{{ data.totalCount }}</strong>
+          {{ '::OrderCount' | abpLocalization }}
+        </span>
+
+        <div class="d-flex align-items-center gap-2 page-size-box">
+          <span class="page-size-label">{{ '::Display' | abpLocalization }}:</span>
+          <app-custom-select
+            [options]="pageSizeOptions"
+            [ngModel]="list.maxResultCount"
+            (selectionChange)="changePageSize($event)"
+            size="sm"
+            placement="top"
+            minWidth="140px"
+          ></app-custom-select>
+        </div>
+      </div>
+
+      <div class="d-flex align-items-center pagination-btn-group" style="gap: 5px;">
+        <button
+          type="button"
+          class="btn-page-nav"
+          [disabled]="currentPage === 1"
+          (click)="firstPage()"
+          [title]="'::FirstPage' | abpLocalization"
+        >
+          <i class="fa fa-angle-double-left"></i>
+        </button>
+
+        <button
+          type="button"
+          class="btn-page-nav btn-text-nav"
+          [disabled]="currentPage === 1"
+          (click)="prevPage()"
+        >
+          <i class="fa fa-angle-left me-1"></i>
+          <span>{{ '::PreviousPage' | abpLocalization }}</span>
+        </button>
+
+        <span class="current-page-badge">
+          {{ '::Page' | abpLocalization }}
+          <strong>{{ currentPage }}</strong> / {{ totalPages }}
+        </span>
+
+        <button
+          type="button"
+          class="btn-page-nav btn-text-nav"
+          [disabled]="currentPage === totalPages"
+          (click)="nextPage()"
+        >
+          <span>{{ '::NextPage' | abpLocalization }}</span>
+          <i class="fa fa-angle-right ms-1"></i>
+        </button>
+
+        <button
+          type="button"
+          class="btn-page-nav"
+          [disabled]="currentPage === totalPages"
+          (click)="lastPage()"
+          [title]="'::LastPage' | abpLocalization"
+        >
+          <i class="fa fa-angle-double-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Thêm/Sửa Đơn hàng (Layout POS 60/40 Hiện đại) -->
+<abp-modal [(visible)]="isModalOpen">
+  <ng-template #abpHeader>
+    <div class="d-flex align-items-center gap-3 modal-header-content">
+      <div class="modal-header-icon order-modal-icon">
+        <i class="fa fa-receipt"></i>
+      </div>
+      <div class="d-flex flex-column justify-content-center">
+        <h5 class="m-0 modal-title-text" style="color: #ea580c; font-weight: 800; font-size: 1.15rem">
+          @if (selectedItem?.id) {
+            @if (isOrderCompleted) {
+              {{ '::ViewOrder' | abpLocalization }} - {{ form?.get('orderNumber')?.value || selectedItem.orderNumber }}
+            } @else {
+              {{ '::EditOrder' | abpLocalization }} - {{ form?.get('orderNumber')?.value || selectedItem.orderNumber }}
+            }
+          } @else {
+            {{ '::AddNewOrder' | abpLocalization }}
+          }
+        </h5>
+        <span class="modal-subtitle-text" style="color: #6b7280; font-size: 0.84rem">
+          {{ '::OrderModalSubtitle' | abpLocalization }}
+        </span>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #abpBody>
+    @if (form) {
+      @if (isOrderCompleted) {
+        <div class="alert alert-success d-flex align-items-center justify-content-between p-2 px-3 mb-2 rounded-3">
+          <div class="d-flex align-items-center">
+            <i class="fa fa-lock text-success me-2 fs-5"></i>
+            <div>
+              <strong class="text-success">{{ '::OrderCompletedLocked' | abpLocalization }}</strong>
+              <div class="small text-muted">Đơn hàng này đã thanh toán xong, toàn bộ thông tin đã bị khóa chỉnh sửa.</div>
+            </div>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-success font-bold" (click)="goToPayment(selectedItem.id)">
+            <i class="fa fa-receipt me-1"></i> Xem hóa đơn & QR
+          </button>
+        </div>
+      }
+      <form id="order-form" [formGroup]="form" (ngSubmit)="save()" class="order-pos-modal-body">
+        <div class="order-pos-layout">
+          <!-- CỘT TRÁI (58%): MENU DANH SÁCH MÓN ĂN -->
+          <div class="pos-menu-column">
+            <div class="menu-column-header">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="column-title">
+                    <i class="fa fa-book-open"></i>
+                    <span>{{ '::MenuDishes' | abpLocalization }}</span>
+                  </span>
+                  <span class="column-count-badge">{{ filteredDishes.length }}</span>
+                </div>
+              </div>
+
+              <!-- Ô tìm kiếm món ăn -->
+              <div class="pos-search-wrapper mb-2">
+                <i class="fa fa-search pos-search-icon"></i>
+                <input
+                  type="text"
+                  class="form-control pos-search-input"
+                  [value]="dishSearchTerm"
+                  (input)="dishSearchTerm = $any($event.target).value"
+                  [placeholder]="'::SearchDishPlaceholder' | abpLocalization"
+                />
+                @if (dishSearchTerm) {
+                  <button
+                    type="button"
+                    class="btn-clear-search"
+                    (click)="dishSearchTerm = ''"
+                    title="Xóa tìm kiếm"
+                  >
+                    <i class="fa fa-times-circle"></i>
+                  </button>
+                }
+              </div>
+            </div>
+
+            <!-- Danh sách món ăn phân theo Course / Category dạng dropdown Accordion -->
+            <div class="pos-dish-list-scroll">
+              @for (group of groupedDishes; track group.categoryName) {
+                <div class="pos-category-section mb-2">
+                  <!-- Header của Course / Category (Nhấn để mở / ẩn) -->
+                  <div
+                    class="category-accordion-header"
+                    (click)="toggleCategory(group.categoryName)"
+                    [class.is-collapsed]="!isCategoryExpanded(group.categoryName)"
+                  >
+                    <div class="category-header-left">
+                      <i class="fa fa-utensils category-icon"></i>
+                      <span class="category-name-text">{{ group.categoryName }}</span>
+                      <span class="category-dish-count-badge">
+                        {{ '::DishesCount' | abpLocalization: ('' + group.dishes.length) }}
+                      </span>
+                    </div>
+                    <div class="category-header-right">
+                      <i
+                        class="fa category-toggle-icon"
+                        [class.fa-chevron-down]="isCategoryExpanded(group.categoryName)"
+                        [class.fa-chevron-right]="!isCategoryExpanded(group.categoryName)"
+                      ></i>
+                    </div>
+                  </div>
+
+                  <!-- Danh sách món ăn bên trong category (Hiện khi mở, ẩn khi đóng) -->
+                  @if (isCategoryExpanded(group.categoryName)) {
+                    <div class="category-dishes-wrapper">
+                      @for (dish of group.dishes; track dish.id) {
+                        <div class="pos-dish-card" [class.is-selected]="getItemQuantityInOrder(dish.id) > 0">
+                          <!-- Thumbnail ảnh món ăn -->
+                          <div class="pos-dish-thumb-box">
+                            @if (dish.imageUrl) {
+                              <img
+                                [src]="dish.imageUrl"
+                                [alt]="dish.name"
+                                class="pos-dish-thumb-img"
+                                (error)="onImgError($event)"
+                              />
+                            } @else {
+                              <div class="pos-dish-fallback-icon">
+                                <i class="fa fa-utensils"></i>
+                              </div>
+                            }
+                          </div>
+
+                          <div class="dish-card-info">
+                            <div class="dish-name-row">
+                              <span class="dish-title">{{ dish.name }}</span>
+                            </div>
+                            <div class="dish-price-row">
+                              <span class="dish-price-val">{{ dish.price | number: '1.0-0' }}</span>
+                              <span class="dish-price-curr">đ</span>
+                            </div>
+                          </div>
+
+                          <div class="dish-card-action">
+                            @if (getItemQuantityInOrder(dish.id) > 0) {
+                              <span class="dish-order-badge">
+                                x{{ getItemQuantityInOrder(dish.id) }}
+                              </span>
+                            }
+                            <button
+                              type="button"
+                              class="btn btn-sm btn-order-dish"
+                              (click)="addDishToOrder(dish)"
+                            >
+                              <i class="fa fa-cart-plus"></i>
+                              <span>{{ '::OrderDishBtn' | abpLocalization }}</span>
+                            </button>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+
+              @if (groupedDishes.length === 0) {
+                <div class="empty-menu-state py-4 text-center">
+                  <div class="empty-icon-circle mb-2">
+                    <i class="fa fa-search"></i>
+                  </div>
+                  <p class="empty-text m-0 text-muted">
+                    {{ '::DishNotFound' | abpLocalization }}
+                  </p>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- CỘT PHẢI (42%): ĐƠN HÀNG (CURRENT ORDER) -->
+          <div class="pos-cart-column">
+            <!-- Header giỏ hàng -->
+            <div class="cart-column-header d-flex align-items-center justify-content-between mb-2">
+              <div class="d-flex align-items-center gap-2">
+                <span class="column-title">
+                  <i class="fa fa-receipt"></i>
+                  <span>{{ '::CurrentOrder' | abpLocalization }}</span>
+                </span>
+                <span class="cart-count-badge">{{ orderItemsArray.length }}</span>
+              </div>
+              @if (orderItemsArray.length > 0) {
+                <button
+                  type="button"
+                  class="btn btn-sm btn-clear-order"
+                  (click)="clearAllOrderItems()"
+                >
+                  <i class="fa fa-trash-alt"></i>
+                  <span>{{ '::ClearOrder' | abpLocalization }}</span>
+                </button>
+              }
+            </div>
+
+            <!-- Khối metadata đơn hàng (Mã, Trạng thái, Bàn, Ngày) -->
+            <div class="order-meta-card mb-2 p-2 bg-light border rounded">
+              <div class="row g-2">
+                <!-- Mã đơn (Chỉ hiển thị, không cho phép tương tác/sửa) -->
+                <div class="col-6">
+                  <div class="d-flex align-items-center justify-content-between">
+                    <label class="form-label-xs m-0 text-muted">{{ '::OrderNumber' | abpLocalization }}</label>
+                    <i class="fa fa-lock text-muted" style="font-size: 0.68rem" title="Mã đơn tự động, chỉ đọc"></i>
+                  </div>
+                  <input
+                    type="text"
+                    class="form-control form-control-sm meta-input meta-readonly-input"
+                    formControlName="orderNumber"
+                    readonly
+                    tabindex="-1"
+                  />
+                </div>
+                <!-- Trạng thái -->
+                <div class="col-6">
+                  <label class="form-label-xs m-0 text-muted">{{ '::Status' | abpLocalization }}</label>
+                  <app-custom-select
+                    class="w-100"
+                    formControlName="status"
+                    [options]="orderStatusSelectOptions"
+                    size="sm"
+                    minWidth="100%"
+                  ></app-custom-select>
+                </div>
+                <!-- Bàn ăn -->
+                <div class="col-6">
+                  <label class="form-label-xs m-0 text-muted">
+                    <span>{{ '::Table' | abpLocalization }}</span>
+                    <span class="text-danger ms-1">*</span>
+                  </label>
+                  <app-custom-select
+                    class="w-100"
+                    formControlName="tableId"
+                    [options]="tableSelectOptions"
+                    [placeholder]="'::SelectTable' | abpLocalization"
+                    leadIcon="fa-chair"
+                    size="sm"
+                    minWidth="100%"
+                    [searchable]="true"
+                  ></app-custom-select>
+                </div>
+                <!-- Ngày đặt -->
+                <div class="col-6">
+                  <label class="form-label-xs m-0 text-muted">{{ '::OrderDate' | abpLocalization }}</label>
+                  <input
+                    type="date"
+                    class="form-control form-control-sm meta-input"
+                    formControlName="orderDate"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- Danh sách món đã đặt trong formArray items -->
+            <div formArrayName="items" class="cart-items-scroll mb-2">
+              @for (itemGroup of orderItemsArray.controls; track $index) {
+                <div [formGroupName]="$index" class="pos-cart-item-row">
+                  <div class="cart-item-info">
+                    <div class="cart-item-name">
+                      {{ getDishName(itemGroup.get('dishId')?.value) }}
+                    </div>
+                    <div class="cart-item-unit-price">
+                      {{ itemGroup.get('unitPrice')?.value | number: '1.0-0' }} đ
+                    </div>
+                  </div>
+
+                  <!-- Stepper tăng giảm số lượng [-] [qty] [+] -->
+                  <div class="quantity-stepper-wrap">
+                    <button
+                      type="button"
+                      class="stepper-btn btn-minus"
+                      (click)="decreaseQuantity($index)"
+                      title="Giảm"
+                    >
+                      <i class="fa fa-minus"></i>
+                    </button>
+                    <input
+                      type="number"
+                      min="1"
+                      class="stepper-input"
+                      formControlName="quantity"
+                      (input)="calculateTotal()"
+                    />
+                    <button
+                      type="button"
+                      class="stepper-btn btn-plus"
+                      (click)="increaseQuantity($index)"
+                      title="Tăng"
+                    >
+                      <i class="fa fa-plus"></i>
+                    </button>
+                  </div>
+
+                  <!-- Thành tiền của dòng món -->
+                  <div class="cart-item-total">
+                    <span class="total-num">
+                      {{ (itemGroup.get('unitPrice')?.value * itemGroup.get('quantity')?.value) | number: '1.0-0' }}
+                    </span>
+                    <span class="total-curr">đ</span>
+                  </div>
+
+                  <!-- Nút xóa món -->
+                  <button
+                    type="button"
+                    class="btn-remove-cart-item"
+                    (click)="removeOrderItem($index)"
+                    [title]="'::Delete' | abpLocalization"
+                  >
+                    <i class="fa fa-times"></i>
+                  </button>
+                </div>
+              }
+
+              @if (orderItemsArray.length === 0) {
+                <div class="empty-cart-state py-4 px-3 text-center">
+                  <div class="empty-cart-icon mb-2">
+                    <i class="fa fa-shopping-basket"></i>
+                  </div>
+                  <p class="empty-cart-text m-0 text-muted">
+                    {{ '::EmptyOrderPrompt' | abpLocalization }}
+                  </p>
+                </div>
+              }
+            </div>
+
+            <!-- Khối Tổng thanh toán (Bill Summary Card) -->
+            <div class="order-bill-summary-card mb-2">
+              <div class="summary-left">
+                <span class="summary-label">{{ '::SubtotalSummaryLabel' | abpLocalization }}</span>
+                <span class="summary-sub">{{ '::SubtotalSummaryDesc' | abpLocalization }}</span>
+              </div>
+              <div class="summary-right">
+                <span class="grand-total-val">
+                  {{ form.get('totalAmount')?.value | number: '1.0-0' }}
+                </span>
+                <span class="grand-total-currency">VND</span>
+              </div>
+            </div>
+
+            <!-- Ghi chú cho đơn hàng -->
+            <div class="order-note-group">
+              <label for="order-note-modal" class="note-label mb-1">
+                <i class="fa fa-edit"></i>
+                <span>{{ '::Note' | abpLocalization }}</span>
+              </label>
+              <textarea
+                id="order-note-modal"
+                rows="2"
+                class="form-control custom-note-textarea"
+                formControlName="note"
+                [placeholder]="'::EnterNotePlaceholder' | abpLocalization"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+      </form>
+    }
+  </ng-template>
+
+  <ng-template #abpFooter>
+    <div class="order-modal-footer d-flex align-items-center justify-content-end gap-2 w-100">
+      <button type="button" class="btn btn-order-modal-close" abpClose>
+        <i class="fa fa-times"></i>
+        <span>{{ '::Close' | abpLocalization }}</span>
+      </button>
+      <button
+        form="order-form"
+        class="btn btn-order-modal-submit"
+        [disabled]="form?.invalid || orderItemsArray.length === 0 || isOrderCompleted"
+      >
+        <i class="fa fa-save"></i>
+        <span>{{ (selectedItem?.id ? '::UpdateOrder' : '::AddNewOrder') | abpLocalization }}</span>
+      </button>
+    </div>
+  </ng-template>
+</abp-modal>

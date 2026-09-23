@@ -1,0 +1,390 @@
+<div class="ingredient-management-page">
+  <!-- 1. TOP HEADER: Tiêu đề & Nút Thao tác -->
+  <div class="page-header-row d-flex align-items-center justify-content-between flex-wrap gap-3 mb-3">
+    <div>
+      <h2 class="page-title m-0">
+        {{ '::ManageIngredients' | abpLocalization }}
+      </h2>
+      <p class="page-subtitle m-0 mt-1">
+        {{ '::ManageIngredientsSubtitle' | abpLocalization }}
+      </p>
+    </div>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <a
+        routerLink="/ingredient-categories"
+        (click)="navigateTo('/ingredient-categories')"
+        class="btn btn-outline-secondary btn-secondary-theme"
+      >
+        <i class="fa fa-tags me-1"></i>
+        <span>{{ '::ViewCategories' | abpLocalization }}</span>
+      </a>
+      <button
+        id="create-ingredient"
+        class="btn btn-primary btn-add-theme"
+        type="button"
+        (click)="createIngredient()"
+      >
+        <i class="fa fa-plus-circle"></i>
+        <span>{{ '::AddNewIngredient' | abpLocalization }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 2. FILTER CARD: Ô tìm kiếm, lọc danh mục & Sắp xếp -->
+  <div class="filter-card-container mb-4">
+    <!-- Hàng tìm kiếm -->
+    <div class="search-input-wrapper mb-3">
+      <i class="fa fa-search search-icon"></i>
+      <input
+        type="text"
+        class="form-control search-input"
+        [(ngModel)]="searchTerm"
+        (ngModelChange)="onSearchChange()"
+        [placeholder]="'::SearchIngredientPlaceholder' | abpLocalization"
+      />
+      @if (searchTerm) {
+        <button type="button" class="btn-clear-search" (click)="searchTerm = ''; onSearchChange()">
+          <i class="fa fa-times-circle"></i>
+        </button>
+      }
+    </div>
+
+    <!-- Hàng lọc dropdown -->
+    <div class="d-flex align-items-center flex-wrap gap-4 filter-dropdowns-row">
+      <!-- Lọc theo Danh mục nguyên liệu -->
+      <div class="filter-item d-flex align-items-center gap-2">
+        <span class="filter-label">{{ '::IngredientCategory' | abpLocalization }}:</span>
+        <app-custom-select
+          [options]="categoryFilterOptions"
+          [(ngModel)]="selectedCategoryId"
+          (selectionChange)="onCategoryFilterChange($event)"
+          minWidth="200px"
+        ></app-custom-select>
+      </div>
+
+      <!-- Sắp xếp -->
+      <div class="filter-item d-flex align-items-center gap-2">
+        <span class="filter-label">{{ '::SortBy' | abpLocalization }}:</span>
+        <app-custom-select
+          [options]="sortOptions"
+          [(ngModel)]="sortBy"
+          (selectionChange)="onSortChange($event)"
+          minWidth="170px"
+        ></app-custom-select>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. DATA TABLE CARD & PAGINATION FOOTER -->
+  <div class="data-card-wrapper" #tableWrapper>
+    <ngx-datatable
+      #table
+      class="sedap-modern-table"
+      [rows]="pagedIngredients"
+      [count]="totalCount"
+      [limit]="pageSize"
+      [offset]="page"
+      [externalPaging]="true"
+      columnMode="force"
+      [headerHeight]="48"
+      [messages]="{
+        emptyMessage: '::NoDataAvailable' | abpLocalization,
+        totalMessage: '::IngredientCount' | abpLocalization
+      }"
+      [rowHeight]="52"
+    >
+      <!-- Cột 1: STT -->
+      <ngx-datatable-column
+        [width]="70"
+        [minWidth]="60"
+        [maxWidth]="75"
+        [canAutoResize]="false"
+        [sortable]="false"
+      >
+        <ng-template ngx-datatable-header-template>
+          <span class="w-100 text-center header-title-centered">{{ '::Index' | abpLocalization }}</span>
+        </ng-template>
+        <ng-template let-rowIndex="rowIndex" ngx-datatable-cell-template>
+          <span class="stt-text">{{ page * pageSize + rowIndex + 1 }}</span>
+        </ng-template>
+      </ngx-datatable-column>
+
+      <!-- Cột 2: Tên nguyên liệu -->
+      <ngx-datatable-column
+        [name]="'::IngredientName' | abpLocalization"
+        prop="name"
+        [minWidth]="220"
+        [flexGrow]="3"
+        [canAutoResize]="true"
+      >
+        <ng-template let-row="row" ngx-datatable-cell-template>
+          <div class="d-flex align-items-center text-truncate">
+            <div class="theme-avatar-icon">
+              <i class="fa fa-leaf"></i>
+            </div>
+            <span class="main-name-text text-truncate" [title]="row.name">{{ row.name }}</span>
+          </div>
+        </ng-template>
+      </ngx-datatable-column>
+
+      <!-- Cột 3: Danh mục nguyên liệu (Category) -->
+      <ngx-datatable-column
+        [name]="'::IngredientCategory' | abpLocalization"
+        prop="ingredientCategoryName"
+        [minWidth]="180"
+        [flexGrow]="2"
+        [canAutoResize]="true"
+      >
+        <ng-template let-row="row" ngx-datatable-cell-template>
+          <span class="category-pill text-truncate" [title]="row.ingredientCategoryName || ''">
+            <i class="fa fa-tag me-1"></i>
+            {{ row.ingredientCategoryName || '-' }}
+          </span>
+        </ng-template>
+      </ngx-datatable-column>
+
+      <!-- Cột 4: Đơn vị tính (Unit) -->
+      <ngx-datatable-column
+        [name]="'::Unit' | abpLocalization"
+        prop="unitName"
+        [width]="180"
+        [minWidth]="150"
+        [maxWidth]="230"
+        [canAutoResize]="true"
+        [flexGrow]="1.5"
+        [sortable]="false"
+      >
+        <ng-template ngx-datatable-header-template>
+          <span class="w-100 text-center header-title-centered">{{ '::Unit' | abpLocalization }}</span>
+        </ng-template>
+        <ng-template let-row="row" ngx-datatable-cell-template>
+          <div class="d-flex justify-content-center w-100">
+            <span class="unit-pill" [title]="getUnitTooltip(row)">
+              <i class="fa fa-scale-balanced me-1"></i>
+              {{ getUnitDisplay(row) }}
+            </span>
+          </div>
+        </ng-template>
+      </ngx-datatable-column>
+
+      <!-- Cột 5: Thao tác -->
+      <ngx-datatable-column
+        [width]="120"
+        [minWidth]="110"
+        [maxWidth]="130"
+        [canAutoResize]="false"
+        [sortable]="false"
+      >
+        <ng-template ngx-datatable-header-template>
+          <span class="w-100 text-center header-title-centered">{{ '::Actions' | abpLocalization }}</span>
+        </ng-template>
+        <ng-template let-row="row" ngx-datatable-cell-template>
+          <div class="actions-container">
+            <button
+              type="button"
+              class="icon-action-btn btn-edit"
+              (click)="editIngredient(row.id)"
+              [title]="'::Edit' | abpLocalization"
+            >
+              <i class="fa fa-pen"></i>
+            </button>
+            <button
+              type="button"
+              class="icon-action-btn btn-delete"
+              (click)="delete(row.id)"
+              [title]="'::DeleteIngredient' | abpLocalization"
+            >
+              <i class="fa fa-trash-alt"></i>
+            </button>
+          </div>
+        </ng-template>
+      </ngx-datatable-column>
+    </ngx-datatable>
+
+    <!-- 4. CUSTOM FOOTER PAGINATION BAR -->
+    <div class="custom-table-footer d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div class="d-flex align-items-center flex-wrap gap-3">
+        <span class="records-summary-text">
+          {{ '::ShowingRecords' | abpLocalization }}
+          <strong>{{ fromRecord }} - {{ toRecord }}</strong>
+          {{ '::OfTotal' | abpLocalization }}
+          <strong>{{ totalCount }}</strong>
+          {{ '::IngredientCount' | abpLocalization }}
+        </span>
+
+        <div class="d-flex align-items-center gap-2 page-size-box">
+          <span class="page-size-label">{{ '::Display' | abpLocalization }}:</span>
+          <app-custom-select
+            [options]="pageSizeOptions"
+            [ngModel]="pageSize"
+            (selectionChange)="changePageSize($event)"
+            size="sm"
+            placement="top"
+            minWidth="140px"
+          ></app-custom-select>
+        </div>
+      </div>
+
+      <div class="d-flex align-items-center pagination-btn-group" style="gap: 5px;">
+        <button
+          type="button"
+          class="btn-page-nav"
+          [disabled]="currentPage === 1"
+          (click)="firstPage()"
+          [title]="'::FirstPage' | abpLocalization"
+        >
+          <i class="fa fa-angle-double-left"></i>
+        </button>
+
+        <button
+          type="button"
+          class="btn-page-nav btn-text-nav"
+          [disabled]="currentPage === 1"
+          (click)="prevPage()"
+        >
+          <i class="fa fa-angle-left me-1"></i>
+          <span>{{ '::PreviousPage' | abpLocalization }}</span>
+        </button>
+
+        <span class="current-page-badge">
+          {{ '::Page' | abpLocalization }}
+          <strong>{{ currentPage }}</strong> / {{ totalPages }}
+        </span>
+
+        <button
+          type="button"
+          class="btn-page-nav btn-text-nav"
+          [disabled]="currentPage === totalPages"
+          (click)="nextPage()"
+        >
+          <span>{{ '::NextPage' | abpLocalization }}</span>
+          <i class="fa fa-angle-right ms-1"></i>
+        </button>
+
+        <button
+          type="button"
+          class="btn-page-nav"
+          [disabled]="currentPage === totalPages"
+          (click)="lastPage()"
+          [title]="'::LastPage' | abpLocalization"
+        >
+          <i class="fa fa-angle-double-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Thêm/Sửa Nguyên liệu (Tuyệt đối KHÔNG có trường Description) -->
+<abp-modal [(visible)]="isModalOpen">
+  <ng-template #abpHeader>
+    <div class="d-flex align-items-center gap-3">
+      <div class="modal-header-icon">
+        <i class="fa fa-leaf"></i>
+      </div>
+      <div>
+        <h5 class="m-0 modal-title-text">
+          {{ (selectedItem.id ? '::EditIngredient' : '::NewIngredient') | abpLocalization }}
+        </h5>
+        <span class="modal-subtitle-text">
+          {{ (selectedItem.id ? '::EditIngredientSubtitle' : '::NewIngredientSubtitle') | abpLocalization }}
+        </span>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #abpBody>
+    <form id="ingredient-form" [formGroup]="form" (ngSubmit)="save()" class="theme-modal-form">
+      <!-- 1. Tên nguyên liệu -->
+      <div class="form-field-group mb-3">
+        <label for="ingredient-name" class="field-label">
+          <span>{{ '::IngredientName' | abpLocalization }}</span>
+          <span class="required-star">*</span>
+        </label>
+        <div class="input-with-icon">
+          <i class="fa fa-signature input-icon"></i>
+          <input
+            type="text"
+            id="ingredient-name"
+            class="form-control custom-form-input"
+            formControlName="name"
+            [placeholder]="'::EnterIngredientName' | abpLocalization"
+            [skipValidation]="true"
+            autofocus
+          />
+        </div>
+        @if (form.get('name')?.invalid && (form.get('name')?.touched || form.get('name')?.dirty)) {
+          <div class="field-validation-error">
+            <i class="fa fa-exclamation-circle"></i>
+            <span>{{ { key: '::FieldRequired', defaultValue: 'This field is required.' } | abpLocalization }}</span>
+          </div>
+        }
+      </div>
+
+      <!-- 2. Danh mục nguyên liệu -->
+      <div class="form-field-group mb-3">
+        <label for="ingredient-cat" class="field-label">
+          <span>{{ '::IngredientCategory' | abpLocalization }}</span>
+          <span class="required-star">*</span>
+        </label>
+        <div class="w-100">
+          <app-custom-select
+            id="ingredient-cat"
+            class="w-100"
+            formControlName="ingredientCategoryId"
+            [options]="modalCategoryOptions"
+            [placeholder]="'::SelectCategoryPlaceholder' | abpLocalization"
+            leadIcon="fa-tag"
+            minWidth="100%"
+            [searchable]="true"
+          ></app-custom-select>
+        </div>
+        @if (form.get('ingredientCategoryId')?.invalid && (form.get('ingredientCategoryId')?.touched || form.get('ingredientCategoryId')?.dirty)) {
+          <div class="field-validation-error">
+            <i class="fa fa-exclamation-circle"></i>
+            <span>{{ { key: '::FieldRequired', defaultValue: 'This field is required.' } | abpLocalization }}</span>
+          </div>
+        }
+      </div>
+
+      <!-- 3. Đơn vị tính (Unit) -->
+      <div class="form-field-group mb-2">
+        <label for="ingredient-unit" class="field-label">
+          <span>{{ '::Unit' | abpLocalization }}</span>
+          <span class="required-star">*</span>
+        </label>
+        <div class="w-100">
+          <app-custom-select
+            id="ingredient-unit"
+            class="w-100"
+            formControlName="unitId"
+            [options]="modalUnitOptions"
+            [placeholder]="'::SelectUnitPlaceholder' | abpLocalization"
+            leadIcon="fa-scale-balanced"
+            minWidth="100%"
+            [searchable]="true"
+          ></app-custom-select>
+        </div>
+        @if (form.get('unitId')?.invalid && (form.get('unitId')?.touched || form.get('unitId')?.dirty)) {
+          <div class="field-validation-error">
+            <i class="fa fa-exclamation-circle"></i>
+            <span>{{ { key: '::FieldRequired', defaultValue: 'This field is required.' } | abpLocalization }}</span>
+          </div>
+        }
+      </div>
+    </form>
+  </ng-template>
+
+  <ng-template #abpFooter>
+    <div class="modal-footer-actions">
+      <button type="button" class="btn btn-secondary btn-modal-close" abpClose>
+        <i class="fa fa-times me-1"></i>
+        {{ '::Close' | abpLocalization }}
+      </button>
+      <button form="ingredient-form" class="btn btn-primary btn-modal-save" [disabled]="form?.invalid">
+        <i class="fa fa-check me-1"></i>
+        {{ '::Save' | abpLocalization }}
+      </button>
+    </div>
+  </ng-template>
+</abp-modal>

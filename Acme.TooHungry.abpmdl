@@ -1,0 +1,114 @@
+{
+  "template": "app",
+  "imports": {
+    "Volo.Abp.LeptonXLiteTheme": {
+      "version": "5.6.0",
+      "isInstalled": true,
+      "creationTime": "09/11/2026 08:26:07 +00:00"
+    },
+    "Volo.Abp.Account": {
+      "version": "10.6.0",
+      "isInstalled": true,
+      "creationTime": "09/11/2026 08:26:07 +00:00"
+    },
+    "Volo.Abp.OpenIddict": {
+      "version": "10.6.0",
+      "isInstalled": true,
+      "creationTime": "09/11/2026 08:26:07 +00:00"
+    },
+    "Volo.Abp.Identity": {
+      "version": "10.6.0",
+      "isInstalled": true,
+      "creationTime": "09/11/2026 08:26:07 +00:00"
+    },
+    "Volo.Abp.TenantManagement": {
+      "version": "10.6.0",
+      "isInstalled": true,
+      "creationTime": "09/11/2026 08:26:07 +00:00"
+    },
+    "Volo.Abp.SettingManagement": {
+      "version": "10.6.0",
+      "isInstalled": true,
+      "creationTime": "09/11/2026 08:26:07 +00:00"
+    },
+    "Volo.Abp.PermissionManagement": {
+      "version": "10.6.0",
+      "isInstalled": true,
+      "creationTime": "09/11/2026 08:26:07 +00:00"
+    },
+    "Volo.Abp.FeatureManagement": {
+      "version": "10.6.0",
+      "isInstalled": true,
+      "creationTime": "09/11/2026 08:26:07 +00:00"
+    },
+    "Volo.Abp.BlobStoring.Database": {
+      "version": "10.6.0",
+      "isInstalled": true,
+      "creationTime": "09/11/2026 08:26:07 +00:00"
+    }
+  },
+  "folders": {
+    "items": {
+      "src": {},
+      "test": {}
+    }
+  },
+  "packages": {
+    "Acme.TooHungry.Application": {
+      "path": "src/Acme.TooHungry.Application/Acme.TooHungry.Application.abppkg",
+      "folder": "src"
+    },
+    "Acme.TooHungry.Application.Tests": {
+      "path": "test/Acme.TooHungry.Application.Tests/Acme.TooHungry.Application.Tests.abppkg",
+      "folder": "test"
+    },
+    "Acme.TooHungry.Domain.Shared": {
+      "path": "src/Acme.TooHungry.Domain.Shared/Acme.TooHungry.Domain.Shared.abppkg",
+      "folder": "src"
+    },
+    "Acme.TooHungry.Application.Contracts": {
+      "path": "src/Acme.TooHungry.Application.Contracts/Acme.TooHungry.Application.Contracts.abppkg",
+      "folder": "src"
+    },
+    "Acme.TooHungry.HttpApi": {
+      "path": "src/Acme.TooHungry.HttpApi/Acme.TooHungry.HttpApi.abppkg",
+      "folder": "src"
+    },
+    "Acme.TooHungry.HttpApi.Client": {
+      "path": "src/Acme.TooHungry.HttpApi.Client/Acme.TooHungry.HttpApi.Client.abppkg",
+      "folder": "src"
+    },
+    "Acme.TooHungry.EntityFrameworkCore.Tests": {
+      "path": "test/Acme.TooHungry.EntityFrameworkCore.Tests/Acme.TooHungry.EntityFrameworkCore.Tests.abppkg",
+      "folder": "test"
+    },
+    "Acme.TooHungry.EntityFrameworkCore": {
+      "path": "src/Acme.TooHungry.EntityFrameworkCore/Acme.TooHungry.EntityFrameworkCore.abppkg",
+      "folder": "src"
+    },
+    "Acme.TooHungry.TestBase": {
+      "path": "test/Acme.TooHungry.TestBase/Acme.TooHungry.TestBase.abppkg",
+      "folder": "test"
+    },
+    "Acme.TooHungry.Domain.Tests": {
+      "path": "test/Acme.TooHungry.Domain.Tests/Acme.TooHungry.Domain.Tests.abppkg",
+      "folder": "test"
+    },
+    "Acme.TooHungry.HttpApi.Client.ConsoleTestApp": {
+      "path": "test/Acme.TooHungry.HttpApi.Client.ConsoleTestApp/Acme.TooHungry.HttpApi.Client.ConsoleTestApp.abppkg",
+      "folder": "test"
+    },
+    "Acme.TooHungry.DbMigrator": {
+      "path": "src/Acme.TooHungry.DbMigrator/Acme.TooHungry.DbMigrator.abppkg",
+      "folder": "src"
+    },
+    "Acme.TooHungry.HttpApi.Host": {
+      "path": "src/Acme.TooHungry.HttpApi.Host/Acme.TooHungry.HttpApi.Host.abppkg",
+      "folder": "src"
+    },
+    "Acme.TooHungry.Domain": {
+      "path": "src/Acme.TooHungry.Domain/Acme.TooHungry.Domain.abppkg",
+      "folder": "src"
+    }
+  }
+}

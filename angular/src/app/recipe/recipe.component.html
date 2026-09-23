@@ -1,0 +1,498 @@
+<div class="recipe-management-page">
+  <!-- 1. TOP HEADER -->
+  <div class="page-header-row d-flex align-items-center justify-content-between flex-wrap gap-3 mb-3">
+    <div>
+      <h2 class="page-title m-0">
+        {{ '::ManageRecipes' | abpLocalization }}
+      </h2>
+      <p class="page-subtitle m-0 mt-1">
+        {{ '::ManageRecipesSubtitle' | abpLocalization }}
+      </p>
+    </div>
+    <div>
+      <button
+        id="create-recipe"
+        class="btn btn-primary btn-add-theme"
+        type="button"
+        (click)="createRecipe()"
+      >
+        <i class="fa fa-plus-circle"></i>
+        <span>{{ '::AddNewRecipe' | abpLocalization }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 2. FILTER CARD -->
+  <div class="filter-card-container mb-4">
+    <div class="search-input-wrapper mb-3">
+      <i class="fa fa-search search-icon"></i>
+      <input
+        type="text"
+        class="form-control search-input"
+        [(ngModel)]="searchTerm"
+        (ngModelChange)="onSearchChange()"
+        [placeholder]="'::SearchRecipePlaceholder' | abpLocalization"
+      />
+      @if (searchTerm) {
+        <button type="button" class="btn-clear-search" (click)="searchTerm = ''; onSearchChange()">
+          <i class="fa fa-times-circle"></i>
+        </button>
+      }
+    </div>
+
+    <div class="d-flex align-items-center flex-wrap gap-4 filter-dropdowns-row">
+      <div class="filter-item d-flex align-items-center gap-2">
+        <span class="filter-label">{{ '::SortBy' | abpLocalization }}:</span>
+        <app-custom-select
+          [options]="sortOptions"
+          [(ngModel)]="sortBy"
+          (selectionChange)="onSortChange($event)"
+          minWidth="170px"
+        ></app-custom-select>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. DATA TABLE CARD & PAGINATION FOOTER -->
+  <div class="data-card-wrapper" #tableWrapper>
+    <ngx-datatable
+      #table
+      class="sedap-modern-table"
+      [rows]="data.items"
+      [count]="data.totalCount"
+      [list]="list"
+      [limit]="list.maxResultCount"
+      [offset]="list.page"
+      [externalPaging]="true"
+      columnMode="force"
+      [headerHeight]="48"
+      [messages]="{
+        emptyMessage: '::NoDataAvailable' | abpLocalization,
+        totalMessage: '::RecipeCount' | abpLocalization
+      }"
+      [rowHeight]="52"
+    >
+      <!-- Cột 1: STT -->
+      <ngx-datatable-column
+        [width]="70"
+        [minWidth]="60"
+        [maxWidth]="75"
+        [canAutoResize]="false"
+        [sortable]="false"
+      >
+        <ng-template ngx-datatable-header-template>
+          <span class="w-100 text-center header-title-centered">{{ '::Index' | abpLocalization }}</span>
+        </ng-template>
+        <ng-template let-rowIndex="rowIndex" ngx-datatable-cell-template>
+          <span class="stt-text">{{ list.page * list.maxResultCount + rowIndex + 1 }}</span>
+        </ng-template>
+      </ngx-datatable-column>
+
+      <!-- Cột 2: Tên công thức (Name) -->
+      <ngx-datatable-column
+        [name]="'::RecipeName' | abpLocalization"
+        prop="name"
+        [minWidth]="200"
+        [flexGrow]="2"
+        [canAutoResize]="true"
+      >
+        <ng-template let-row="row" ngx-datatable-cell-template>
+          <div class="d-flex align-items-center text-truncate">
+            <div class="theme-avatar-icon">
+              <i class="fa fa-book-open"></i>
+            </div>
+            <span class="main-name-text text-truncate" [title]="row.name">{{ row.name }}</span>
+          </div>
+        </ng-template>
+      </ngx-datatable-column>
+
+      <!-- Cột 3: Áp dụng cho món ăn (Dish) -->
+      <ngx-datatable-column
+        [name]="'::Dish' | abpLocalization"
+        prop="dishName"
+        [minWidth]="170"
+        [flexGrow]="1"
+        [canAutoResize]="true"
+      >
+        <ng-template let-row="row" ngx-datatable-cell-template>
+          <span class="status-pill">
+            {{ row.dishName || '-' }}
+          </span>
+        </ng-template>
+      </ngx-datatable-column>
+
+      <!-- Cột 4: Số nguyên liệu -->
+      <ngx-datatable-column
+        [name]="'::IngredientsCount' | abpLocalization"
+        [width]="150"
+        [minWidth]="130"
+        [maxWidth]="180"
+        [canAutoResize]="false"
+        [sortable]="false"
+      >
+        <ng-template let-row="row" ngx-datatable-cell-template>
+          <span class="badge-tag">
+            <i class="fa fa-leaf me-1"></i>
+            {{ row.recipeIngredients?.length || 0 }} {{ '::IngredientsUnit' | abpLocalization }}
+          </span>
+        </ng-template>
+      </ngx-datatable-column>
+
+      <!-- Cột 5: Thao tác (Actions) -->
+      <ngx-datatable-column
+        [width]="120"
+        [minWidth]="110"
+        [maxWidth]="130"
+        [canAutoResize]="false"
+        [sortable]="false"
+      >
+        <ng-template ngx-datatable-header-template>
+          <span class="w-100 text-center header-title-centered">{{ '::Actions' | abpLocalization }}</span>
+        </ng-template>
+        <ng-template let-row="row" ngx-datatable-cell-template>
+          <div class="actions-container">
+            <button
+              type="button"
+              class="icon-action-btn btn-edit"
+              (click)="editRecipe(row.id)"
+              [title]="'::Edit' | abpLocalization"
+            >
+              <i class="fa fa-pen"></i>
+            </button>
+            <button
+              type="button"
+              class="icon-action-btn btn-delete"
+              (click)="delete(row.id)"
+              [title]="'::DeleteRecipe' | abpLocalization"
+            >
+              <i class="fa fa-trash-alt"></i>
+            </button>
+          </div>
+        </ng-template>
+      </ngx-datatable-column>
+    </ngx-datatable>
+
+    <!-- 4. CUSTOM FOOTER PAGINATION BAR -->
+    <div class="custom-table-footer d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div class="d-flex align-items-center flex-wrap gap-3">
+        <span class="records-summary-text">
+          {{ '::ShowingRecords' | abpLocalization }}
+          <strong>{{ fromRecord }} - {{ toRecord }}</strong>
+          {{ '::OfTotal' | abpLocalization }}
+          <strong>{{ data.totalCount }}</strong>
+          {{ '::RecipeCount' | abpLocalization }}
+        </span>
+
+        <div class="d-flex align-items-center gap-2 page-size-box">
+          <span class="page-size-label">{{ '::Display' | abpLocalization }}:</span>
+          <app-custom-select
+            [options]="pageSizeOptions"
+            [ngModel]="list.maxResultCount"
+            (selectionChange)="changePageSize($event)"
+            size="sm"
+            placement="top"
+            minWidth="140px"
+          ></app-custom-select>
+        </div>
+      </div>
+
+      <div class="d-flex align-items-center pagination-btn-group" style="gap: 5px;">
+        <button
+          type="button"
+          class="btn-page-nav"
+          [disabled]="currentPage === 1"
+          (click)="firstPage()"
+          [title]="'::FirstPage' | abpLocalization"
+        >
+          <i class="fa fa-angle-double-left"></i>
+        </button>
+
+        <button
+          type="button"
+          class="btn-page-nav btn-text-nav"
+          [disabled]="currentPage === 1"
+          (click)="prevPage()"
+        >
+          <i class="fa fa-angle-left me-1"></i>
+          <span>{{ '::PreviousPage' | abpLocalization }}</span>
+        </button>
+
+        <span class="current-page-badge">
+          {{ '::Page' | abpLocalization }}
+          <strong>{{ currentPage }}</strong> / {{ totalPages }}
+        </span>
+
+        <button
+          type="button"
+          class="btn-page-nav btn-text-nav"
+          [disabled]="currentPage === totalPages"
+          (click)="nextPage()"
+        >
+          <span>{{ '::NextPage' | abpLocalization }}</span>
+          <i class="fa fa-angle-right ms-1"></i>
+        </button>
+
+        <button
+          type="button"
+          class="btn-page-nav"
+          [disabled]="currentPage === totalPages"
+          (click)="lastPage()"
+          [title]="'::LastPage' | abpLocalization"
+        >
+          <i class="fa fa-angle-double-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Thêm/Sửa Công thức (Redesigned Modern Recipe Builder) -->
+<abp-modal [(visible)]="isModalOpen" [options]="{ size: 'lg', centered: true }">
+  <ng-template #abpHeader>
+    <div class="d-flex align-items-center gap-3">
+      <div class="modal-header-icon recipe-modal-header-icon">
+        <i class="fa fa-book-open"></i>
+      </div>
+      <div>
+        <h5 class="m-0 modal-title-text">
+          {{ (selectedItem.id ? '::EditRecipe' : '::NewRecipe') | abpLocalization }}
+        </h5>
+        <span class="modal-subtitle-text">
+          {{ (selectedItem.id ? '::EditRecipeSubtitle' : '::NewRecipeSubtitle') | abpLocalization }}
+        </span>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #abpBody>
+    <form id="recipe-form" [formGroup]="form" (ngSubmit)="save()" class="recipe-modal-form">
+      <!-- PHẦN 1: THÔNG TIN CƠ BẢN CỦA CÔNG THỨC -->
+      <div class="recipe-form-card mb-4">
+        <div class="row g-3">
+          <!-- 1. Tên công thức -->
+          <div class="col-md-7">
+            <div class="form-field-group">
+              <label for="recipe-name" class="field-label">
+                <span>{{ '::RecipeName' | abpLocalization }}</span>
+                <span class="required-star">*</span>
+              </label>
+              <div class="input-with-icon">
+                <i class="fa fa-signature input-icon"></i>
+                <input
+                  type="text"
+                  id="recipe-name"
+                  class="form-control custom-form-input"
+                  formControlName="name"
+                  [placeholder]="'::EnterRecipeName' | abpLocalization"
+                  [skipValidation]="true"
+                  autofocus
+                />
+              </div>
+              @if (form.get('name')?.invalid && (form.get('name')?.touched || form.get('name')?.dirty)) {
+                <div class="field-validation-error">
+                  <i class="fa fa-exclamation-circle"></i>
+                  <span>{{ { key: '::FieldRequired', defaultValue: 'This field is required.' } | abpLocalization }}</span>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- 2. Chọn món ăn liên kết -->
+          <div class="col-md-5">
+            <div class="form-field-group">
+              <label for="recipe-dish" class="field-label">
+                <span>{{ '::Dish' | abpLocalization }}</span>
+                <span class="required-star">*</span>
+              </label>
+              <div class="w-100">
+                <app-custom-select
+                  id="recipe-dish"
+                  class="w-100"
+                  formControlName="dishId"
+                  [options]="dishOptions"
+                  [placeholder]="'::SelectDishPlaceholder' | abpLocalization"
+                  leadIcon="fa-utensils"
+                  minWidth="100%"
+                  [searchable]="true"
+                  (selectionChange)="onDishSelected($event)"
+                ></app-custom-select>
+              </div>
+              @if (form.get('dishId')?.invalid && (form.get('dishId')?.touched || form.get('dishId')?.dirty)) {
+                <div class="field-validation-error">
+                  <i class="fa fa-exclamation-circle"></i>
+                  <span>{{ { key: '::FieldRequired', defaultValue: 'This field is required.' } | abpLocalization }}</span>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- 3. Hướng dẫn nấu (Cooking Instructions) -->
+          <div class="col-12">
+            <div class="form-field-group mb-0">
+              <label for="recipe-instructions" class="field-label">
+                <span>{{ '::CookingInstructions' | abpLocalization }}</span>
+              </label>
+              <textarea
+                id="recipe-instructions"
+                rows="3"
+                class="form-control custom-form-textarea"
+                formControlName="instructions"
+                [placeholder]="'::EnterInstructionsPlaceholder' | abpLocalization"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PHẦN 2: DANH SÁCH NGUYÊN LIỆU (THE CORE RECIPE INGREDIENTS BUILDER) -->
+      <div class="ingredients-builder-section">
+        <!-- Section Header -->
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2 pb-1">
+          <div>
+            <div class="d-flex align-items-center gap-2">
+              <span class="builder-section-title">
+                <i class="fa fa-mortar-pestle me-1" style="color: #ff521b;"></i>
+                {{ '::RecipeIngredients' | abpLocalization }}
+              </span>
+              <span class="badge-count-pill">
+                {{ recipeIngredientsArray.length }} {{ '::IngredientsUnit' | abpLocalization }}
+              </span>
+            </div>
+            <span class="builder-section-desc d-block">
+              {{ '::RecipeIngredientsSubtitle' | abpLocalization }}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            class="btn btn-add-ingredient"
+            (click)="addIngredientRow()"
+          >
+            <i class="fa fa-plus-circle"></i>
+            <span>{{ '::AddIngredient' | abpLocalization }}</span>
+          </button>
+        </div>
+
+        <!-- Table Header & Rows Container -->
+        <div class="ingredients-table-box">
+          @if (recipeIngredientsArray.length > 0) {
+            <!-- Column Header Labels -->
+            <div class="ingredients-table-header d-flex align-items-center">
+              <div class="col-stt text-center">#</div>
+              <div class="col-ingredient flex-grow-1">{{ '::Ingredient' | abpLocalization }} <span class="required-star">*</span></div>
+              <div class="col-qty text-center">{{ '::Quantity' | abpLocalization }} <span class="required-star">*</span></div>
+              <div class="col-unit text-center">{{ '::Unit' | abpLocalization }}</div>
+              <div class="col-note flex-grow-1">{{ '::IngredientPreparationNote' | abpLocalization }}</div>
+              <div class="col-action text-center">{{ '::Action' | abpLocalization }}</div>
+            </div>
+
+            <!-- FormArray Rows -->
+            <div formArrayName="recipeIngredients" class="ingredients-rows-list d-flex flex-column gap-2">
+              @for (itemGroup of recipeIngredientsArray.controls; track $index) {
+                <div [formGroupName]="$index" class="ingredient-row-card d-flex align-items-center">
+                  <!-- STT Badge -->
+                  <div class="col-stt text-center">
+                    <span class="row-index-badge">{{ $index + 1 }}</span>
+                  </div>
+
+                  <!-- Dropdown Chọn nguyên liệu -->
+                  <div class="col-ingredient flex-grow-1">
+                    <app-custom-select
+                      class="w-100"
+                      formControlName="ingredientId"
+                      [options]="ingredientOptions"
+                      [placeholder]="'::SelectIngredientPlaceholder' | abpLocalization"
+                      leadIcon="fa-seedling"
+                      minWidth="100%"
+                      size="sm"
+                      [searchable]="true"
+                    ></app-custom-select>
+                  </div>
+
+                  <!-- Số lượng / Định lượng -->
+                  <div class="col-qty text-center">
+                    <div class="qty-input-wrapper">
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0.01"
+                        class="form-control custom-row-input text-center font-weight-bold"
+                        formControlName="quantity"
+                        [placeholder]="'::Quantity' | abpLocalization"
+                      />
+                    </div>
+                  </div>
+
+                  <!-- Đơn vị tính (Tự động hiển thị theo nguyên liệu được chọn) -->
+                  <div class="col-unit text-center">
+                    <span class="unit-badge">
+                      {{ getIngredientUnit(itemGroup.get('ingredientId')?.value) }}
+                    </span>
+                  </div>
+
+                  <!-- Ghi chú sơ chế -->
+                  <div class="col-note flex-grow-1">
+                    <input
+                      type="text"
+                      class="form-control custom-row-input"
+                      formControlName="note"
+                      [placeholder]="'::IngredientPreparationNote' | abpLocalization"
+                    />
+                  </div>
+
+                  <!-- Nút Xóa dòng -->
+                  <div class="col-action text-center">
+                    <button
+                      type="button"
+                      class="btn-row-delete"
+                      (click)="removeIngredientRow($index)"
+                      [title]="'::Delete' | abpLocalization"
+                    >
+                      <i class="fa fa-trash-alt"></i>
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          } @else {
+            <!-- Empty State -->
+            <div class="ingredients-empty-state text-center py-4 px-3">
+              <div class="empty-icon-circle mx-auto mb-2">
+                <i class="fa fa-mortar-pestle"></i>
+              </div>
+              <h6 class="empty-title m-0">{{ '::NoIngredientsAdded' | abpLocalization }}</h6>
+              <p class="empty-desc m-0 mt-1">
+                {{ '::AddIngredientHint' | abpLocalization }}
+              </p>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-add-first mt-3"
+                (click)="addIngredientRow()"
+              >
+                <i class="fa fa-plus me-1"></i>
+                {{ '::AddIngredient' | abpLocalization }}
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+    </form>
+  </ng-template>
+
+  <ng-template #abpFooter>
+    <div class="modal-footer-actions">
+      <button type="button" class="btn btn-secondary btn-modal-close" abpClose>
+        <i class="fa fa-times me-1"></i>
+        {{ '::Close' | abpLocalization }}
+      </button>
+      <button
+        form="recipe-form"
+        class="btn btn-primary btn-modal-save"
+        [disabled]="form?.invalid"
+      >
+        <i class="fa fa-check me-1"></i>
+        {{ '::Save' | abpLocalization }}
+      </button>
+    </div>
+  </ng-template>
+</abp-modal>

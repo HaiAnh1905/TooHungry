@@ -1,0 +1,343 @@
+<div class="dining-area-page">
+  <!-- 1. TOP HEADER: Tiêu đề & Nút Thêm mới -->
+  <div class="page-header-row d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+    <div>
+      <h2 class="page-title m-0 d-flex align-items-center gap-2">
+        <i class="fas fa-map-location-dot text-primary-accent"></i>
+        <span>{{ '::ManageDiningAreas' | abpLocalization }}</span>
+      </h2>
+      <p class="page-subtitle m-0 mt-1">
+        Danh sách các khu vực, tầng phục vụ và cấu hình bàn ăn trong nhà hàng
+      </p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <button
+        id="btn-create-area"
+        class="btn btn-primary btn-add-theme"
+        type="button"
+        (click)="createArea()"
+      >
+        <i class="fa fa-plus-circle"></i>
+        <span>{{ '::AddNewDiningArea' | abpLocalization }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 2. KPI STATS BANNER: Thống kê nhanh các chỉ số khu vực -->
+  <div class="stats-banner-grid mb-4">
+    <div class="stat-card">
+      <div class="stat-icon-wrapper bg-orange-soft">
+        <i class="fas fa-map-marked-alt text-orange"></i>
+      </div>
+      <div class="stat-info">
+        <span class="stat-label">Tổng số khu vực</span>
+        <h3 class="stat-value">{{ totalAreasCount() }}</h3>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon-wrapper bg-blue-soft">
+        <i class="fas fa-chair text-blue"></i>
+      </div>
+      <div class="stat-info">
+        <span class="stat-label">Tổng bàn phân bổ</span>
+        <h3 class="stat-value">{{ totalTablesCount() }}</h3>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon-wrapper bg-green-soft">
+        <i class="fas fa-crown text-green"></i>
+      </div>
+      <div class="stat-info">
+        <span class="stat-label">Khu vực nhiều bàn nhất</span>
+        <h3 class="stat-value text-truncate" style="max-width: 180px;">
+          {{ busiestArea() ? busiestArea()?.name : '—' }}
+        </h3>
+        <span class="stat-subtext" *ngIf="busiestArea()">
+          ({{ busiestArea()?.tableCount }} bàn)
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. FILTER & TOOLBAR CARD -->
+  <div class="filter-card-container mb-4">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <!-- Ô tìm kiếm -->
+      <div class="search-input-wrapper flex-grow-1" style="max-width: 450px;">
+        <i class="fa fa-search search-icon"></i>
+        <input
+          type="text"
+          class="form-control search-input"
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="onSearchChange()"
+          placeholder="Tìm kiếm theo tên khu vực, mô tả..."
+        />
+        @if (searchTerm) {
+          <button type="button" class="btn-clear-search" (click)="searchTerm = ''; onSearchChange()">
+            <i class="fa fa-times-circle"></i>
+          </button>
+        }
+      </div>
+
+      <!-- Cụm bên phải: Sắp xếp & Tùy chọn hiển thị số lượng thẻ -->
+      <div class="d-flex align-items-center gap-3 flex-wrap">
+        <div class="filter-item d-flex align-items-center gap-2">
+          <span class="filter-label"><i class="fa fa-sliders-h text-primary me-1"></i>{{ '::Display' | abpLocalization }}:</span>
+          <app-custom-select
+            [options]="pageSizeOptions"
+            [ngModel]="areaPageSize()"
+            (selectionChange)="changeAreaPageSize($event)"
+            size="sm"
+            minWidth="145px"
+          ></app-custom-select>
+        </div>
+
+        <div class="filter-item d-flex align-items-center gap-2">
+          <span class="filter-label">{{ '::SortBy' | abpLocalization }}:</span>
+          <app-custom-select
+            [options]="sortOptions"
+            [(ngModel)]="sortBy"
+            (selectionChange)="onSortChange($event)"
+            minWidth="175px"
+          ></app-custom-select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. NỘI DUNG: CHẾ ĐỘ THẺ TRỰC QUAN (GRID VIEW) -->
+  @if (filteredAreas().length === 0) {
+    <div class="empty-state-card text-center py-5">
+      <div class="empty-icon-circle mx-auto mb-3">
+        <i class="fas fa-map-marker-slash"></i>
+      </div>
+      <h4 class="empty-title">Không tìm thấy khu vực nào</h4>
+      <p class="empty-desc">Thử thay đổi từ khóa tìm kiếm hoặc nhấn "+ Thêm khu vực mới" để tạo khu vực bàn ăn đầu tiên.</p>
+      <button type="button" class="btn btn-primary btn-add-theme mt-2" (click)="createArea()">
+        <i class="fa fa-plus-circle"></i>
+        <span>Thêm khu vực ngay</span>
+      </button>
+    </div>
+  } @else {
+    <div class="area-cards-grid">
+      @for (area of pagedAreas(); track area.id) {
+        <div class="area-card">
+          <!-- Card Header -->
+          <div class="area-card-header d-flex align-items-start justify-content-between">
+            <div class="d-flex align-items-center gap-3">
+              <div class="area-badge-icon">
+                <i class="fas" [ngClass]="getAreaIcon(area.name)"></i>
+              </div>
+              <div>
+                <h4 class="area-name m-0">{{ area.name }}</h4>
+                <span class="table-count-badge">
+                  <i class="fas fa-chair me-1"></i>
+                  {{ area.tableCount }} bàn ăn
+                </span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Card Body: Mô tả -->
+          <div class="area-card-body">
+            <p class="area-desc" [class.no-desc]="!area.description">
+              {{ area.description || 'Chưa có mô tả chi tiết cho khu vực này.' }}
+            </p>
+          </div>
+
+          <!-- Card Footer: Nút hành động nhanh -->
+          <div class="area-card-footer d-flex align-items-center justify-content-between pt-3">
+            <a
+              [routerLink]="['/tables']"
+              [queryParams]="{ areaId: area.id }"
+              class="btn btn-sm btn-outline-view-tables"
+              title="Xem danh sách bàn trong khu vực này"
+            >
+              <i class="fas fa-external-link-alt me-1"></i>
+              Xem bàn
+            </a>
+
+            <div class="d-flex align-items-center gap-2">
+              <button
+                type="button"
+                class="btn-icon-btn btn-edit-icon"
+                (click)="editArea(area)"
+                title="Chỉnh sửa khu vực"
+              >
+                <i class="fas fa-pen"></i>
+              </button>
+              <button
+                type="button"
+                class="btn-icon-btn btn-delete-icon"
+                (click)="deleteArea(area)"
+                title="Xóa khu vực"
+              >
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Area Cards Custom Footer Pagination -->
+    @if (filteredAreas().length > 0) {
+      <div
+        class="area-pagination-footer d-flex align-items-center justify-content-between flex-wrap gap-3 mt-4"
+      >
+        <div class="d-flex align-items-center flex-wrap gap-3">
+          <span class="records-summary-text">
+            {{ '::ShowingRecords' | abpLocalization }}
+            <strong>{{ areaFromRecord() }} - {{ areaToRecord() }}</strong>
+            {{ '::OfTotal' | abpLocalization }}
+            <strong>{{ filteredAreas().length }}</strong>
+            khu vực
+          </span>
+
+          <div class="d-flex align-items-center gap-2 page-size-box">
+            <span class="page-size-label">{{ '::Display' | abpLocalization }}:</span>
+            <app-custom-select
+              [options]="pageSizeOptions"
+              [ngModel]="areaPageSize()"
+              (selectionChange)="changeAreaPageSize($event)"
+              size="sm"
+              placement="top"
+              minWidth="145px"
+            ></app-custom-select>
+          </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-2 pagination-btn-group">
+          <button
+            type="button"
+            class="btn-page-nav"
+            [disabled]="areaPage() === 1"
+            (click)="areaFirstPage()"
+            [title]="'::FirstPage' | abpLocalization"
+          >
+            <i class="fa fa-angle-double-left"></i>
+          </button>
+          <button
+            type="button"
+            class="btn-page-nav"
+            [disabled]="areaPage() === 1"
+            (click)="areaPrevPage()"
+            [title]="'::PreviousPage' | abpLocalization"
+          >
+            <i class="fa fa-angle-left"></i>
+          </button>
+          <span class="page-indicator-pill">{{ areaPage() }} / {{ areaTotalPages() }}</span>
+          <button
+            type="button"
+            class="btn-page-nav"
+            [disabled]="areaPage() === areaTotalPages()"
+            (click)="areaNextPage()"
+            [title]="'::NextPage' | abpLocalization"
+          >
+            <i class="fa fa-angle-right"></i>
+          </button>
+          <button
+            type="button"
+            class="btn-page-nav"
+            [disabled]="areaPage() === areaTotalPages()"
+            (click)="areaLastPage()"
+            [title]="'::LastPage' | abpLocalization"
+          >
+            <i class="fa fa-angle-double-right"></i>
+          </button>
+        </div>
+      </div>
+    }
+  }
+
+  <!-- 6. MODAL THÊM / CHỈNH SỬA KHU VỰC -->
+  <abp-modal [(visible)]="isModalOpen" [busy]="isSaving">
+    <ng-template #abpHeader>
+      <div class="modal-header-custom d-flex align-items-center gap-2">
+        <i class="fas fa-map-location-dot text-primary-accent"></i>
+        <h4 class="modal-title m-0">
+          {{ selectedItem.id ? 'Chỉnh sửa Khu vực bàn' : 'Thêm Khu vực bàn mới' }}
+        </h4>
+      </div>
+    </ng-template>
+
+    <ng-template #abpBody>
+      <form [formGroup]="form" (ngSubmit)="save()" id="area-form" class="area-modal-form">
+        <!-- Tên khu vực -->
+        <div class="mb-3">
+          <label class="form-label required-label" for="area-name">
+            Tên khu vực
+          </label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="fas fa-map-marker-alt"></i></span>
+            <input
+              type="text"
+              id="area-name"
+              class="form-control"
+              formControlName="name"
+              placeholder="VD: Tầng 1, Khu VIP, Sân vườn, Ban công..."
+              autofocus
+            />
+          </div>
+          @if (form.get('name')?.invalid && (form.get('name')?.dirty || form.get('name')?.touched)) {
+            <div class="text-danger small mt-1">
+              @if (form.get('name')?.errors?.['required']) {
+                Vui lòng nhập tên khu vực bàn ăn!
+              }
+              @if (form.get('name')?.errors?.['maxlength']) {
+                Tên khu vực không được vượt quá 128 ký tự!
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Mô tả khu vực -->
+        <div class="mb-3">
+          <label class="form-label" for="area-desc">
+            Mô tả / Ghi chú đặc điểm
+          </label>
+          <textarea
+            id="area-desc"
+            class="form-control"
+            formControlName="description"
+            rows="3"
+            placeholder="VD: Khu vực yên tĩnh, có điều hòa riêng, phù hợp tiếp khách sang trọng..."
+          ></textarea>
+          <div class="form-text text-muted small">
+            Mô tả giúp nhân viên phục vụ nắm rõ đặc trưng của từng không gian bàn ăn.
+          </div>
+        </div>
+      </form>
+    </ng-template>
+
+    <ng-template #abpFooter>
+      <div class="d-flex align-items-center justify-content-end gap-2 w-100">
+        <button
+          type="button"
+          class="btn btn-outline-secondary btn-modal-cancel"
+          abpClose
+          [disabled]="isSaving"
+        >
+          Hủy bỏ
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary btn-add-theme"
+          (click)="save()"
+          [disabled]="form.invalid || isSaving"
+        >
+          @if (isSaving) {
+            <i class="fa fa-spin fa-spinner me-1"></i>
+            <span>Đang lưu...</span>
+          } @else {
+            <i class="fa fa-check me-1"></i>
+            <span>{{ selectedItem.id ? 'Lưu thay đổi' : 'Tạo khu vực' }}</span>
+          }
+        </button>
+      </div>
+    </ng-template>
+  </abp-modal>
+</div>

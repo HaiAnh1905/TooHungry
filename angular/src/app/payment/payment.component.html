@@ -1,0 +1,425 @@
+<div class="payment-container">
+  <!-- Header Bar -->
+  <div class="payment-header-bar">
+    <div class="header-left">
+      <button type="button" class="btn btn-back-tables" (click)="onBackToTables()">
+        <i class="fa fa-arrow-left"></i>
+        <span>{{ '::BackToTables' | abpLocalization }}</span>
+      </button>
+      <div class="header-titles">
+        <h1 class="page-title">
+          <i class="fa fa-receipt text-primary"></i>
+          <span>{{ '::PaymentPageTitle' | abpLocalization }}</span>
+        </h1>
+        <div class="order-sub-meta">
+          <span class="meta-item">
+            <i class="fa fa-hashtag"></i>
+            <strong>{{ order()?.orderNumber || '---' }}</strong>
+          </span>
+          <span class="meta-divider">•</span>
+          <span class="meta-item">
+            <i class="fa fa-chair"></i>
+            <strong class="text-orange">{{ order()?.tableName || 'Bàn dùng bữa' }}</strong>
+          </span>
+          <span class="meta-divider">•</span>
+          <span class="meta-item text-muted">
+            <i class="fa fa-clock"></i>
+            <span>{{ order()?.orderDate | date: 'dd/MM/yyyy HH:mm' }}</span>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="header-right">
+      @if (isCompleted()) {
+        <div class="status-badge-completed">
+          <i class="fa fa-check-double"></i>
+          <span>ĐÃ THANH TOÁN (COMPLETED)</span>
+        </div>
+      } @else {
+        <div class="status-badge-pending">
+          <i class="fa fa-hourglass-half"></i>
+          <span>CHỜ THANH TOÁN</span>
+        </div>
+      }
+    </div>
+  </div>
+
+  @if (isLoading()) {
+    <div class="loading-wrapper">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <p class="mt-3 text-muted font-medium">Đang tải thông tin hóa đơn thanh toán...</p>
+    </div>
+  } @else if (order()) {
+    <!-- Main Payment Grid -->
+    <div class="payment-grid">
+      <!-- Left Column: Bill / Order Details -->
+      <div class="bill-card">
+        <div class="bill-header">
+          <div class="restaurant-brand">
+            <div class="restaurant-logo">
+              <i class="fa fa-utensils"></i>
+            </div>
+            <div class="restaurant-info">
+              <h3 class="brand-name">TooHungry Restaurant</h3>
+              <p class="brand-sub">Hệ thống Nhà hàng & Quản lý ẩm thực</p>
+            </div>
+          </div>
+          <div class="bill-tag">HÓA ĐƠN DÙNG BỮA</div>
+        </div>
+
+        <div class="bill-meta-box">
+          <div class="meta-row">
+            <span class="lbl">Bàn phục vụ:</span>
+            <span class="val font-bold text-dark">{{ order()?.tableName || 'Tại bàn' }}</span>
+          </div>
+          <div class="meta-row">
+            <span class="lbl">Mã phiếu:</span>
+            <span class="val font-mono font-bold">{{ order()?.orderNumber }}</span>
+          </div>
+          <div class="meta-row">
+            <span class="lbl">Thời gian lập:</span>
+            <span class="val">{{ order()?.orderDate | date: 'dd/MM/yyyy HH:mm:ss' }}</span>
+          </div>
+          @if (order()?.note) {
+            <div class="meta-row note-row">
+              <span class="lbl">Ghi chú:</span>
+              <span class="val text-italic text-secondary">{{ order()?.note }}</span>
+            </div>
+          }
+        </div>
+
+        <!-- Dishes Table -->
+        <div class="bill-table-wrapper">
+          <table class="bill-table">
+            <thead>
+              <tr>
+                <th class="col-dish">Món ăn</th>
+                <th class="col-qty text-center">SL</th>
+                <th class="col-price text-end">Đơn giá</th>
+                <th class="col-total text-end">Thành tiền</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of order()?.items; track item.id || $index) {
+                <tr>
+                  <td class="col-dish font-medium">{{ item.dishName || 'Món ăn' }}</td>
+                  <td class="col-qty text-center font-bold">{{ item.quantity }}</td>
+                  <td class="col-price text-end text-muted">{{ item.unitPrice | number:'1.0-0' }} đ</td>
+                  <td class="col-total text-end font-bold text-dark">{{ (item.totalPrice || ((item.quantity || 0) * (item.unitPrice || 0))) | number:'1.0-0' }} đ</td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="4" class="text-center text-muted py-3">Chưa có món ăn trong đơn này</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Bill Calculations -->
+        <div class="bill-summary">
+          <div class="summary-line">
+            <span>Tạm tính món ăn</span>
+            <span class="font-medium">{{ effectiveTotalAmount() | number:'1.0-0' }} đ</span>
+          </div>
+          <div class="summary-line">
+            <span>Thuế & Phí dịch vụ (0%)</span>
+            <span class="text-muted">0 đ</span>
+          </div>
+          <div class="summary-line">
+            <span>Giảm giá / Khuyến mãi</span>
+            <span class="text-muted">0 đ</span>
+          </div>
+          <div class="summary-line total-line">
+            <span class="total-label">TỔNG THANH TOÁN</span>
+            <span class="total-value">{{ effectiveTotalAmount() | number:'1.0-0' }} <small>đ</small></span>
+          </div>
+        </div>
+
+        <div class="bill-footer-note">
+          <i class="fa fa-heart text-danger"></i>
+          <span>Cảm ơn quý khách đã thưởng thức ẩm thực tại TooHungry!</span>
+        </div>
+      </div>
+
+      <!-- Right Column: Payment Gateway HOẶC Thông báo đơn hàng thanh toán thành công -->
+      @if (!isCompleted()) {
+        <div class="gateway-card">
+          <div class="gateway-header">
+            <h3 class="gateway-title">
+              <i class="fa fa-wallet text-orange"></i>
+              <span>Phương thức thanh toán</span>
+            </h3>
+            <span class="gateway-subtitle">Lựa chọn hình thức thanh toán thuận tiện nhất</span>
+          </div>
+
+          <!-- Method Tabs -->
+          <div class="payment-tabs">
+            <button
+              type="button"
+              class="tab-btn"
+              [class.active]="paymentMethod() === 'qr'"
+              (click)="setPaymentMethod('qr')"
+            >
+              <i class="fa fa-qrcode"></i>
+              <span>Chuyển khoản QR (VietQR)</span>
+            </button>
+            <button
+              type="button"
+              class="tab-btn"
+              [class.active]="paymentMethod() === 'cash'"
+              (click)="setPaymentMethod('cash')"
+            >
+              <i class="fa fa-money-bill-wave"></i>
+              <span>Tiền mặt (Cash)</span>
+            </button>
+          </div>
+
+          <!-- Tab Content 1: QR Code -->
+          @if (paymentMethod() === 'qr') {
+            <div class="tab-body qr-body">
+              <div class="qr-showcase">
+                <div class="qr-frame">
+                  <img
+                    [src]="vietQrUrl()"
+                    alt="Mã QR Chuyển khoản VietQR"
+                    class="qr-image"
+                    (load)="isQrLoaded.set(true)"
+                  />
+                  <div class="qr-scan-guide">
+                    <i class="fa fa-camera"></i>
+                    <span>Quét bằng ứng dụng Ngân hàng hoặc Ví điện tử bất kỳ</span>
+                  </div>
+                </div>
+
+                <!-- Bank Account Info Details -->
+                <div class="bank-details-card">
+                  <div class="bank-badge">
+                    <i class="fa fa-university"></i>
+                    <span>Ngân hàng Quân Đội (MB Bank)</span>
+                  </div>
+
+                  <div class="bank-row">
+                    <div class="bank-field">
+                      <span class="field-lbl">Số tài khoản:</span>
+                      <span class="field-val font-mono font-bold">9999 8888 66</span>
+                    </div>
+                    <button
+                      type="button"
+                      class="btn-copy"
+                      (click)="copyToClipboard('9999888866', 'stk')"
+                      [title]="'Sao chép'"
+                    >
+                      <i class="fa" [ngClass]="copiedField() === 'stk' ? 'fa-check text-success' : 'fa-copy'"></i>
+                      <span>{{ copiedField() === 'stk' ? 'Đã chép' : 'Sao chép' }}</span>
+                    </button>
+                  </div>
+
+                  <div class="bank-row">
+                    <div class="bank-field">
+                      <span class="field-lbl">Chủ tài khoản:</span>
+                      <span class="field-val font-bold">NHA HANG TOOHUNGRY</span>
+                    </div>
+                  </div>
+
+                  <div class="bank-row">
+                    <div class="bank-field">
+                      <span class="field-lbl">Số tiền cần trả:</span>
+                      <span class="field-val font-bold text-orange font-mono">
+                        {{ effectiveTotalAmount() | number:'1.0-0' }} đ
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="bank-row">
+                    <div class="bank-field">
+                      <span class="field-lbl">Nội dung chuyển:</span>
+                      <span class="field-val font-mono font-bold text-dark">TOOHUNGRY {{ order()?.orderNumber }}</span>
+                    </div>
+                    <button
+                      type="button"
+                      class="btn-copy"
+                      (click)="copyToClipboard('TOOHUNGRY ' + (order()?.orderNumber || ''), 'memo')"
+                      [title]="'Sao chép'"
+                    >
+                      <i class="fa" [ngClass]="copiedField() === 'memo' ? 'fa-check text-success' : 'fa-copy'"></i>
+                      <span>{{ copiedField() === 'memo' ? 'Đã chép' : 'Sao chép' }}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- Tab Content 2: Cash -->
+          @if (paymentMethod() === 'cash') {
+            <div class="tab-body cash-body">
+              <div class="cash-box">
+                <div class="cash-calc-row">
+                  <span class="lbl">Số tiền đơn hàng:</span>
+                  <span class="val font-bold text-orange font-mono">
+                    {{ effectiveTotalAmount() | number:'1.0-0' }} đ
+                  </span>
+                </div>
+
+                <div class="cash-input-wrapper">
+                  <label for="cashGivenInput" class="form-label font-bold">
+                    <i class="fa fa-hand-holding-usd"></i>
+                    <span>Số tiền khách đưa (VND):</span>
+                  </label>
+                  <div class="input-group">
+                    <input
+                      id="cashGivenInput"
+                      type="number"
+                      class="form-control form-control-lg text-end font-mono font-bold"
+                      [ngModel]="cashGiven()"
+                      (ngModelChange)="cashGiven.set($event)"
+                      placeholder="Nhập số tiền..."
+                    />
+                    <span class="input-group-text font-bold">đ</span>
+                  </div>
+                </div>
+
+                <!-- Quick cash buttons -->
+                <div class="quick-cash-tags">
+                  <button
+                    type="button"
+                    class="btn-cash-tag"
+                    (click)="setExactCash()"
+                  >
+                    Đúng số tiền
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-cash-tag"
+                    (click)="setQuickCash(100000)"
+                  >
+                    100.000 đ
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-cash-tag"
+                    (click)="setQuickCash(200000)"
+                  >
+                    200.000 đ
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-cash-tag"
+                    (click)="setQuickCash(500000)"
+                  >
+                    500.000 đ
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-cash-tag"
+                    (click)="setQuickCash(1000000)"
+                  >
+                    1.000.000 đ
+                  </button>
+                </div>
+
+                <!-- Change calculation -->
+                <div class="change-box" [class.negative]="(cashGiven() || 0) < effectiveTotalAmount()">
+                  @if ((cashGiven() || 0) >= effectiveTotalAmount()) {
+                    <div class="change-row">
+                      <span class="change-lbl">Tiền thừa trả lại:</span>
+                      <span class="change-val font-mono font-bold text-success">
+                        {{ changeAmount() | number:'1.0-0' }} đ
+                      </span>
+                    </div>
+                  } @else {
+                    <div class="change-row text-danger font-medium">
+                      <i class="fa fa-exclamation-triangle"></i>
+                      <span>Khách còn thiếu: {{ (effectiveTotalAmount() - (cashGiven() || 0)) | number:'1.0-0' }} đ</span>
+                    </div>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- Gateway Footer Actions -->
+          <div class="gateway-footer">
+            <button
+              type="button"
+              class="btn btn-confirm-payment"
+              [disabled]="isProcessingPayment()"
+              (click)="onConfirmPayment()"
+            >
+              @if (isProcessingPayment()) {
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                <span>Đang ghi nhận thanh toán...</span>
+              } @else {
+                <i class="fa fa-check-circle"></i>
+                <span>{{ '::ConfirmPayment' | abpLocalization }}</span>
+              }
+            </button>
+          </div>
+        </div>
+      } @else {
+        <!-- Cột bên phải: THÔNG BÁO ĐƠN HÀNG THANH TOÁN THÀNH CÔNG -->
+        <div class="payment-success-card">
+          <div class="success-badge-top">
+            <span class="badge-dot"></span>
+            <span>GIAO DỊCH HOÀN TẤT</span>
+          </div>
+
+          <div class="success-icon-wrapper">
+            <div class="success-icon-bg">
+              <i class="fa fa-check"></i>
+            </div>
+          </div>
+
+          <h3 class="success-title">Thanh toán thành công!</h3>
+          <p class="success-subtitle">
+            Đơn hàng đã được thanh toán hoàn tất và lưu vào hệ thống kế toán.
+          </p>
+
+          <div class="success-summary-box">
+            <div class="summary-item">
+              <span class="item-label">Mã phiếu:</span>
+              <span class="item-value font-mono font-bold">{{ order()?.orderNumber }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="item-label">Bàn phục vụ:</span>
+              <span class="item-value font-bold text-orange">{{ order()?.tableName || 'Tại bàn' }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="item-label">Tổng tiền đã thu:</span>
+              <span class="item-value font-bold text-success font-mono">
+                {{ effectiveTotalAmount() | number:'1.0-0' }} đ
+              </span>
+            </div>
+            <div class="summary-item">
+              <span class="item-label">Trạng thái bàn:</span>
+              <span class="item-value text-success font-bold">
+                <i class="fa fa-check-circle"></i> Bàn trống (Available)
+              </span>
+            </div>
+            <div class="summary-item">
+              <span class="item-label">Trạng thái đơn:</span>
+              <span class="item-value text-primary font-bold">
+                <i class="fa fa-lock"></i> Đã khóa chỉnh sửa (Completed)
+              </span>
+            </div>
+          </div>
+
+          <div class="success-actions-group">
+            <button type="button" class="btn btn-action-print" (click)="onPrintReceipt()">
+              <i class="fa fa-print"></i>
+              <span>{{ '::PrintReceipt' | abpLocalization }}</span>
+            </button>
+            <button type="button" class="btn btn-action-back" (click)="onBackToTables()">
+              <i class="fa fa-arrow-left"></i>
+              <span>{{ '::BackToTables' | abpLocalization }}</span>
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

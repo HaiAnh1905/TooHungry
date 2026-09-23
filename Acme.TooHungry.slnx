@@ -1,0 +1,23 @@
+<Solution>
+    <Configurations>
+        <Platform Name="Any CPU" />
+    </Configurations>
+    <Folder Name="/src/">
+        <Project Path="src/Acme.TooHungry.Domain/Acme.TooHungry.Domain.csproj" />
+        <Project Path="src/Acme.TooHungry.Application/Acme.TooHungry.Application.csproj" />
+        <Project Path="src/Acme.TooHungry.EntityFrameworkCore/Acme.TooHungry.EntityFrameworkCore.csproj" />
+        <Project Path="src/Acme.TooHungry.Domain.Shared/Acme.TooHungry.Domain.Shared.csproj" />
+        <Project Path="src/Acme.TooHungry.Application.Contracts/Acme.TooHungry.Application.Contracts.csproj" />
+        <Project Path="src/Acme.TooHungry.HttpApi/Acme.TooHungry.HttpApi.csproj" />
+        <Project Path="src/Acme.TooHungry.HttpApi.Client/Acme.TooHungry.HttpApi.Client.csproj" />
+        <Project Path="src/Acme.TooHungry.HttpApi.Host/Acme.TooHungry.HttpApi.Host.csproj" />
+        <Project Path="src/Acme.TooHungry.DbMigrator/Acme.TooHungry.DbMigrator.csproj" />
+    </Folder>
+    <Folder Name="/test/">
+        <Project Path="test/Acme.TooHungry.Application.Tests/Acme.TooHungry.Application.Tests.csproj" />
+        <Project Path="test/Acme.TooHungry.EntityFrameworkCore.Tests/Acme.TooHungry.EntityFrameworkCore.Tests.csproj" />
+        <Project Path="test/Acme.TooHungry.TestBase/Acme.TooHungry.TestBase.csproj" />
+        <Project Path="test/Acme.TooHungry.Domain.Tests/Acme.TooHungry.Domain.Tests.csproj" />
+        <Project Path="test/Acme.TooHungry.HttpApi.Client.ConsoleTestApp/Acme.TooHungry.HttpApi.Client.ConsoleTestApp.csproj" />
+    </Folder>
+</Solution>

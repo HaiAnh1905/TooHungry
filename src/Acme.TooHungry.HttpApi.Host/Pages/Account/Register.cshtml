@@ -1,0 +1,340 @@
+@page
+@using Volo.Abp.Account.Localization
+@using Microsoft.AspNetCore.Mvc.Localization
+@using Volo.Abp.Account.Settings
+@using Volo.Abp.Settings
+@model Volo.Abp.Account.Web.Pages.Account.RegisterModel
+@inject IHtmlLocalizer<AccountResource> L
+@inject ISettingProvider SettingProvider
+@{
+    ViewBag.Title = L["Register"].Value;
+}
+
+<style>
+    .register-card {
+        background: #ffffff;
+        border: 1px solid #ede4d6;
+        border-radius: 16px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+        padding: 2.25rem 2.5rem;
+    }
+    .register-title {
+        font-weight: 800;
+        color: #221d18;
+        font-size: 1.6rem;
+    }
+    .register-subtitle {
+        color: #7c7267;
+        font-size: 0.95rem;
+    }
+    .register-subtitle a {
+        color: #ff6b35;
+        font-weight: 700;
+        text-decoration: none;
+    }
+    .register-subtitle a:hover {
+        text-decoration: underline;
+    }
+    .field-label {
+        font-weight: 700;
+        color: #3d332a;
+        font-size: 0.9rem;
+        margin-bottom: 0.35rem;
+    }
+    .field-label .required-star {
+        color: #dc3545;
+        margin-left: 2px;
+    }
+    .custom-input-wrapper {
+        position: relative;
+    }
+    .custom-input-wrapper .form-control {
+        height: 48px;
+        border-radius: 10px;
+        border: 1.5px solid #e5ded3;
+        font-size: 0.95rem;
+        padding: 0.6rem 1rem;
+        background-color: #faf8f5;
+        transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+    }
+    .custom-input-wrapper .form-control:focus {
+        background-color: #ffffff;
+        border-color: #ff6b35;
+        box-shadow: 0 0 0 3.5px rgba(255, 107, 53, 0.15);
+    }
+    .custom-input-wrapper .form-control.is-invalid {
+        border-color: #dc3545 !important;
+        background-color: #fff9f9 !important;
+        box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.12) !important;
+    }
+    .custom-input-wrapper.pwd-wrapper .form-control {
+        padding-right: 46px;
+    }
+    .btn-toggle-pwd {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: transparent;
+        border: none;
+        color: #8c8275;
+        cursor: pointer;
+        padding: 6px 8px;
+        border-radius: 6px;
+        z-index: 4;
+    }
+    .btn-toggle-pwd:hover {
+        color: #ff6b35;
+    }
+    /* Thông báo lỗi chỉ hiện dưới các ô input khi nhập sai */
+    .field-error-msg {
+        display: none;
+        color: #dc3545;
+        font-size: 0.83rem;
+        font-weight: 600;
+        margin-top: 0.35rem;
+    }
+    .field-error-msg.visible {
+        display: block;
+    }
+    .btn-register-submit {
+        height: 48px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #ff843a 0%, #ff4b12 100%);
+        border: none;
+        color: #ffffff;
+        font-weight: 800;
+        font-size: 0.98rem;
+        box-shadow: 0 4px 14px rgba(255, 75, 18, 0.25);
+        transition: all 0.2s ease;
+    }
+    .btn-register-submit:hover {
+        background: linear-gradient(135deg, #ff9452 0%, #ff5c26 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 18px rgba(255, 75, 18, 0.35);
+    }
+</style>
+
+<div class="card register-card mt-3">
+    <div class="card-body p-0">
+        <h4 class="register-title mb-1">@L["Register"]</h4>
+        <div class="register-subtitle mb-4">
+            @L["AlreadyRegistered"]
+            <a href="@Url.Page("./Login", new {returnUrl = Model.ReturnUrl, returnUrlHash = Model.ReturnUrlHash})">
+                @L["Login"]
+            </a>
+        </div>
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert alert-danger shadow-sm border-0 mb-4" role="alert">
+                <div asp-validation-summary="All" class="text-danger m-0 ps-3"></div>
+            </div>
+        }
+
+        <form method="post" id="registerGuardForm" novalidate>
+            <!-- 1. TÊN TÀI KHOẢN -->
+            <div class="mb-3">
+                <label class="field-label" for="Input_UserName">
+                    Tên tài khoản (Username)<span class="required-star">*</span>
+                </label>
+                <div class="custom-input-wrapper">
+                    <input type="text"
+                           id="Input_UserName"
+                           name="Input.UserName"
+                           value="@Model.Input?.UserName"
+                           maxlength="32"
+                           class="form-control"
+                           placeholder="Nhập tên tài khoản..."
+                           autocomplete="username"
+                           autofocus />
+                </div>
+                <div id="userNameError" class="field-error-msg"></div>
+            </div>
+
+            <!-- 2. ĐỊA CHỈ EMAIL -->
+            <div class="mb-3">
+                <label class="field-label" for="Input_EmailAddress">
+                    Địa chỉ Email<span class="required-star">*</span>
+                </label>
+                <div class="custom-input-wrapper">
+                    <input type="email"
+                           id="Input_EmailAddress"
+                           name="Input.EmailAddress"
+                           value="@Model.Input?.EmailAddress"
+                           maxlength="256"
+                           class="form-control"
+                           placeholder="name@example.com"
+                           autocomplete="email" />
+                </div>
+                <div id="emailError" class="field-error-msg"></div>
+            </div>
+
+            <!-- 3. MẬT KHẨU -->
+            <div class="mb-3">
+                <label class="field-label" for="Input_Password">
+                    Mật khẩu<span class="required-star">*</span>
+                </label>
+                <div class="custom-input-wrapper pwd-wrapper">
+                    <input type="password"
+                           id="Input_Password"
+                           name="Input.Password"
+                           maxlength="128"
+                           class="form-control"
+                           placeholder="Nhập mật khẩu..."
+                           autocomplete="new-password" />
+                    <button type="button" class="btn-toggle-pwd" id="btnTogglePwd" title="Ẩn/Hiện mật khẩu" tabindex="-1">
+                        <i class="bi bi-eye-slash" id="togglePwdIcon"></i>
+                    </button>
+                </div>
+                <div id="passwordError" class="field-error-msg"></div>
+            </div>
+
+            <div class="d-grid gap-2 mt-4">
+                <button type="submit" id="btnSubmitRegister" class="btn btn-register-submit">
+                    @L["Register"]
+                </button>
+            </div>
+
+            <input type="hidden" name="ReturnUrl" value="@Model.ReturnUrl" />
+            <input type="hidden" name="ReturnUrlHash" value="@Model.ReturnUrlHash" />
+            @Html.AntiForgeryToken()
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const form = document.getElementById("registerGuardForm");
+        const userNameInput = document.getElementById("Input_UserName");
+        const emailInput = document.getElementById("Input_EmailAddress");
+        const passwordInput = document.getElementById("Input_Password");
+        const btnTogglePwd = document.getElementById("btnTogglePwd");
+        const togglePwdIcon = document.getElementById("togglePwdIcon");
+
+        const userNameError = document.getElementById("userNameError");
+        const emailError = document.getElementById("emailError");
+        const passwordError = document.getElementById("passwordError");
+
+        let hasAttemptedSubmit = false;
+
+        // Toggle ẩn/hiện mật khẩu
+        if (btnTogglePwd) {
+            btnTogglePwd.addEventListener("click", function () {
+                const isPassword = passwordInput.type === "password";
+                passwordInput.type = isPassword ? "text" : "password";
+                togglePwdIcon.className = isPassword ? "bi bi-eye" : "bi bi-eye-slash";
+            });
+        }
+
+        // Quy tắc kiểm tra tính hợp lệ
+        function checkUserName(val) {
+            val = (val || "").trim();
+            if (!val) return "Tên tài khoản không được để trống!";
+            if (val.length < 3 || val.length > 32) return "Tên tài khoản phải từ 3 đến 32 ký tự!";
+            if (!/^[a-zA-Z0-9._-]+$/.test(val)) {
+                return "Tên tài khoản không hợp lệ (chỉ gồm chữ cái, số, dấu '.', '_', '-'; không dấu cách)!";
+            }
+            return null;
+        }
+
+        function checkEmail(val) {
+            val = (val || "").trim();
+            if (!val) return "Địa chỉ Email không được để trống!";
+            const emailRegex = /^[a-zA-Z0-9._%+-]+@@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            if (!emailRegex.test(val)) return "Địa chỉ Email không đúng định dạng (VD: user@example.com)!";
+            return null;
+        }
+
+        function checkPassword(val) {
+            val = val || "";
+            if (!val) return "Mật khẩu không được để trống!";
+            if (val.length < 6) return "Mật khẩu phải có tối thiểu 6 ký tự!";
+            if (!/[a-z]/.test(val)) return "Mật khẩu phải có ít nhất 1 chữ cái thường (a-z)!";
+            if (!/[A-Z]/.test(val)) return "Mật khẩu phải có ít nhất 1 chữ cái in hoa (A-Z)!";
+            if (!/[0-9]/.test(val)) return "Mật khẩu phải có ít nhất 1 chữ số (0-9)!";
+            if (!/[^a-zA-Z0-9]/.test(val)) return "Mật khẩu phải có ít nhất 1 ký tự đặc biệt (!@@#$%^&*...)!";
+            return null;
+        }
+
+        function displayError(input, errorEl, message) {
+            if (message) {
+                input.classList.add("is-invalid");
+                errorEl.textContent = "⚠️ " + message;
+                errorEl.classList.add("visible");
+            } else {
+                input.classList.remove("is-invalid");
+                errorEl.textContent = "";
+                errorEl.classList.remove("visible");
+            }
+        }
+
+        // Kiểm tra khi rời khỏi ô input (blur)
+        userNameInput.addEventListener("blur", function () {
+            if (userNameInput.value.trim().length > 0 || hasAttemptedSubmit) {
+                displayError(userNameInput, userNameError, checkUserName(userNameInput.value));
+            }
+        });
+
+        emailInput.addEventListener("blur", function () {
+            if (emailInput.value.trim().length > 0 || hasAttemptedSubmit) {
+                displayError(emailInput, emailError, checkEmail(emailInput.value));
+            }
+        });
+
+        passwordInput.addEventListener("blur", function () {
+            if (passwordInput.value.length > 0 || hasAttemptedSubmit) {
+                displayError(passwordInput, passwordError, checkPassword(passwordInput.value));
+            }
+        });
+
+        // Khi người dùng gõ, nếu đang có lỗi thì tự động xóa lỗi khi đã sửa đúng
+        userNameInput.addEventListener("input", function () {
+            if (hasAttemptedSubmit || userNameInput.classList.contains("is-invalid")) {
+                displayError(userNameInput, userNameError, checkUserName(userNameInput.value));
+            }
+        });
+
+        emailInput.addEventListener("input", function () {
+            if (hasAttemptedSubmit || emailInput.classList.contains("is-invalid")) {
+                displayError(emailInput, emailError, checkEmail(emailInput.value));
+            }
+        });
+
+        passwordInput.addEventListener("input", function () {
+            if (hasAttemptedSubmit || passwordInput.classList.contains("is-invalid")) {
+                displayError(passwordInput, passwordError, checkPassword(passwordInput.value));
+            }
+        });
+
+        // Guard khi Submit form: chỉ hiển thị lỗi ngay dưới các ô input bị sai
+        form.addEventListener("submit", function (e) {
+            hasAttemptedSubmit = true;
+
+            const uErr = checkUserName(userNameInput.value);
+            const eErr = checkEmail(emailInput.value);
+            const pErr = checkPassword(passwordInput.value);
+
+            displayError(userNameInput, userNameError, uErr);
+            displayError(emailInput, emailError, eErr);
+            displayError(passwordInput, passwordError, pErr);
+
+            const firstError = uErr || eErr || pErr;
+
+            if (firstError) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                if (uErr) {
+                    userNameInput.focus();
+                } else if (eErr) {
+                    emailInput.focus();
+                } else if (pErr) {
+                    passwordInput.focus();
+                }
+                return false;
+            }
+            return true;
+        });
+    });
+</script>

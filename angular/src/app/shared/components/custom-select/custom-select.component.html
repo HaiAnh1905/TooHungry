@@ -1,0 +1,87 @@
+<div
+  class="custom-select-container"
+  [class.is-open]="isOpen"
+  [class.is-disabled]="disabled"
+  [class.size-sm]="size === 'sm'"
+  [class.placement-top]="placement === 'top'"
+  [style.min-width]="minWidth"
+>
+  <!-- Trigger Button -->
+  <div
+    class="custom-select-trigger"
+    [class.active]="isOpen"
+    [class.has-selection]="value !== null && value !== undefined && value !== ''"
+    (click)="toggleDropdown($event)"
+    tabindex="0"
+    (keydown.enter)="toggleDropdown($event)"
+    (keydown.space)="toggleDropdown($event)"
+  >
+    <div class="trigger-content d-flex align-items-center text-truncate flex-grow-1" style="gap: 6px;">
+      @if (selectedOption?.icon || leadIcon) {
+        <i class="trigger-icon fa" [ngClass]="selectedOption?.icon || leadIcon"></i>
+      }
+      <span class="trigger-label text-truncate" [class.is-placeholder]="!selectedOption">
+        {{ displayLabel }}
+      </span>
+    </div>
+    <div class="trigger-actions d-flex align-items-center flex-shrink-0" style="gap: 4px;">
+      <i class="fa fa-chevron-down chevron-icon" [class.rotate]="isOpen"></i>
+    </div>
+  </div>
+
+  <!-- Dropdown Panel -->
+  @if (isOpen) {
+    <div class="custom-select-panel" (click)="$event.stopPropagation()">
+      @if (searchable || options.length > 7) {
+        <div class="search-box-wrapper">
+          <i class="fa fa-search search-icon"></i>
+          <input
+            type="text"
+            class="search-input"
+            [(ngModel)]="searchQuery"
+            [placeholder]="searchPlaceholder"
+            (click)="$event.stopPropagation()"
+            autofocus
+          />
+          @if (searchQuery) {
+            <button type="button" class="btn-clear-query" (click)="searchQuery = ''">
+              <i class="fa fa-times-circle"></i>
+            </button>
+          }
+        </div>
+      }
+
+      <div class="options-list-scroll">
+        @for (opt of filteredOptions; track $index) {
+          <div
+            class="custom-option-item"
+            [class.is-selected]="isSelected(opt)"
+            (click)="selectOption(opt, $event)"
+          >
+            <div class="option-content d-flex align-items-center flex-grow-1 text-truncate" style="gap: 7px;">
+              @if (opt.icon) {
+                <span class="option-icon-box">
+                  <i class="fa" [ngClass]="opt.icon"></i>
+                </span>
+              }
+              <div class="d-flex flex-column text-truncate">
+                <span class="option-label text-truncate">{{ getLocalizedText(opt.label) }}</span>
+                @if (opt.desc) {
+                  <span class="option-desc text-truncate">{{ getLocalizedText(opt.desc) }}</span>
+                }
+              </div>
+            </div>
+            @if (isSelected(opt)) {
+              <i class="fa fa-check selected-check-icon"></i>
+            }
+          </div>
+        } @empty {
+          <div class="empty-options">
+            <i class="fa fa-search text-muted mb-1 d-block" style="font-size: 1.1rem;"></i>
+            <span>{{ '::NoDataAvailable' | abpLocalization }}</span>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>

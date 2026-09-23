@@ -1,0 +1,503 @@
+/* ==========================================================================
+   TooHungry - White & Orange Brand Theme for Account / Login Pages
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --th-primary: #ff6b35;
+  --th-primary-hover: #f04e12;
+  --th-primary-light: #fff2eb;
+  --th-primary-gradient: linear-gradient(135deg, #ff8c42 0%, #ff521b 100%);
+  --th-primary-gradient-hover: linear-gradient(135deg, #ff7a29 0%, #e6410c 100%);
+  --th-primary-shadow: rgba(255, 82, 27, 0.35);
+  --th-primary-shadow-hover: rgba(255, 82, 27, 0.48);
+
+  --th-bg-canvas: #f8f5ee;
+  --th-card-bg: #ffffff;
+  --th-border-beige: #ede4d6;
+  --th-border-focus: #ff6b35;
+  --th-input-bg: #fbf9f6;
+  --th-text-dark: #221d18;
+  --th-text-muted: #7c7267;
+
+  /* LeptonX Overrides */
+  --lpx-logo: url('/images/logo/toohungry-logo.svg');
+  --lpx-logo-icon: url('/images/logo/toohungry-logo.svg');
+  --lpx-brand: #ff6b35;
+  --lpx-brand-hover: #f04e12;
+  --lpx-primary: #ff6b35;
+  --lpx-primary-hover: #f04e12;
+}
+
+/* Base Body & Layout */
+body.abp-account-layout {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  background-color: var(--th-bg-canvas) !important;
+  background-image: 
+    radial-gradient(circle at 10% 12%, rgba(255, 107, 53, 0.09) 0%, transparent 45%),
+    radial-gradient(circle at 90% 88%, rgba(255, 140, 66, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.6) 0%, transparent 80%) !important;
+  background-attachment: fixed !important;
+  min-height: 100vh !important;
+  color: var(--th-text-dark) !important;
+  -webkit-font-smoothing: antialiased;
+}
+
+.abp-account-layout .lpx-scroll-container,
+.abp-account-layout #lpx-wrapper,
+.abp-account-layout .lpx-content-container,
+.abp-account-layout .lpx-content {
+  background: transparent !important;
+}
+
+.abp-account-layout .container {
+  padding-top: 3rem !important;
+  padding-bottom: 3.5rem !important;
+}
+
+/* Brand Header (Logo + Brand Name) */
+.abp-account-layout .lpx-logo-container.lpx-login-brand-text {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-bottom: 2rem !important;
+  text-decoration: none !important;
+}
+
+.abp-account-layout .lpx-brand-logo.lpx-login-logo {
+  background-image: url('/images/logo/toohungry-logo.svg') !important;
+  background-size: contain !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  width: 58px !important;
+  height: 58px !important;
+  margin-bottom: 0.75rem !important;
+  filter: drop-shadow(0 6px 14px rgba(255, 82, 27, 0.38)) !important;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+.abp-account-layout .lpx-brand-logo.lpx-login-logo:hover {
+  transform: scale(1.08) rotate(-3deg);
+}
+
+.abp-account-layout .lpx-brand-name.lpx-login-name {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-size: 2rem !important;
+  font-weight: 800 !important;
+  color: var(--th-text-dark) !important;
+  letter-spacing: -0.8px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-align: center !important;
+  line-height: 1.2 !important;
+  position: relative !important;
+  top: 0px !important;
+}
+
+.abp-account-layout .lpx-brand-name.lpx-login-name::after {
+  content: "Restaurant Platform";
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--th-primary);
+  margin-top: 4px;
+}
+
+/* Clean up empty title */
+.abp-account-layout .lpx-main-title.lpx-login-title:empty,
+.abp-account-layout .card.mb-3 .lpx-main-title.lpx-login-title {
+  display: none !important;
+}
+
+/* Cards (White with Warm French Beige Border & Elegant Shadow) */
+.abp-account-layout .card {
+  background: var(--th-card-bg) !important;
+  border: 1.5px solid var(--th-border-beige) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 10px 30px -5px rgba(255, 107, 53, 0.08), 0 3px 12px rgba(0, 0, 0, 0.02) !important;
+  transition: box-shadow 0.25s ease, border-color 0.25s ease !important;
+  overflow: visible !important;
+}
+
+.abp-account-layout .card:hover {
+  box-shadow: 0 14px 38px -4px rgba(255, 107, 53, 0.13), 0 4px 14px rgba(0, 0, 0, 0.04) !important;
+  border-color: #e4d8c5 !important;
+}
+
+/* Tenant & Language Top Bar */
+.abp-account-layout .card.mb-3 {
+  border-radius: 16px !important;
+  background: #ffffff !important;
+  margin-bottom: 1rem !important;
+  overflow: visible !important;
+}
+
+.abp-account-layout .card.mb-3 .card-body {
+  padding: 0.85rem 1.4rem !important;
+  overflow: visible !important;
+}
+
+.abp-account-layout .card.mb-3 hr {
+  margin: 0.75rem 0 !important;
+  border-color: var(--th-border-beige) !important;
+  opacity: 0.8 !important;
+}
+
+/* Hide trailing hr if there is no tenant switcher below */
+.abp-account-layout .card.mb-3 hr:last-child {
+  display: none !important;
+}
+
+/* If the card-body only contains the top header with language dropdown and a trailing hr, tighten the padding */
+.abp-account-layout .card.mb-3 .card-body:has(> hr:last-child) {
+  padding-bottom: 0.85rem !important;
+}
+
+.abp-account-layout .card.mb-3 .row {
+  align-items: center !important;
+}
+
+/* Language Selection Button */
+.abp-account-layout .dropdown .btn-light.dropdown-toggle {
+  background: #fbf9f6 !important;
+  border: 1.5px solid var(--th-border-beige) !important;
+  color: #52473e !important;
+  font-size: 0.82rem !important;
+  font-weight: 600 !important;
+  border-radius: 10px !important;
+  padding: 5px 12px !important;
+  box-shadow: none !important;
+  transition: all 0.2s ease !important;
+}
+
+.abp-account-layout .dropdown .btn-light.dropdown-toggle:hover,
+.abp-account-layout .dropdown .btn-light.dropdown-toggle:focus,
+.abp-account-layout .dropdown .btn-light.dropdown-toggle.show {
+  background: var(--th-primary-light) !important;
+  border-color: var(--th-primary) !important;
+  color: var(--th-primary-hover) !important;
+}
+
+.abp-account-layout .dropdown-menu {
+  border-radius: 14px !important;
+  border: 1.5px solid var(--th-border-beige) !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12) !important;
+  padding: 6px !important;
+  z-index: 1050 !important;
+}
+
+.abp-account-layout .dropdown-item {
+  border-radius: 8px !important;
+  font-size: 0.85rem !important;
+  font-weight: 500 !important;
+  padding: 7px 12px !important;
+  color: var(--th-text-dark) !important;
+  transition: all 0.15s ease !important;
+}
+
+.abp-account-layout .dropdown-item:hover,
+.abp-account-layout .dropdown-item:focus {
+  background-color: var(--th-primary-light) !important;
+  color: var(--th-primary-hover) !important;
+}
+
+/* Tenant Section */
+.abp-account-layout .text-uppercase.text-muted {
+  font-size: 0.7rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 1px !important;
+  color: #9c8e82 !important;
+}
+
+.abp-account-layout h6.d-inline-block {
+  font-size: 0.92rem !important;
+  font-weight: 700 !important;
+  color: var(--th-text-dark) !important;
+}
+
+/* Tenant Switch Button */
+#AbpTenantSwitchLink,
+.abp-account-layout .btn-outline-primary {
+  border: 1.5px solid var(--th-primary) !important;
+  color: var(--th-primary) !important;
+  background: transparent !important;
+  font-weight: 600 !important;
+  font-size: 0.8rem !important;
+  border-radius: 8px !important;
+  padding: 4px 14px !important;
+  transition: all 0.2s ease !important;
+  text-decoration: none !important;
+  display: inline-block !important;
+}
+
+#AbpTenantSwitchLink:hover,
+.abp-account-layout .btn-outline-primary:hover {
+  background: var(--th-primary) !important;
+  color: #ffffff !important;
+  box-shadow: 0 3px 10px rgba(255, 107, 53, 0.3) !important;
+  transform: translateY(-1px);
+}
+
+/* Main Form Card */
+.abp-account-layout .card.mt-3 {
+  border-radius: 20px !important;
+  margin-top: 0.5rem !important;
+}
+
+.abp-account-layout .card.mt-3 .card-body.p-5 {
+  padding: 2.25rem 2.5rem !important;
+}
+
+.abp-account-layout h4 {
+  font-size: 1.65rem !important;
+  font-weight: 800 !important;
+  color: var(--th-text-dark) !important;
+  letter-spacing: -0.6px !important;
+  margin-bottom: 0.35rem !important;
+}
+
+.abp-account-layout strong {
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+  color: var(--th-text-muted) !important;
+}
+
+.abp-account-layout strong a,
+.abp-account-layout a.text-decoration-none,
+.abp-account-layout a[href*="Register"],
+.abp-account-layout a[href*="ForgotPassword"] {
+  color: var(--th-primary) !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+  transition: color 0.15s ease !important;
+}
+
+.abp-account-layout strong a:hover,
+.abp-account-layout a.text-decoration-none:hover,
+.abp-account-layout a[href*="Register"]:hover,
+.abp-account-layout a[href*="ForgotPassword"]:hover {
+  color: var(--th-primary-hover) !important;
+  text-decoration: underline !important;
+}
+
+/* Form Labels & Controls */
+.abp-account-layout .form-label {
+  font-size: 0.86rem !important;
+  font-weight: 600 !important;
+  color: #3e362e !important;
+  margin-bottom: 0.45rem !important;
+}
+
+.abp-account-layout .form-control {
+  background-color: var(--th-input-bg) !important;
+  border: 1.5px solid var(--th-border-beige) !important;
+  border-radius: 12px !important;
+  padding: 0.65rem 0.95rem !important;
+  font-size: 0.92rem !important;
+  color: var(--th-text-dark) !important;
+  box-shadow: none !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.abp-account-layout .form-control:focus {
+  background-color: #ffffff !important;
+  border-color: var(--th-primary) !important;
+  box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.16) !important;
+  color: var(--th-text-dark) !important;
+}
+
+/* Input Group & Password Visibility Button */
+.abp-account-layout .input-group {
+  border-radius: 12px !important;
+  position: relative;
+}
+
+.abp-account-layout .input-group .form-control {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+.abp-account-layout .input-group .btn-secondary#PasswordVisibilityButton,
+.abp-account-layout #PasswordVisibilityButton {
+  background-color: var(--th-input-bg) !important;
+  border: 1.5px solid var(--th-border-beige) !important;
+  border-left: none !important;
+  color: #8a7c6f !important;
+  border-top-right-radius: 12px !important;
+  border-bottom-right-radius: 12px !important;
+  padding: 0.65rem 1rem !important;
+  box-shadow: none !important;
+  transition: all 0.2s ease !important;
+}
+
+.abp-account-layout #PasswordVisibilityButton i {
+  color: #8a7c6f !important;
+  transition: color 0.2s ease;
+}
+
+.abp-account-layout .input-group:focus-within .btn-secondary#PasswordVisibilityButton {
+  border-color: var(--th-primary) !important;
+  background-color: #ffffff !important;
+}
+
+.abp-account-layout .input-group .btn-secondary#PasswordVisibilityButton:hover,
+.abp-account-layout #PasswordVisibilityButton:hover {
+  background-color: var(--th-primary-light) !important;
+  color: var(--th-primary) !important;
+}
+
+.abp-account-layout #PasswordVisibilityButton:hover i {
+  color: var(--th-primary) !important;
+}
+
+/* Dev Login Helper Hint Tags */
+.abp-account-layout span.text-muted.small {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  margin-top: 6px !important;
+  font-size: 0.74rem !important;
+  font-weight: 500 !important;
+  color: #8c7f74 !important;
+  background: #fdfaf6 !important;
+  padding: 3px 9px !important;
+  border-radius: 6px !important;
+  border: 1px dashed #e4d8c7 !important;
+}
+
+/* Checkbox (Remember me) */
+.abp-account-layout .form-check-input {
+  width: 1.15rem !important;
+  height: 1.15rem !important;
+  border: 1.5px solid #d4c6b5 !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  margin-top: 0.15rem !important;
+  transition: all 0.15s ease !important;
+}
+
+.abp-account-layout .form-check-input:checked {
+  background-color: var(--th-primary) !important;
+  border-color: var(--th-primary) !important;
+  box-shadow: 0 2px 6px rgba(255, 107, 53, 0.35) !important;
+}
+
+.abp-account-layout .form-check-input:focus {
+  border-color: var(--th-primary) !important;
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.2) !important;
+}
+
+.abp-account-layout .form-check-label {
+  font-size: 0.88rem !important;
+  font-weight: 500 !important;
+  color: #4f453c !important;
+  cursor: pointer !important;
+  margin-left: 0.4rem !important;
+}
+
+/* Primary Button (Login / Register / Submit) */
+.abp-account-layout .btn-primary,
+.abp-account-layout button[type="submit"] {
+  background: var(--th-primary-gradient) !important;
+  border: none !important;
+  border-radius: 12px !important;
+  color: #ffffff !important;
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  padding: 0.82rem 1.4rem !important;
+  letter-spacing: 0.3px !important;
+  box-shadow: 0 6px 18px var(--th-primary-shadow) !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  cursor: pointer !important;
+}
+
+.abp-account-layout .btn-primary:hover,
+.abp-account-layout button[type="submit"]:hover {
+  background: var(--th-primary-gradient-hover) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 24px var(--th-primary-shadow-hover) !important;
+  color: #ffffff !important;
+}
+
+.abp-account-layout .btn-primary:active,
+.abp-account-layout button[type="submit"]:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 3px 10px var(--th-primary-shadow) !important;
+}
+
+/* Alert Boxes */
+.abp-account-layout .alert {
+  border-radius: 12px !important;
+  font-size: 0.88rem !important;
+  font-weight: 500 !important;
+}
+
+.abp-account-layout .alert-danger {
+  background-color: #fff1f0 !important;
+  border: 1px solid #ffa39e !important;
+  color: #cf1322 !important;
+}
+
+/* Validation Errors */
+.abp-account-layout .text-danger,
+.abp-account-layout span[data-valmsg-for] {
+  color: #d4380d !important;
+  font-size: 0.8rem !important;
+  font-weight: 500 !important;
+  margin-top: 4px !important;
+}
+
+/* Tenant Switch Modal Overrides */
+.modal-content {
+  border-radius: 20px !important;
+  border: 1.5px solid var(--th-border-beige) !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12) !important;
+  overflow: hidden !important;
+}
+
+.modal-header {
+  border-bottom: 1px solid var(--th-border-beige) !important;
+  padding: 1.25rem 1.5rem !important;
+  background: #ffffff !important;
+}
+
+.modal-header .modal-title {
+  font-weight: 800 !important;
+  color: var(--th-text-dark) !important;
+}
+
+.modal-footer {
+  border-top: 1px solid var(--th-border-beige) !important;
+  padding: 1rem 1.5rem !important;
+}
+
+.modal-footer .btn-secondary {
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  background: #f0e9dd !important;
+  border: none !important;
+  color: #4a4036 !important;
+}
+
+.modal-footer .btn-primary {
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  background: var(--th-primary-gradient) !important;
+  border: none !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px var(--th-primary-shadow) !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+  .abp-account-layout .container {
+    padding-top: 1.5rem !important;
+  }
+  .abp-account-layout .card.mt-3 .card-body.p-5 {
+    padding: 1.75rem 1.35rem !important;
+  }
+}

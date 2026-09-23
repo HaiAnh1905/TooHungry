@@ -1,0 +1,23 @@
+<svg width="48" height="48" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="th_brand_grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff8c42" />
+      <stop offset="100%" stop-color="#ff521b" />
+    </linearGradient>
+    <filter id="th_shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#ff521b" flood-opacity="0.38"/>
+    </filter>
+  </defs>
+  <!-- Background squircle -->
+  <rect x="2" y="2" width="36" height="36" rx="10" fill="url(#th_brand_grad)" filter="url(#th_shadow)"/>
+  
+  <!-- Utensils (Fork & Knife / Chef) in pure white -->
+  <!-- Fork -->
+  <path d="M14 11v6c0 1.1.9 2 2 2h0c1.1 0 2-.9 2-2v-6" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M16 11v6" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M16 19v10" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+  
+  <!-- Knife -->
+  <path d="M24 11v9c0 1.1-.9 2-2 2v7" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M24 11c1.5 0 2.5 1.5 2.5 3.5s-1 4.5-2.5 4.5" fill="white"/>
+</svg>

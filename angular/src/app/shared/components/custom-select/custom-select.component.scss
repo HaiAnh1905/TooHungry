@@ -1,0 +1,296 @@
+:host {
+  display: inline-block;
+
+  &.w-100 {
+    display: block;
+    width: 100%;
+  }
+}
+
+.custom-select-container {
+  position: relative;
+  width: 100%;
+
+  /* Trigger button styling */
+  .custom-select-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 38px;
+    padding: 0 0.85rem;
+    background-color: #faf7f4;
+    border: 1.5px solid #ede4d6;
+    border-radius: 10px;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    outline: none;
+
+    &:hover {
+      background-color: #ffffff;
+      border-color: #fed7aa;
+      box-shadow: 0 2px 8px rgba(255, 107, 53, 0.08);
+
+      .chevron-icon {
+        color: #ff6b35;
+      }
+    }
+
+    &.active {
+      background-color: #ffffff;
+      border-color: #ff6b35;
+      box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.16);
+
+      .chevron-icon {
+        color: #ff6b35;
+        transform: rotate(180deg);
+      }
+    }
+
+    &.has-selection {
+      border-color: #fbd38d;
+      background-color: #fffdfa;
+    }
+
+    .trigger-content {
+      .trigger-icon {
+        color: #ff6b35;
+        font-size: 0.85rem;
+        flex-shrink: 0;
+      }
+
+      .trigger-label {
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: #221d18;
+
+        &.is-placeholder {
+          color: #9c8e82;
+          font-weight: 500;
+        }
+      }
+    }
+
+    .chevron-icon {
+      font-size: 0.78rem;
+      color: #a89d91;
+      transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s ease;
+
+      &.rotate {
+        transform: rotate(180deg);
+        color: #ff6b35;
+      }
+    }
+  }
+
+  /* Size SM variant for pagination and compact views */
+  &.size-sm {
+    .custom-select-trigger {
+      height: 32px;
+      padding: 0 0.65rem;
+      border-radius: 8px;
+
+      .trigger-label {
+        font-size: 0.82rem;
+      }
+
+      .chevron-icon {
+        font-size: 0.72rem;
+      }
+    }
+  }
+
+  /* Disabled State */
+  &.is-disabled {
+    opacity: 0.65;
+    pointer-events: none;
+    cursor: not-allowed;
+
+    .custom-select-trigger {
+      background-color: #f3efe8;
+      border-color: #e5ddd0;
+    }
+  }
+
+  /* Placement Top variant for pagination footer / bottom of screens */
+  &.placement-top {
+    .custom-select-panel {
+      top: auto;
+      bottom: calc(100% + 5px);
+      animation: selectPanelPopUp 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  }
+
+  /* Dropdown Floating Panel */
+  .custom-select-panel {
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 0;
+    min-width: 100%;
+    width: max-content;
+    max-width: min(520px, 92vw);
+    box-sizing: border-box;
+    background-color: #ffffff;
+    border: 1.5px solid #ede4d6;
+    border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(45, 30, 15, 0.14), 0 2px 8px rgba(0, 0, 0, 0.04);
+    z-index: 1090;
+    padding: 0.4rem;
+    animation: selectPanelPop 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+
+    .search-box-wrapper {
+      position: relative;
+      margin-bottom: 0.35rem;
+      padding: 0.15rem 0.2rem;
+
+      .search-icon {
+        position: absolute;
+        left: 0.8rem;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.78rem;
+        color: #a89d91;
+      }
+
+      .search-input {
+        width: 100%;
+        height: 32px;
+        padding: 0 1.8rem 0 2rem;
+        border: 1px solid #ede4d6;
+        border-radius: 8px;
+        background-color: #faf6f0;
+        font-size: 0.82rem;
+        color: #221d18;
+        outline: none;
+        transition: all 0.2s ease;
+
+        &:focus {
+          background-color: #ffffff;
+          border-color: #ff6b35;
+          box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.12);
+        }
+      }
+
+      .btn-clear-query {
+        position: absolute;
+        right: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        border: none;
+        background: transparent;
+        color: #a89d91;
+        font-size: 0.82rem;
+        cursor: pointer;
+        padding: 0;
+
+        &:hover {
+          color: #221d18;
+        }
+      }
+    }
+
+    .options-list-scroll {
+      max-height: 220px;
+      overflow-y: auto;
+      padding-right: 2px;
+
+      &::-webkit-scrollbar {
+        width: 5px;
+      }
+      &::-webkit-scrollbar-thumb {
+        background-color: #e2d9cd;
+        border-radius: 9999px;
+      }
+    }
+
+    .custom-option-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 0.7rem;
+      border-radius: 8px;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s ease;
+      margin-bottom: 2px;
+
+      .option-icon-box {
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        background-color: #fff7ed;
+        color: #ea580c;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        flex-shrink: 0;
+      }
+
+      .option-label {
+        font-size: 0.86rem;
+        font-weight: 600;
+        color: #383029;
+      }
+
+      .option-desc {
+        font-size: 0.72rem;
+        color: #8c7e72;
+      }
+
+      .selected-check-icon {
+        color: #ff6b35;
+        font-size: 0.82rem;
+        flex-shrink: 0;
+        margin-left: 0.5rem;
+      }
+
+      &:hover {
+        background-color: #fff7ed;
+        transform: translateX(2px);
+
+        .option-label {
+          color: #ea580c;
+        }
+      }
+
+      &.is-selected {
+        background-color: #ffedd5;
+
+        .option-label {
+          color: #9a3412;
+          font-weight: 700;
+        }
+      }
+    }
+
+    .empty-options {
+      padding: 1rem 0.5rem;
+      text-align: center;
+      font-size: 0.82rem;
+      color: #9c8e82;
+    }
+  }
+}
+
+@keyframes selectPanelPop {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes selectPanelPopUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
