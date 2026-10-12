@@ -1,0 +1,351 @@
+/* ==========================================================================
+   Unit Management - Modern Orange & White Theme (RM-004)
+   ========================================================================== */
+
+.category-management-page {
+  padding: 0.5rem 0 1rem 0;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* 1. TOP HEADER */
+.page-header-row {
+  .page-title {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #1e1915;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+  }
+
+  .page-subtitle {
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: #8c7e73;
+    letter-spacing: 0.1px;
+  }
+
+  .btn-add-theme {
+    background: linear-gradient(135deg, #ff8c42 0%, #ff521b 100%) !important;
+    border: none !important;
+    border-radius: 12px !important;
+    padding: 0.65rem 1.45rem !important;
+    font-weight: 700 !important;
+    font-size: 0.92rem !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(255, 82, 27, 0.32) !important;
+    transition: all 0.25s ease !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.625rem !important;
+
+    i, .fa, .fas, [class*="fa-"] {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      font-size: 1.05rem !important;
+      line-height: 1 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    span {
+      display: inline-flex !important;
+      align-items: center !important;
+      line-height: 1.2 !important;
+    }
+
+    &:hover {
+      background: linear-gradient(135deg, #ff7a29 0%, #e6410c 100%) !important;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(255, 82, 27, 0.42) !important;
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+}
+
+/* 2. FILTER CARD CONTAINER */
+.filter-card-container {
+  background-color: #ffffff;
+  border: 1px solid #ede4d6;
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 4px 20px rgba(180, 150, 110, 0.06);
+
+  .search-input-wrapper {
+    position: relative;
+    width: 100%;
+
+    .search-icon {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #9c8e82;
+      font-size: 0.95rem;
+      pointer-events: none;
+    }
+
+    .search-input {
+      width: 100%;
+      background-color: #faf7f4;
+      border: 1.5px solid #ede4d6;
+      border-radius: 12px;
+      padding: 0.72rem 2.6rem 0.72rem 2.75rem;
+      font-size: 0.92rem;
+      font-weight: 500;
+      color: #1e1915;
+      transition: all 0.25s ease;
+
+      &::placeholder {
+        color: #a89d91;
+        font-weight: 400;
+      }
+
+      &:focus {
+        background-color: #ffffff;
+        border-color: #ff6b35;
+        box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.15);
+        outline: none;
+      }
+    }
+
+    .btn-clear-search {
+      position: absolute;
+      right: 0.85rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: #a89d91;
+      font-size: 1.05rem;
+      padding: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.15s ease;
+
+      &:hover {
+        color: #ff521b;
+      }
+    }
+  }
+
+  .filter-dropdowns-row {
+    .filter-item {
+      .filter-label {
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: #5c5248;
+        white-space: nowrap;
+      }
+    }
+  }
+}
+
+/* 3. DATA CARD WRAPPER */
+.data-card-wrapper {
+  background-color: #ffffff;
+  border: 1px solid #ede4d6;
+  border-radius: 16px;
+  padding: 1rem;
+  box-shadow: 0 4px 20px rgba(180, 150, 110, 0.06);
+
+  /* Shared table custom styling */
+  ::ng-deep {
+    .ant-table {
+      font-family: inherit;
+      color: #1e1915;
+    }
+
+    .ant-table-thead > tr > th {
+      background-color: #faf7f4 !important;
+      color: #5c5248 !important;
+      font-weight: 750 !important;
+      font-size: 0.84rem !important;
+      letter-spacing: 0.4px !important;
+      border-bottom: 1.5px solid #ede4d6 !important;
+      padding: 12px 16px !important;
+    }
+
+    .ant-table-tbody > tr > td {
+      border-bottom: 1px solid rgba(237, 228, 214, 0.6) !important;
+      padding: 12px 16px !important;
+      font-size: 0.92rem !important;
+      vertical-align: middle !important;
+    }
+
+    .ant-table-tbody > tr:hover > td {
+      background-color: #fff9f5 !important;
+    }
+
+    .ant-pagination-item-active {
+      border-color: #ff6b35 !important;
+      a {
+        color: #ff6b35 !important;
+      }
+    }
+  }
+}
+
+/* 4. CELL ELEMENTS */
+.main-name-text {
+  font-weight: 700;
+  color: #1e1915;
+  font-size: 0.95rem;
+}
+
+.theme-avatar-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background-color: #fff2eb;
+  border: 1px solid #ffd8c7;
+  color: #ff521b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.text-muted-desc {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+/* Trạng thái Badges */
+.badge-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1;
+
+  i {
+    font-size: 0.75rem;
+  }
+
+  &.badge-active {
+    background-color: #ecfdf5;
+    color: #059669;
+    border: 1px solid #a7f3d0;
+  }
+
+  &.badge-inactive {
+    background-color: #f3f4f6;
+    color: #6b7280;
+    border: 1px solid #e5e7eb;
+  }
+}
+
+/* Hành động Buttons */
+.actions-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .icon-action-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.88rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+
+    &.btn-edit {
+      background-color: #fff5eb;
+      color: #ff6b35;
+      border-color: #ffe3cf;
+
+      &:hover {
+        background-color: #ff6b35;
+        color: #ffffff;
+        border-color: #ff6b35;
+      }
+    }
+
+    &.btn-delete {
+      background-color: #fef2f2;
+      color: #ef4444;
+      border-color: #fee2e2;
+
+      &:hover {
+        background-color: #ef4444;
+        color: #ffffff;
+        border-color: #ef4444;
+      }
+    }
+  }
+}
+
+/* 5. MODAL FORM STYLING */
+.unit-modal-form {
+  .form-label {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #374151;
+  }
+
+  .modern-input {
+    border: 1.5px solid #ede4d6;
+    border-radius: 10px;
+    background-color: #faf7f4;
+    font-size: 0.92rem;
+    font-weight: 500;
+    color: #1e1915;
+    padding: 0.65rem 0.95rem;
+    transition: all 0.2s ease;
+
+    &:focus {
+      background-color: #ffffff;
+      border-color: #ff6b35;
+      box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.15);
+      outline: none;
+    }
+
+    &.is-invalid {
+      border-color: #ef4444;
+      background-color: #fef2f2;
+    }
+  }
+
+  .custom-switch {
+    .form-check-input {
+      cursor: pointer;
+      width: 2.5rem;
+      height: 1.35rem;
+      background-color: #d1d5db;
+      border-color: #d1d5db;
+      transition: background-color 0.2s ease, border-color 0.2s ease;
+
+      &:checked {
+        background-color: #ff6b35;
+        border-color: #ff6b35;
+      }
+
+      &:focus {
+        box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.2);
+      }
+    }
+
+    .form-check-label {
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: #374151;
+    }
+  }
+}

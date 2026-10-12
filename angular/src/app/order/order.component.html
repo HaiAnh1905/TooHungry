@@ -385,7 +385,11 @@
                   @if (isCategoryExpanded(group.categoryName)) {
                     <div class="category-dishes-wrapper">
                       @for (dish of group.dishes; track dish.id) {
-                        <div class="pos-dish-card" [class.is-selected]="getItemQuantityInOrder(dish.id) > 0">
+                        <div
+                          class="pos-dish-card"
+                          [class.is-selected]="getItemQuantityInOrder(dish.id) > 0"
+                          [class.is-out-of-stock]="isDishOutOfStock(dish.id)"
+                        >
                           <!-- Thumbnail ảnh món ăn -->
                           <div class="pos-dish-thumb-box">
                             @if (dish.imageUrl) {
@@ -405,6 +409,12 @@
                           <div class="dish-card-info">
                             <div class="dish-name-row">
                               <span class="dish-title">{{ dish.name }}</span>
+                              @if (isDishOutOfStock(dish.id)) {
+                                <span class="dish-stock-pill-out">
+                                  <i class="fa fa-triangle-exclamation"></i>
+                                  <span>{{ '::OutOfStock' | abpLocalization }}</span>
+                                </span>
+                              }
                             </div>
                             <div class="dish-price-row">
                               <span class="dish-price-val">{{ dish.price | number: '1.0-0' }}</span>
@@ -421,6 +431,7 @@
                             <button
                               type="button"
                               class="btn btn-sm btn-order-dish"
+                              [class.btn-dish-out-of-stock]="isDishOutOfStock(dish.id)"
                               (click)="addDishToOrder(dish)"
                             >
                               <i class="fa fa-cart-plus"></i>
@@ -530,60 +541,74 @@
             <!-- Danh sách món đã đặt trong formArray items -->
             <div formArrayName="items" class="cart-items-scroll mb-2">
               @for (itemGroup of orderItemsArray.controls; track $index) {
-                <div [formGroupName]="$index" class="pos-cart-item-row">
-                  <div class="cart-item-info">
-                    <div class="cart-item-name">
-                      {{ getDishName(itemGroup.get('dishId')?.value) }}
+                <div
+                  [formGroupName]="$index"
+                  class="pos-cart-item-row"
+                  [class.has-stock-warning]="getDishStockWarning(itemGroup.get('dishId')?.value, itemGroup.get('quantity')?.value)"
+                >
+                  <div class="cart-item-main">
+                    <div class="cart-item-info">
+                      <div class="cart-item-name">
+                        {{ getDishName(itemGroup.get('dishId')?.value) }}
+                      </div>
+                      <div class="cart-item-unit-price">
+                        {{ itemGroup.get('unitPrice')?.value | number: '1.0-0' }} đ
+                      </div>
                     </div>
-                    <div class="cart-item-unit-price">
-                      {{ itemGroup.get('unitPrice')?.value | number: '1.0-0' }} đ
-                    </div>
-                  </div>
 
-                  <!-- Stepper tăng giảm số lượng [-] [qty] [+] -->
-                  <div class="quantity-stepper-wrap">
+                    <!-- Stepper tăng giảm số lượng [-] [qty] [+] -->
+                    <div class="quantity-stepper-wrap">
+                      <button
+                        type="button"
+                        class="stepper-btn btn-minus"
+                        (click)="decreaseQuantity($index)"
+                        title="Giảm"
+                      >
+                        <i class="fa fa-minus"></i>
+                      </button>
+                      <input
+                        type="number"
+                        min="1"
+                        class="stepper-input"
+                        formControlName="quantity"
+                        (input)="calculateTotal()"
+                      />
+                      <button
+                        type="button"
+                        class="stepper-btn btn-plus"
+                        (click)="increaseQuantity($index)"
+                        title="Tăng"
+                      >
+                        <i class="fa fa-plus"></i>
+                      </button>
+                    </div>
+
+                    <!-- Thành tiền của dòng món -->
+                    <div class="cart-item-total">
+                      <span class="total-num">
+                        {{ (itemGroup.get('unitPrice')?.value * itemGroup.get('quantity')?.value) | number: '1.0-0' }}
+                      </span>
+                      <span class="total-curr">đ</span>
+                    </div>
+
+                    <!-- Nút xóa món -->
                     <button
                       type="button"
-                      class="stepper-btn btn-minus"
-                      (click)="decreaseQuantity($index)"
-                      title="Giảm"
+                      class="btn-remove-cart-item"
+                      (click)="removeOrderItem($index)"
+                      [title]="'::Delete' | abpLocalization"
                     >
-                      <i class="fa fa-minus"></i>
-                    </button>
-                    <input
-                      type="number"
-                      min="1"
-                      class="stepper-input"
-                      formControlName="quantity"
-                      (input)="calculateTotal()"
-                    />
-                    <button
-                      type="button"
-                      class="stepper-btn btn-plus"
-                      (click)="increaseQuantity($index)"
-                      title="Tăng"
-                    >
-                      <i class="fa fa-plus"></i>
+                      <i class="fa fa-times"></i>
                     </button>
                   </div>
 
-                  <!-- Thành tiền của dòng món -->
-                  <div class="cart-item-total">
-                    <span class="total-num">
-                      {{ (itemGroup.get('unitPrice')?.value * itemGroup.get('quantity')?.value) | number: '1.0-0' }}
-                    </span>
-                    <span class="total-curr">đ</span>
-                  </div>
-
-                  <!-- Nút xóa món -->
-                  <button
-                    type="button"
-                    class="btn-remove-cart-item"
-                    (click)="removeOrderItem($index)"
-                    [title]="'::Delete' | abpLocalization"
-                  >
-                    <i class="fa fa-times"></i>
-                  </button>
+                  <!-- Banner cảnh báo hết / thiếu nguyên liệu trong kho -->
+                  @if (getDishStockWarning(itemGroup.get('dishId')?.value, itemGroup.get('quantity')?.value); as warning) {
+                    <div class="cart-item-stock-warning">
+                      <i class="fa fa-triangle-exclamation"></i>
+                      <span [innerHTML]="warning"></span>
+                    </div>
+                  }
                 </div>
               }
 
@@ -642,7 +667,7 @@
       <button
         form="order-form"
         class="btn btn-order-modal-submit"
-        [disabled]="form?.invalid || orderItemsArray.length === 0 || isOrderCompleted"
+        [disabled]="form?.invalid || orderItemsArray.length === 0 || isOrderCompleted || !hasOrderChanged"
       >
         <i class="fa fa-save"></i>
         <span>{{ (selectedItem?.id ? '::UpdateOrder' : '::AddNewOrder') | abpLocalization }}</span>

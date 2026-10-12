@@ -1,48 +1,37 @@
+import type { TableStatus } from './table-status.enum';
 import type { FullAuditedEntityDto, PagedAndSortedResultRequestDto } from '@abp/ng.core';
 
-export enum TableStatus {
-  Available = 0,
-  Occupied = 1,
-  Reserved = 2,
-  Disabled = 3,
-}
-
-export const tableStatusOptions = [
-  { value: TableStatus.Available, key: '::TableStatusAvailable' },
-  { value: TableStatus.Occupied, key: '::TableStatusOccupied' },
-  { value: TableStatus.Reserved, key: '::TableStatusReserved' },
-  { value: TableStatus.Disabled, key: '::TableStatusDisabled' },
-];
-
-export interface TableDto extends FullAuditedEntityDto<string> {
-  name: string;
-  capacity: number;
-  status: TableStatus;
-  diningAreaId?: string;
-  diningAreaName?: string;
-  location?: string;
-  reservedCustomerName?: string;
-  reservedCustomerPhone?: string;
-  reservedTime?: string;
-  reservedGuestCount?: number;
-  reservedNote?: string;
-}
-
 export interface CreateUpdateTableDto {
-  name: string;
-  capacity: number;
-  status: TableStatus;
-  diningAreaId?: string;
-  location?: string;
-  reservedCustomerName?: string;
-  reservedCustomerPhone?: string;
-  reservedTime?: string;
-  reservedGuestCount?: number;
-  reservedNote?: string;
+  name?: string;
+  capacity?: number;
+  status?: TableStatus;
+  diningAreaId?: string | null;
+  location?: string | null;
+  reservedCustomerName?: string | null;
+  reservedCustomerPhone?: string | null;
+  reservedTime?: string | null;
+  reservedGuestCount?: number | null;
+  reservedNote?: string | null;
 }
 
 export interface GetTablesInput extends PagedAndSortedResultRequestDto {
-  filter?: string;
+  filter?: string | null;
+  status?: TableStatus | null;
+  diningAreaId?: string | null;
+}
+
+export interface TableDto extends FullAuditedEntityDto<string> {
+  name?: string;
+  capacity?: number;
   status?: TableStatus;
-  diningAreaId?: string;
+  diningAreaId?: string | null;
+  diningAreaName?: string | null;
+  location?: string | null;
+  reservedCustomerName?: string | null;
+  reservedCustomerPhone?: string | null;
+  reservedTime?: string | null;
+  reservedGuestCount?: number | null;
+  reservedNote?: string | null;
+  activeOrderId?: string | null;
+  hasActiveOrder?: boolean;
 }

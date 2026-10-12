@@ -1,4 +1,4 @@
-﻿namespace Acme.TooHungry;
+namespace Acme.TooHungry;
 
 public static class TooHungryDomainErrorCodes
 {

@@ -1,0 +1,236 @@
+<abp-modal
+  [(visible)]="visible"
+  (visibleChange)="visibleChange.emit($event)"
+  [options]="{ size: 'lg', centered: true, windowClass: 'modal-stock-adjustment' }"
+  [suppressUnsavedChangesWarning]="true"
+>
+  <ng-template #abpHeader>
+    <div class="d-flex align-items-center gap-3">
+      <div class="modal-header-icon shadow-sm">
+        <i class="fa fa-sliders"></i>
+      </div>
+      <div>
+        <h5 class="m-0 modal-title-text">
+          {{ '::StockAdjustment' | abpLocalization }}
+        </h5>
+        <span class="modal-subtitle-text">
+          {{ ingredient?.name }} &bull; {{ '::UnitLabel' | abpLocalization }}: <strong>{{ ingredient?.baseUnit || ingredient?.unitName }}</strong>
+        </span>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #abpBody>
+    <form [formGroup]="form" (ngSubmit)="submit()" class="stock-adjustment-form">
+      <!-- Thẻ so sánh Tồn kho -->
+      <div class="metrics-card mb-3">
+        <div class="row g-3 align-items-center">
+          <!-- Tồn hệ thống -->
+          <div class="col-sm-4 text-center border-end">
+            <div class="metric-label">{{ '::SystemQuantity' | abpLocalization }}</div>
+            <div class="metric-value-display">
+              {{ systemQuantity }}
+              <span class="metric-unit">{{ ingredient?.baseUnit || ingredient?.unitName }}</span>
+            </div>
+          </div>
+
+          <!-- Tồn thực tế -->
+          <div class="col-sm-4 text-center border-end">
+            <label for="actual-qty" class="metric-label d-block text-primary">
+              {{ '::ActualQuantity' | abpLocalization }} *
+            </label>
+            <input
+              id="actual-qty"
+              type="number"
+              class="form-control metric-input text-center mx-auto"
+              formControlName="actualQuantity"
+              (ngModelChange)="onActualQuantityChange()"
+              min="0"
+              step="any"
+              placeholder="0"
+            />
+          </div>
+
+          <!-- Chênh lệch -->
+          <div class="col-sm-4 text-center">
+            <div class="metric-label">{{ '::Difference' | abpLocalization }}</div>
+            @if (difference === 0) {
+              <div class="diff-badge neutral">
+                <i class="fa fa-check-circle me-1"></i> {{ '::DiffAccurate' | abpLocalization }}
+              </div>
+            } @else if (difference > 0) {
+              <div class="diff-badge surplus">
+                <i class="fa fa-arrow-trend-up me-1"></i> +{{ difference }} ({{ '::DiffSurplus' | abpLocalization }})
+              </div>
+            } @else {
+              <div class="diff-badge shortage">
+                <i class="fa fa-arrow-trend-down me-1"></i> {{ difference }} ({{ '::DiffShortage' | abpLocalization }})
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Bảng chọn lô hàng khi chênh lệch âm (Difference < 0) -->
+      @if (difference < 0) {
+        <div class="deduction-panel mb-3">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+            <div class="d-flex align-items-center gap-2">
+              <span class="fw-bold text-dark small">
+                <i class="fa fa-boxes-stacked text-warning me-1"></i>
+                {{ '::AllocateShortageToBatches' | abpLocalization }}
+              </span>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-warning text-dark py-0 px-2 rounded-pill small fw-semibold"
+                (click)="autoAllocateFifo()"
+                [title]="'::AutoAllocateFifoTooltip' | abpLocalization"
+              >
+                <i class="fa fa-wand-magic-sparkles text-warning me-1"></i> {{ '::AutoAllocateFifo' | abpLocalization }}
+              </button>
+            </div>
+
+            <div class="small">
+              <span class="text-muted">{{ '::SelectedAmount' | abpLocalization }} </span>
+              <span
+                class="badge px-2 py-1 rounded-pill"
+                [class.bg-danger]="isDeductionMismatch"
+                [class.bg-success]="!isDeductionMismatch"
+              >
+                {{ totalDeductionFromBatches }} / {{ shortageAmount }} {{ ingredient?.baseUnit || ingredient?.unitName }}
+              </span>
+            </div>
+          </div>
+
+          @if (isLoadingBatches) {
+            <div class="text-center py-4 bg-white rounded-3">
+              <div class="spinner-border spinner-border-sm text-warning me-2"></div>
+              <span class="small text-muted">Đang tải danh sách lô hàng...</span>
+            </div>
+          } @else if (availableBatches.length === 0) {
+            <div class="alert alert-warning py-2 mb-0 small rounded-3">
+              <i class="fa fa-triangle-exclamation me-1"></i>
+              Không tìm thấy lô hàng khả dụng nào để trừ hao hụt.
+            </div>
+          } @else {
+            <div class="table-responsive bg-white rounded-3 shadow-sm border">
+              <table class="table table-sm deduction-table align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th class="ps-3">Mã Lô</th>
+                    <th>Hạn sử dụng</th>
+                    <th class="text-end">Tồn kho lô</th>
+                    <th class="text-end pe-3" style="width: 190px;">Số lượng trừ</th>
+                  </tr>
+                </thead>
+                <tbody formArrayName="batchDeductions">
+                  @for (row of batchDeductionsArray.controls; track $index) {
+                    <tr [formGroupName]="$index">
+                      <td class="ps-3">
+                        <span class="badge bg-light text-dark border font-monospace px-2 py-1">
+                          {{ row.get('batchCode')?.value }}
+                        </span>
+                      </td>
+                      <td class="small text-muted">
+                        <i class="fa fa-calendar-alt me-1 text-muted"></i>
+                        {{ availableBatches[$index]?.expiryDate ? (availableBatches[$index].expiryDate | date:'dd/MM/yyyy') : 'Không hạn' }}
+                      </td>
+                      <td class="text-end fw-bold text-dark">
+                        {{ row.get('remainingQuantity')?.value }}
+                        <span class="small text-muted fw-normal">{{ ingredient?.baseUnit || ingredient?.unitName }}</span>
+                      </td>
+                      <td class="pe-3">
+                        <div class="input-group input-group-sm flex-nowrap">
+                          <input
+                            type="number"
+                            class="form-control text-end fw-bold input-qty-deduct"
+                            formControlName="quantity"
+                            min="0"
+                            [max]="row.get('remainingQuantity')?.value"
+                            step="any"
+                          />
+                          <button
+                            type="button"
+                            class="btn btn-btn-max"
+                            (click)="setMaxDeduction($index)"
+                            title="Trừ tối đa cho lô này và tự cân đối các lô khác"
+                          >
+                            Max
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            @if (isDeductionMismatch) {
+              <div class="alert alert-danger py-2 px-3 mt-2 mb-0 small rounded-3 d-flex align-items-center gap-2">
+                <i class="fa fa-circle-exclamation fs-6"></i>
+                <div>
+                  Tổng số lượng trừ (<strong>{{ totalDeductionFromBatches }}</strong>) phải khớp chính xác lượng thiếu hụt (<strong>{{ shortageAmount }}</strong>).
+                  <a href="javascript:void(0)" (click)="autoAllocateFifo()" class="alert-link ms-1 text-decoration-underline">
+                    Bấm vào đây để tự động khớp
+                  </a>
+                </div>
+              </div>
+            }
+          }
+        </div>
+      }
+
+      <!-- Lý do điều chỉnh (Bắt buộc) -->
+      <div class="form-group mb-2">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <label for="adjust-reason" class="form-label fw-bold text-dark small m-0">
+            {{ '::AdjustmentReason' | abpLocalization }} <span class="text-danger">*</span>
+          </label>
+          <div class="d-flex gap-1 flex-wrap">
+            <button type="button" class="btn btn-quick-tag" (click)="setQuickReason('Kiểm kê định kỳ')">
+              Kiểm kê định kỳ
+            </button>
+            <button type="button" class="btn btn-quick-tag" (click)="setQuickReason('Hao hụt tự nhiên / hỏng')">
+              Hao hụt / Hỏng
+            </button>
+            <button type="button" class="btn btn-quick-tag" (click)="setQuickReason('Sai lệch khi nhập kho')">
+              Sai lệch nhập kho
+            </button>
+          </div>
+        </div>
+
+        <textarea
+          id="adjust-reason"
+          class="form-control reason-textarea"
+          rows="3"
+          formControlName="reason"
+          [placeholder]="'::AdjustmentReasonPlaceholder' | abpLocalization"
+        ></textarea>
+        @if (form.get('reason')?.invalid && (form.get('reason')?.dirty || form.get('reason')?.touched)) {
+          <small class="text-danger d-block mt-1">
+            <i class="fa fa-circle-exclamation me-1"></i> {{ '::FieldRequired' | abpLocalization }}
+          </small>
+        }
+      </div>
+    </form>
+  </ng-template>
+
+  <ng-template #abpFooter>
+    <button type="button" class="btn btn-modal-close" (click)="close()" [disabled]="isSubmitting">
+      {{ '::Close' | abpLocalization }}
+    </button>
+    <button
+      type="button"
+      class="btn btn-modal-save"
+      (click)="submit()"
+      [disabled]="form.invalid || (difference < 0 && isDeductionMismatch) || isSubmitting"
+    >
+      @if (isSubmitting) {
+        <i class="fa fa-spinner fa-spin me-1"></i> Đang lưu...
+      } @else {
+        <i class="fa fa-check me-1"></i>
+        <span>{{ '::Save' | abpLocalization }}</span>
+      }
+    </button>
+  </ng-template>
+</abp-modal>

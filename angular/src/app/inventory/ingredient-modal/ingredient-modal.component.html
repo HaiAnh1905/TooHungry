@@ -1,0 +1,171 @@
+<abp-modal
+  [(visible)]="visible"
+  (visibleChange)="visibleChange.emit($event)"
+  [options]="{ size: 'lg', centered: true }"
+>
+  <ng-template #abpHeader>
+    <div class="d-flex align-items-center gap-3">
+      <div class="modal-header-icon">
+        <i class="fa fa-cubes-stacked"></i>
+      </div>
+      <div>
+        <h5 class="m-0 modal-title-text">
+          {{ (ingredient ? ('::UpdateIngredientTitle' | abpLocalization) : ('::CreateIngredientTitle' | abpLocalization)) }}
+        </h5>
+        <span class="modal-subtitle-text">
+          {{ '::IngredientModalSubtitle' | abpLocalization }}
+        </span>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #abpBody>
+    <form [formGroup]="form" (ngSubmit)="save()" class="ingredient-form">
+      <!-- Tên nguyên liệu -->
+      <div class="mb-3">
+        <label for="ing-name" class="form-label fw-bold small text-dark">
+          {{ '::Name' | abpLocalization }} <span class="text-danger">*</span>
+        </label>
+        <input
+          id="ing-name"
+          type="text"
+          class="form-control"
+          formControlName="name"
+          [placeholder]="'::IngredientNamePlaceholder' | abpLocalization"
+        />
+        @if (form.get('name')?.invalid && (form.get('name')?.dirty || form.get('name')?.touched)) {
+          <small class="text-danger d-block mt-1">{{ '::FieldRequired' | abpLocalization }}</small>
+        }
+      </div>
+
+      <!-- Mã & Đơn vị -->
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <label for="ing-code" class="form-label fw-bold small text-dark">{{ '::IngredientCode' | abpLocalization }}</label>
+          <input
+            id="ing-code"
+            type="text"
+            class="form-control text-uppercase"
+            style="text-transform: uppercase;"
+            formControlName="code"
+            (input)="onCodeInput($event)"
+            placeholder="Ví dụ: ING-BEEF-01"
+          />
+        </div>
+        <div class="col-md-6">
+          <label for="ing-unit" class="form-label fw-bold small text-dark">
+            {{ '::WarehouseUnit' | abpLocalization }} <span class="text-danger">*</span>
+          </label>
+          <app-custom-select
+            class="w-100 d-block"
+            [options]="unitOptions"
+            formControlName="unitId"
+            [placeholder]="'::SelectWarehouseUnitPlaceholder' | abpLocalization"
+            leadIcon="fa-balance-scale"
+            minWidth="100%"
+            [searchable]="true"
+          ></app-custom-select>
+          @if (form.get('unitId')?.invalid && (form.get('unitId')?.dirty || form.get('unitId')?.touched)) {
+            <small class="text-danger d-block mt-1">{{ '::FieldRequired' | abpLocalization }}</small>
+          }
+        </div>
+      </div>
+
+      <!-- Định mức tồn kho tối thiểu -->
+      <div class="mb-3">
+        <label for="ing-min-stock" class="form-label fw-bold small text-dark">
+          {{ '::MinStockLabel' | abpLocalization }} <span class="text-danger">*</span>
+        </label>
+        <input
+          id="ing-min-stock"
+          type="number"
+          class="form-control"
+          formControlName="minStock"
+          min="0"
+          step="any"
+        />
+        <small class="text-muted">{{ '::MinStockHint' | abpLocalization }}</small>
+      </div>
+
+      <!-- Loại vòng đời bảo quản (StorageType - T044) -->
+      <div class="mb-3">
+        <label class="form-label fw-bold small text-dark d-block">
+          {{ '::StorageType' | abpLocalization }} <span class="text-danger">*</span>
+        </label>
+        <div class="storage-type-options d-flex flex-column gap-2">
+          <!-- FRESH -->
+          <label class="storage-card-option" [class.selected]="form.get('storageType')?.value === StorageTypeEnum.FRESH">
+            <input
+              type="radio"
+              class="form-check-input me-2 mt-0"
+              formControlName="storageType"
+              [value]="StorageTypeEnum.FRESH"
+            />
+            <div class="storage-card-info">
+              <strong class="text-dark d-block">{{ '::StorageFresh' | abpLocalization }}</strong>
+              <small class="text-muted">{{ '::StorageFreshDesc' | abpLocalization }}</small>
+            </div>
+          </label>
+
+          <!-- SHORT_TERM -->
+          <label class="storage-card-option" [class.selected]="form.get('storageType')?.value === StorageTypeEnum.SHORT_TERM">
+            <input
+              type="radio"
+              class="form-check-input me-2 mt-0"
+              formControlName="storageType"
+              [value]="StorageTypeEnum.SHORT_TERM"
+            />
+            <div class="storage-card-info">
+              <strong class="text-dark d-block">{{ '::StorageShortTerm' | abpLocalization }}</strong>
+              <small class="text-muted">{{ '::StorageShortTermDesc' | abpLocalization }}</small>
+            </div>
+          </label>
+
+          <!-- LONG_TERM -->
+          <label class="storage-card-option" [class.selected]="form.get('storageType')?.value === StorageTypeEnum.LONG_TERM">
+            <input
+              type="radio"
+              class="form-check-input me-2 mt-0"
+              formControlName="storageType"
+              [value]="StorageTypeEnum.LONG_TERM"
+            />
+            <div class="storage-card-info">
+              <strong class="text-dark d-block">{{ '::StorageLongTerm' | abpLocalization }}</strong>
+              <small class="text-muted">{{ '::StorageLongTermDesc' | abpLocalization }}</small>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Phương thức tiêu hao (ConsumptionMethod) -->
+      <div class="mb-3">
+        <label for="ing-consumption" class="form-label fw-bold small text-dark">
+          {{ '::ConsumptionMethod' | abpLocalization }} <span class="text-danger">*</span>
+        </label>
+        <app-custom-select
+          class="w-100 d-block"
+          [options]="consumptionMethodOptions"
+          formControlName="consumptionMethod"
+          [placeholder]="'::SelectConsumptionMethodPlaceholder' | abpLocalization"
+          leadIcon="fa-gear"
+          minWidth="100%"
+        ></app-custom-select>
+      </div>
+    </form>
+  </ng-template>
+
+  <ng-template #abpFooter>
+    <button type="button" class="btn btn-outline-secondary" (click)="close()">
+      {{ '::Close' | abpLocalization }}
+    </button>
+    <button
+      type="button"
+      class="btn btn-orange"
+      (click)="save()"
+      [disabled]="form.invalid || isSaving"
+    >
+      <i class="fa fa-check me-1" [class.fa-spin]="isSaving"></i>
+      <span>{{ '::Save' | abpLocalization }}</span>
+    </button>
+  </ng-template>
+</abp-modal>

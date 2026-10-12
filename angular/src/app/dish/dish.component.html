@@ -1,6 +1,8 @@
 <div class="dish-management-page">
   <!-- 1. TOP HEADER: Tiêu đề & Nút Thêm mới -->
-  <div class="page-header-row d-flex align-items-center justify-content-between flex-wrap gap-3 mb-3">
+  <div
+    class="page-header-row d-flex align-items-center justify-content-between flex-wrap gap-3 mb-3"
+  >
     <div>
       <h2 class="page-title m-0">
         {{ '::ManageDishes' | abpLocalization }}
@@ -22,7 +24,45 @@
     </div>
   </div>
 
-  <!-- 2. FILTER CARD: Ô tìm kiếm toàn chiều ngang & Dropdown lọc -->
+  <!-- 2. TABS BAR: Phân loại Tất cả / Đang phục vụ / Tạm ngưng kèm Badge đếm -->
+  <div class="dish-tabs-wrapper mb-3">
+    <div class="dish-tabs-list d-flex align-items-center gap-2">
+      <button
+        type="button"
+        class="dish-tab-button"
+        [class.active]="activeTab === 'all'"
+        (click)="setTab('all')"
+      >
+        <i class="fa fa-utensils"></i>
+        <span>{{ '::AllDishes' | abpLocalization }}</span>
+        <span class="tab-count-badge">{{ allCount }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="dish-tab-button active-tab-state"
+        [class.active]="activeTab === 'active'"
+        (click)="setTab('active')"
+      >
+        <i class="fa fa-check-circle"></i>
+        <span>{{ '::ActiveDishes' | abpLocalization }}</span>
+        <span class="tab-count-badge badge-active">{{ activeCount }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="dish-tab-button inactive-tab-state"
+        [class.active]="activeTab === 'inactive'"
+        (click)="setTab('inactive')"
+      >
+        <i class="fa fa-pause-circle"></i>
+        <span>{{ '::InactiveDishes' | abpLocalization }}</span>
+        <span class="tab-count-badge badge-inactive">{{ inactiveCount }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 3. FILTER CARD: Ô tìm kiếm toàn chiều ngang & Dropdown lọc -->
   <div class="filter-card-container mb-4">
     <!-- Hàng tìm kiếm -->
     <div class="search-input-wrapper mb-3">
@@ -67,8 +107,54 @@
     </div>
   </div>
 
-  <!-- 3. DATA TABLE CARD & PAGINATION FOOTER -->
+  <!-- 4. DATA TABLE CARD & PAGINATION FOOTER -->
   <div class="data-card-wrapper" #tableWrapper>
+    <!-- Bulk Actions Bar -->
+    @if (selectedDishIds.size > 0) {
+      <div
+        class="bulk-actions-bar d-flex align-items-center justify-content-between flex-wrap gap-3 mb-3 p-2 px-3"
+      >
+        <div class="d-flex align-items-center gap-3">
+          <span class="bulk-selected-badge">
+            <i class="fa fa-check-square me-1"></i>
+            {{ '::SelectedCount' | abpLocalization: selectedDishIds.size + '' }}
+          </span>
+          <span class="bulk-info-text">
+            {{ '::BulkActionsPrompt' | abpLocalization }}
+          </span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <button
+            type="button"
+            class="btn btn-sm btn-bulk-activate"
+            [disabled]="isBulkOperating"
+            (click)="bulkToggleActive(true)"
+          >
+            <i class="fa fa-play-circle me-1"></i>
+            <span>{{ '::BulkActivate' | abpLocalization }}</span>
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm btn-bulk-deactivate"
+            [disabled]="isBulkOperating"
+            (click)="bulkToggleActive(false)"
+          >
+            <i class="fa fa-pause-circle me-1"></i>
+            <span>{{ '::BulkDeactivate' | abpLocalization }}</span>
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm btn-bulk-clear"
+            (click)="clearSelection()"
+            [title]="'::ClearSelection' | abpLocalization"
+          >
+            <i class="fa fa-times me-1"></i>
+            <span>{{ '::Cancel' | abpLocalization }}</span>
+          </button>
+        </div>
+      </div>
+    }
+
     <ngx-datatable
       #table
       class="sedap-modern-table"
@@ -82,20 +168,53 @@
       [headerHeight]="48"
       [messages]="{
         emptyMessage: '::NoDataAvailable' | abpLocalization,
-        totalMessage: '::DishCount' | abpLocalization
+        totalMessage: '::DishCount' | abpLocalization,
       }"
-      [rowHeight]="52"
+      [rowHeight]="56"
     >
+      <!-- Cột Checkbox -->
+      <ngx-datatable-column
+        [width]="48"
+        [minWidth]="45"
+        [maxWidth]="55"
+        [canAutoResize]="false"
+        [sortable]="false"
+      >
+        <ng-template ngx-datatable-header-template>
+          <div class="d-flex justify-content-center align-items-center w-100">
+            <input
+              type="checkbox"
+              class="form-check-input select-all-checkbox m-0"
+              [checked]="isAllSelected()"
+              (click)="toggleSelectAll($event)"
+              [title]="'::SelectAll' | abpLocalization"
+            />
+          </div>
+        </ng-template>
+        <ng-template let-row="row" ngx-datatable-cell-template>
+          <div class="d-flex justify-content-center align-items-center w-100">
+            <input
+              type="checkbox"
+              class="form-check-input dish-row-checkbox m-0"
+              [checked]="isSelected(row.id)"
+              (click)="toggleSelect(row.id, $event)"
+            />
+          </div>
+        </ng-template>
+      </ngx-datatable-column>
+
       <!-- Cột 1: STT -->
       <ngx-datatable-column
-        [width]="70"
-        [minWidth]="60"
+        [width]="65"
+        [minWidth]="55"
         [maxWidth]="75"
         [canAutoResize]="false"
         [sortable]="false"
       >
         <ng-template ngx-datatable-header-template>
-          <span class="w-100 text-center header-title-centered">{{ '::Index' | abpLocalization }}</span>
+          <span class="w-100 text-center header-title-centered">{{
+            '::Index' | abpLocalization
+          }}</span>
         </ng-template>
         <ng-template let-rowIndex="rowIndex" ngx-datatable-cell-template>
           <span class="stt-text">{{ list.page * list.maxResultCount + rowIndex + 1 }}</span>
@@ -106,39 +225,60 @@
       <ngx-datatable-column
         [name]="'::DishName' | abpLocalization"
         prop="name"
-        [width]="230"
-        [minWidth]="180"
-        [maxWidth]="260"
-        [canAutoResize]="false"
+        [minWidth]="220"
+        [flexGrow]="4"
+        [canAutoResize]="true"
       >
         <ng-template let-row="row" ngx-datatable-cell-template>
-          <div class="d-flex align-items-center text-truncate gap-2">
+          <div class="d-flex align-items-center text-truncate gap-2 w-100">
             @if (row.imageUrl) {
-              <div class="dish-thumb-box">
+              <div class="dish-thumb-box flex-shrink-0">
                 <img
                   [src]="row.imageUrl"
                   [alt]="row.name"
                   class="dish-table-thumbnail"
-                  (error)="onImgError($event)"
+                  appImgFallback
                 />
               </div>
             } @else {
-              <div class="dish-avatar-icon">
+              <div class="dish-avatar-icon flex-shrink-0">
                 <i class="fa fa-utensils"></i>
               </div>
             }
-            <span class="dish-name-text text-truncate" [title]="row.name">{{ row.name }}</span>
+            <div class="d-flex flex-column text-truncate">
+              <div class="d-flex align-items-center gap-1">
+                <span class="dish-name-text text-truncate" [title]="row.name">{{ row.name }}</span>
+                @if (!row.isActive && row.deletionReason) {
+                  <span
+                    class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle flex-shrink-0"
+                    style="font-size: 0.72rem;"
+                    [title]="row.deletionReason"
+                  >
+                    <i class="fa fa-triangle-exclamation me-1"></i>{{ '::HasDeactivatedIngredient' | abpLocalization }}
+                  </span>
+                }
+              </div>
+              @if (row.description) {
+                <small
+                  class="text-muted text-truncate"
+                  style="font-size: 0.76rem; max-width: 320px"
+                  [title]="row.description"
+                >
+                  {{ row.description }}
+                </small>
+              }
+            </div>
           </div>
         </ng-template>
       </ngx-datatable-column>
 
-      <!-- Cột 3: Danh mục món ăn (Category) - Thu gọn vừa vặn pill -->
+      <!-- Cột 3: Danh mục món ăn (Category) -->
       <ngx-datatable-column
         [name]="'::Category' | abpLocalization"
         prop="dishCategoryName"
-        [width]="130"
-        [minWidth]="110"
-        [maxWidth]="150"
+        [width]="135"
+        [minWidth]="115"
+        [maxWidth]="155"
         [canAutoResize]="false"
         [sortable]="false"
       >
@@ -149,29 +289,13 @@
         </ng-template>
       </ngx-datatable-column>
 
-      <!-- Cột 4: Mô tả món ăn (Description) - Mở rộng tối đa không gian hiển thị -->
-      <ngx-datatable-column
-        [name]="'::Description' | abpLocalization"
-        prop="description"
-        [minWidth]="320"
-        [flexGrow]="5"
-        [canAutoResize]="true"
-        [sortable]="false"
-      >
-        <ng-template let-row="row" ngx-datatable-cell-template>
-          <span class="text-truncate d-inline-block w-100" style="color: #475569; font-size: 0.88rem;" [title]="row.description || ''">
-            {{ row.description || '—' }}
-          </span>
-        </ng-template>
-      </ngx-datatable-column>
-
-      <!-- Cột 5: Giá bán (Price) -->
+      <!-- Cột 4: Giá bán (Price - Decimal VND) -->
       <ngx-datatable-column
         [name]="'::Price' | abpLocalization"
         prop="price"
-        [width]="175"
-        [minWidth]="155"
-        [maxWidth]="200"
+        [width]="145"
+        [minWidth]="125"
+        [maxWidth]="165"
         [canAutoResize]="false"
       >
         <ng-template let-row="row" ngx-datatable-cell-template>
@@ -182,19 +306,55 @@
         </ng-template>
       </ngx-datatable-column>
 
-      <!-- Cột 5: Thao tác (Actions) -->
+      <!-- Cột 5: Trạng thái phục vụ (IsActive Switch) -->
       <ngx-datatable-column
-        [width]="120"
-        [minWidth]="110"
-        [maxWidth]="130"
+        [name]="'::Status' | abpLocalization"
+        [width]="165"
+        [minWidth]="150"
+        [maxWidth]="180"
+        [canAutoResize]="false"
+        [sortable]="false"
+      >
+        <ng-template let-row="row" ngx-datatable-cell-template>
+          <div class="form-check form-switch d-flex align-items-center gap-2 m-0 p-0 text-nowrap">
+            <input
+              class="form-check-input switch-dish-active m-0"
+              type="checkbox"
+              role="switch"
+              [checked]="row.isActive"
+              (click)="toggleActive(row, $event)"
+              [title]="(row.isActive ? '::ActiveDishes' : '::InactiveDishes') | abpLocalization"
+            />
+            <span class="status-indicator-label text-nowrap" [class.active]="row.isActive">
+              {{ (row.isActive ? '::ActiveDishes' : '::InactiveDishes') | abpLocalization }}
+            </span>
+          </div>
+        </ng-template>
+      </ngx-datatable-column>
+
+      <!-- Cột Thao tác (Actions) -->
+      <ngx-datatable-column
+        [width]="150"
+        [minWidth]="140"
+        [maxWidth]="165"
         [canAutoResize]="false"
         [sortable]="false"
       >
         <ng-template ngx-datatable-header-template>
-          <span class="w-100 text-center header-title-centered">{{ '::Actions' | abpLocalization }}</span>
+          <span class="w-100 text-center header-title-centered">{{
+            '::Actions' | abpLocalization
+          }}</span>
         </ng-template>
         <ng-template let-row="row" ngx-datatable-cell-template>
           <div class="actions-container">
+            <button
+              type="button"
+              class="icon-action-btn btn-recipe"
+              (click)="openRecipeModal(row)"
+              [title]="'::Recipe' | abpLocalization"
+            >
+              <i class="fa fa-book-open"></i>
+            </button>
             <button
               type="button"
               class="icon-action-btn btn-edit"
@@ -206,7 +366,7 @@
             <button
               type="button"
               class="icon-action-btn btn-delete"
-              (click)="delete(row.id)"
+              (click)="openDeleteModal(row)"
               [title]="'::DeleteDish' | abpLocalization"
             >
               <i class="fa fa-trash-alt"></i>
@@ -216,8 +376,10 @@
       </ngx-datatable-column>
     </ngx-datatable>
 
-    <!-- 4. CUSTOM FOOTER PAGINATION BAR -->
-    <div class="custom-table-footer d-flex align-items-center justify-content-between flex-wrap gap-3">
+    <!-- 5. CUSTOM FOOTER PAGINATION BAR -->
+    <div
+      class="custom-table-footer d-flex align-items-center justify-content-between flex-wrap gap-3"
+    >
       <!-- Bên trái: Số lượng bản ghi + Select số dòng -->
       <div class="d-flex align-items-center flex-wrap gap-3">
         <span class="records-summary-text">
@@ -242,7 +404,7 @@
       </div>
 
       <!-- Bên phải: Dãy nút điều hướng phân trang -->
-      <div class="d-flex align-items-center pagination-btn-group" style="gap: 5px;">
+      <div class="d-flex align-items-center pagination-btn-group" style="gap: 5px">
         <button
           type="button"
           class="btn-page-nav"
@@ -292,7 +454,7 @@
   </div>
 </div>
 
-<!-- Modal Thêm/Sửa Món ăn (Redesigned) -->
+<!-- Modal Thêm/Sửa Món ăn -->
 <abp-modal [(visible)]="isModalOpen">
   <ng-template #abpHeader>
     <div class="d-flex align-items-center gap-3">
@@ -312,260 +474,168 @@
 
   <ng-template #abpBody>
     <form id="dish-form" [formGroup]="form" (ngSubmit)="save()" class="dish-modal-form">
-      <!-- 1. Tên món ăn -->
-      <div class="form-field-group mb-3">
+      <!-- Tên món ăn -->
+      <div class="form-field-group mb-2">
         <label for="dish-name" class="field-label">
           <span>{{ '::DishName' | abpLocalization }}</span>
           <span class="required-star">*</span>
         </label>
-        <div class="input-with-icon">
-          <i class="fa fa-utensils input-icon"></i>
-          <input
-            type="text"
-            id="dish-name"
-            class="form-control custom-form-input"
-            formControlName="name"
-            [placeholder]="'::EnterDishName' | abpLocalization"
-            [skipValidation]="true"
-            autofocus
-          />
-        </div>
-        @if (form.get('name')?.invalid && (form.get('name')?.touched || form.get('name')?.dirty)) {
-          <div class="field-validation-error">
-            <i class="fa fa-exclamation-circle"></i>
-            <span>{{ { key: '::FieldRequired', defaultValue: 'This field is required.' } | abpLocalization }}</span>
+        <input
+          type="text"
+          id="dish-name"
+          class="form-control modern-input"
+          formControlName="name"
+          [placeholder]="'::EnterDishName' | abpLocalization"
+          autofocus
+        />
+      </div>
+
+      <!-- Hàng 2: Giá bán & Danh mục -->
+      <div class="row g-2 mb-2">
+        <div class="col-md-6 form-field-group">
+          <label for="dish-price" class="field-label">
+            <span>{{ '::Price' | abpLocalization }} (VND)</span>
+            <span class="required-star">*</span>
+          </label>
+          <div class="input-group modern-input-group">
+            <input
+              type="number"
+              id="dish-price"
+              class="form-control modern-input"
+              formControlName="price"
+              min="0"
+              step="1000"
+              [placeholder]="'::EnterDishPrice' | abpLocalization"
+            />
+            <span class="input-group-text currency-suffix">VND</span>
           </div>
-        }
-      </div>
+        </div>
 
-      <!-- 2. Danh mục món ăn (Modern Custom Dropdown) -->
-      <div class="form-field-group mb-3">
-        <label class="field-label">
-          <span>{{ '::DishCategory' | abpLocalization }}</span>
-        </label>
-        
-        <div class="custom-dropdown-container">
-          <!-- Dropdown Trigger Button -->
-          <button
-            type="button"
-            class="custom-dropdown-trigger"
-            [class.active]="isCategoryDropdownOpen"
-            (click)="toggleCategoryDropdown($event)"
-          >
-            <div class="d-flex align-items-center gap-2 text-truncate">
-              <i class="fa fa-layer-group dropdown-lead-icon"></i>
-              <span class="dropdown-value-text" [class.is-placeholder]="!selectedCategoryName">
-                {{ selectedCategoryName || ('::SelectCategory' | abpLocalization) }}
-              </span>
-            </div>
-            <i class="fa fa-chevron-down dropdown-chevron" [class.rotated]="isCategoryDropdownOpen"></i>
-          </button>
-
-          <!-- Dropdown Panel Options -->
-          @if (isCategoryDropdownOpen) {
-            <div class="custom-dropdown-panel animate-pop">
-              <!-- Mục 1: Bỏ chọn danh mục -->
-              <div
-                class="dropdown-option-item"
-                [class.selected]="!form.get('dishCategoryId')?.value"
-                (click)="selectCategory(null, null)"
-              >
-                <div class="d-flex align-items-center gap-2">
-                  <i class="fa fa-minus-circle text-muted" style="font-size: 13px;"></i>
-                  <span>-- {{ '::SelectCategory' | abpLocalization }} --</span>
-                </div>
-                @if (!form.get('dishCategoryId')?.value) {
-                  <i class="fa fa-check check-mark"></i>
-                }
-              </div>
-
-              <div class="dropdown-divider"></div>
-
-              <!-- Danh sách Categories -->
-              @for (category of categories$ | async; track category.id) {
-                <div
-                  class="dropdown-option-item"
-                  [class.selected]="form.get('dishCategoryId')?.value === category.id"
-                  (click)="selectCategory(category.id, category.name)"
-                >
-                  <div class="d-flex align-items-center gap-2 flex-grow-1 overflow-visible">
-                    <span class="category-bullet"></span>
-                    <span class="category-title text-truncate">{{ category.name }}</span>
-                  </div>
-                  @if (form.get('dishCategoryId')?.value === category.id) {
-                    <i class="fa fa-check check-mark"></i>
-                  }
-                </div>
-              }
-            </div>
-          }
+        <div class="col-md-6 form-field-group">
+          <label class="field-label">
+            <span>{{ '::Category' | abpLocalization }}</span>
+          </label>
+          <app-custom-select
+            class="w-100 d-block"
+            [options]="modalCategoryOptions"
+            formControlName="dishCategoryId"
+            [placeholder]="'::SelectCategory' | abpLocalization"
+            leadIcon="fa-tag"
+            minWidth="100%"
+          ></app-custom-select>
         </div>
       </div>
 
-      <!-- 3. Hình ảnh món ăn (Upload Cloudinary & Preview) -->
-      <div class="form-field-group mb-3">
+      <!-- Trạng thái phục vụ (IsActive Toggle) -->
+      <div class="form-field-group mb-2">
+        <label class="field-label d-block mb-2">
+          <span>{{ '::Status' | abpLocalization }}</span>
+        </label>
+        <div class="form-check form-switch d-flex align-items-center m-0 p-0 gap-2">
+          <input
+            class="form-check-input m-0 float-none"
+            style="width: 2.5rem; height: 1.25rem; cursor: pointer"
+            type="checkbox"
+            id="dish-is-active"
+            formControlName="isActive"
+          />
+          <label class="form-check-label m-0" for="dish-is-active" style="cursor: pointer">
+            {{
+              (form.get('isActive')?.value ? '::ActiveDishes' : '::InactiveDishes')
+                | abpLocalization
+            }}
+          </label>
+        </div>
+      </div>
+
+      <!-- Ảnh món ăn Cloudinary -->
+      <div class="form-field-group mb-2">
         <div class="d-flex align-items-center justify-content-between mb-1">
           <label class="field-label m-0">
             <span>{{ '::DishImage' | abpLocalization }}</span>
           </label>
-          <button
-            type="button"
-            class="btn-link-toggle"
-            (click)="toggleDirectUrlMode()"
-          >
-            <i class="fa" [class.fa-link]="!isDirectUrlMode" [class.fa-cloud-upload-alt]="isDirectUrlMode"></i>
-            <span class="ms-1">{{ (isDirectUrlMode ? '::UploadImage' : '::OrEnterImageUrl') | abpLocalization }}</span>
+          <button type="button" class="btn-text-mode" (click)="toggleDirectUrlMode()">
+            <i
+              class="fa"
+              [class.fa-link]="!isDirectUrlMode"
+              [class.fa-upload]="isDirectUrlMode"
+            ></i>
+            <span>{{
+              (isDirectUrlMode ? '::SwitchToUploadMode' : '::SwitchToUrlMode') | abpLocalization
+            }}</span>
           </button>
         </div>
 
-        <!-- Hidden Native File Input -->
-        <input
-          #fileInput
-          type="file"
-          accept="image/jpeg,image/png,image/webp,image/gif"
-          class="d-none"
-          (change)="onFileSelected($event)"
-        />
-
         @if (!isDirectUrlMode) {
-          <!-- Khung Preview Ảnh nếu đã có ảnh -->
-          @if (imagePreviewUrl) {
-            <div class="dish-image-preview-card">
-              <img
-                [src]="imagePreviewUrl"
-                alt="Dish preview"
-                class="dish-preview-img"
-              />
-              @if (isUploadingImage) {
-                <div class="uploading-overlay">
-                  <div class="spinner-border spinner-border-sm text-light mb-1" role="status"></div>
-                  <span class="uploading-text">{{ '::UploadingImage' | abpLocalization }}</span>
-                </div>
-              }
-              <div class="preview-actions">
+          <div
+            class="upload-dropzone"
+            [class.has-preview]="imagePreviewUrl"
+            (click)="triggerFileInput()"
+          >
+            <input
+              type="file"
+              #fileInput
+              (change)="onFileSelected($event)"
+              accept="image/*"
+              class="d-none"
+            />
+            @if (isUploadingImage) {
+              <div class="uploading-state d-flex flex-column align-items-center py-3">
+                <div class="spinner-border text-primary mb-2" role="status"></div>
+                <span class="upload-progress-text">{{
+                  '::UploadingToCloudinary' | abpLocalization
+                }}</span>
+              </div>
+            } @else if (imagePreviewUrl) {
+              <div class="preview-box position-relative">
+                <img [src]="imagePreviewUrl" alt="Preview" class="img-preview" appImgFallback />
                 <button
                   type="button"
-                  class="btn-preview-action btn-change"
-                  [disabled]="isUploadingImage"
-                  (click)="triggerFileInput()"
-                  [title]="'::ChangeImage' | abpLocalization"
-                >
-                  <i class="fa fa-camera me-1"></i>
-                  <span>{{ '::ChangeImage' | abpLocalization }}</span>
-                </button>
-                <button
-                  type="button"
-                  class="btn-preview-action btn-remove"
-                  [disabled]="isUploadingImage"
-                  (click)="removeImage()"
+                  class="btn-remove-preview"
+                  (click)="$event.stopPropagation(); removeImage()"
                   [title]="'::RemoveImage' | abpLocalization"
                 >
-                  <i class="fa fa-trash-alt me-1"></i>
-                  <span>{{ '::RemoveImage' | abpLocalization }}</span>
+                  <i class="fa fa-times"></i>
                 </button>
               </div>
-            </div>
-          } @else {
-            <!-- Khung Dropzone chọn ảnh -->
-            <div
-              class="dish-dropzone-box"
-              (click)="triggerFileInput()"
-              role="button"
-              tabindex="0"
-            >
-              @if (isUploadingImage) {
-                <div class="d-flex flex-column align-items-center py-3">
-                  <div class="spinner-border text-primary mb-2" role="status"></div>
-                  <span class="upload-hint">{{ '::UploadingImage' | abpLocalization }}</span>
+            } @else {
+              <div class="empty-upload-placeholder d-flex flex-column align-items-center py-1">
+                <div class="upload-icon-circle mb-1">
+                  <i class="fa fa-cloud-upload-alt"></i>
                 </div>
-              } @else {
-                <div class="dropzone-content">
-                  <div class="dropzone-icon">
-                    <i class="fa fa-cloud-upload-alt"></i>
-                  </div>
-                  <div class="dropzone-main-text">
-                    {{ '::DragAndDropImage' | abpLocalization }}
-                  </div>
-                  <div class="dropzone-sub-text">
-                    {{ '::ImageFormatsHint' | abpLocalization }}
-                  </div>
-                </div>
-              }
-            </div>
-          }
-        } @else {
-          <!-- Mode dán URL trực tiếp -->
-          <div class="input-with-icon">
-            <i class="fa fa-link input-icon"></i>
-            <input
-              type="text"
-              class="form-control custom-form-input"
-              [ngModel]="imagePreviewUrl"
-              (ngModelChange)="onImageUrlChange($event)"
-              [ngModelOptions]="{standalone: true}"
-              [placeholder]="'::ImageUrlPlaceholder' | abpLocalization"
-            />
-          </div>
-          @if (imagePreviewUrl) {
-            <div class="mt-2 text-center">
-              <img
-                [src]="imagePreviewUrl"
-                alt="URL Preview"
-                class="direct-url-preview-img"
-                (error)="onImgError($event)"
-              />
-            </div>
-          }
-        }
-
-        @if (uploadError) {
-          <div class="field-validation-error mt-2">
-            <i class="fa fa-exclamation-circle"></i>
-            <span>{{ uploadError }}</span>
-          </div>
-        }
-      </div>
-
-      <!-- 3. Giá bán (VND) -->
-      <div class="form-field-group mb-2">
-        <label for="dish-price" class="field-label">
-          <span>{{ '::PriceVND' | abpLocalization }}</span>
-          <span class="required-star">*</span>
-        </label>
-        <div class="input-with-icon input-price-wrapper">
-          <i class="fa fa-tag input-icon"></i>
-          <input
-            type="number"
-            id="dish-price"
-            class="form-control custom-form-input price-input"
-            formControlName="price"
-            [placeholder]="'::PricePlaceholder' | abpLocalization"
-            [skipValidation]="true"
-          />
-          <span class="currency-tag">VND</span>
-        </div>
-        @if (form.get('price')?.invalid && (form.get('price')?.touched || form.get('price')?.dirty)) {
-          <div class="field-validation-error">
-            <i class="fa fa-exclamation-circle"></i>
-            @if (form.get('price')?.errors?.['required']) {
-              <span>{{ { key: '::FieldRequired', defaultValue: 'This field is required.' } | abpLocalization }}</span>
-            } @else if (form.get('price')?.errors?.['min']) {
-              <span>{{ { key: '::PriceMinZero', defaultValue: 'This field must be greater than or equal to 0.' } | abpLocalization }}</span>
+                <span class="upload-primary-text">{{
+                  '::ClickToUploadImage' | abpLocalization
+                }}</span>
+                <span class="upload-secondary-text">{{
+                  '::UploadImageHints' | abpLocalization
+                }}</span>
+              </div>
             }
           </div>
+        } @else {
+          <div class="input-group modern-input-group">
+            <span class="input-group-text"><i class="fa fa-link"></i></span>
+            <input
+              type="text"
+              class="form-control modern-input"
+              [value]="form.get('imageUrl')?.value || ''"
+              (input)="onImageUrlChange($any($event.target).value)"
+              [placeholder]="'::EnterImageUrlPlaceholder' | abpLocalization"
+            />
+          </div>
         }
       </div>
 
-      <!-- 4. Mô tả món ăn (Description) -->
+      <!-- Mô tả món ăn -->
       <div class="form-field-group mb-2">
         <label for="dish-description" class="field-label">
           <span>{{ '::Description' | abpLocalization }}</span>
         </label>
         <textarea
           id="dish-description"
-          rows="3"
-          class="form-control custom-form-textarea"
+          class="form-control modern-textarea"
           formControlName="description"
+          rows="3"
           [placeholder]="'::EnterDishDescription' | abpLocalization"
         ></textarea>
       </div>
@@ -573,15 +643,101 @@
   </ng-template>
 
   <ng-template #abpFooter>
-    <div class="modal-footer-actions">
-      <button type="button" class="btn btn-secondary btn-modal-close" abpClose>
-        <i class="fa fa-times me-1"></i>
-        {{ '::Close' | abpLocalization }}
-      </button>
-      <button form="dish-form" class="btn btn-primary btn-modal-save" [disabled]="form?.invalid">
-        <i class="fa fa-check me-1"></i>
-        {{ '::Save' | abpLocalization }}
-      </button>
-    </div>
+    <button type="button" class="btn btn-outline-secondary" (click)="isModalOpen = false">
+      {{ '::Cancel' | abpLocalization }}
+    </button>
+    <button
+      type="button"
+      class="btn btn-primary"
+      (click)="save()"
+      [disabled]="form.invalid || isUploadingImage"
+    >
+      <i class="fa fa-check me-1"></i>
+      <span>{{ '::Save' | abpLocalization }}</span>
+    </button>
   </ng-template>
 </abp-modal>
+
+<!-- Modal Xác nhận Xóa Món ăn bắt buộc nhập Lý do xóa (Kiểm toán) -->
+<abp-modal [(visible)]="isDeleteModalOpen">
+  <ng-template #abpHeader>
+    <div class="d-flex align-items-center gap-3 text-danger">
+      <div class="modal-header-icon bg-danger-subtle text-danger">
+        <i class="fa fa-exclamation-triangle"></i>
+      </div>
+      <div>
+        <h5 class="m-0 modal-title-text text-danger">
+          {{ '::DeleteDish' | abpLocalization }}
+        </h5>
+        <span class="modal-subtitle-text">
+          {{ deletingDish?.name }}
+        </span>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #abpBody>
+    <div
+      class="delete-warning-box p-3 mb-3 rounded border border-warning bg-warning-subtle text-dark"
+    >
+      <i class="fa fa-info-circle me-2 text-warning"></i>
+      <span
+        >Món ăn này sẽ được ngừng phục vụ trên tất cả thực đơn hàng ngày (Daily Menu) và lưu trữ lại
+        trong hệ thống kiểm toán.</span
+      >
+    </div>
+
+    <div class="form-field-group">
+      <label for="deletion-reason" class="field-label">
+        <span>{{ '::DeletionReason' | abpLocalization }}</span>
+        <span class="required-star">*</span>
+      </label>
+      <textarea
+        id="deletion-reason"
+        class="form-control modern-textarea"
+        [(ngModel)]="deletionReason"
+        rows="3"
+        [placeholder]="'::DeletionReasonPlaceholder' | abpLocalization"
+        autofocus
+      ></textarea>
+      @if (!deletionReason.trim()) {
+        <small class="text-danger mt-1 d-block">
+          {{ '::DeletionReasonRequired' | abpLocalization }}
+        </small>
+      }
+    </div>
+  </ng-template>
+
+  <ng-template #abpFooter>
+    <button
+      type="button"
+      class="btn btn-outline-secondary"
+      (click)="closeDeleteModal()"
+      [disabled]="isDeletingDish"
+    >
+      {{ '::Cancel' | abpLocalization }}
+    </button>
+    <button
+      type="button"
+      class="btn btn-danger"
+      (click)="confirmDeleteWithReason()"
+      [disabled]="!deletionReason.trim() || isDeletingDish"
+    >
+      @if (isDeletingDish) {
+        <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+      } @else {
+        <i class="fa fa-trash-alt me-1"></i>
+      }
+      <span>{{ '::Confirm' | abpLocalization }}</span>
+    </button>
+  </ng-template>
+</abp-modal>
+
+<!-- Modal Quản lý Công thức (Recipe) -->
+<app-recipe-modal
+  *ngIf="isRecipeModalOpen"
+  [(visible)]="isRecipeModalOpen"
+  [dishId]="selectedDishForRecipe?.id"
+  [dishName]="selectedDishForRecipe?.name"
+  (recipeSaved)="onRecipeSaved()"
+></app-recipe-modal>

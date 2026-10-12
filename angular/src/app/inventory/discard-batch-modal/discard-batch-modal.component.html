@@ -1,0 +1,122 @@
+<abp-modal
+  [(visible)]="visible"
+  (visibleChange)="visibleChange.emit($event)"
+  [options]="{ size: 'md', centered: true }"
+  [busy]="isSubmitting"
+  [suppressUnsavedChangesWarning]="true"
+>
+  <ng-template #abpHeader>
+    <div class="d-flex align-items-center gap-3">
+      <div class="modal-header-icon-danger">
+        <i class="fa fa-triangle-exclamation"></i>
+      </div>
+      <div>
+        <h5 class="m-0 modal-title-text text-danger">
+          {{ '::DiscardBatchModalTitle' | abpLocalization }}
+        </h5>
+        <span class="modal-subtitle-text">
+          {{ batch?.batchCode }} - {{ batch?.ingredientName || ingredient?.name }}
+        </span>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #abpBody>
+    <div class="alert alert-danger d-flex align-items-start gap-2 mb-3">
+      <i class="fa fa-circle-exclamation mt-1"></i>
+      <div class="small">
+        {{
+          '::DiscardBatchConfirmMessage'
+            | abpLocalization
+              : (batch?.batchCode || '')
+              : ('' + (batch?.remainingQuantity || 0))
+              : (batch?.purchaseUnit || ingredient?.baseUnit || ingredient?.unitName || '')
+        }}
+      </div>
+    </div>
+
+    <!-- Batch metadata card -->
+    <div class="card bg-light border-0 p-3 mb-3 rounded-3">
+      <div class="row g-2 text-muted small">
+        <div class="col-6">
+          <span>{{ '::BatchCode' | abpLocalization }}:</span>
+          <strong class="text-dark d-block font-monospace">{{ batch?.batchCode }}</strong>
+        </div>
+        <div class="col-6">
+          <span>{{ '::RemainingQuantity' | abpLocalization }}:</span>
+          <strong class="text-danger d-block font-monospace">
+            {{ batch?.remainingQuantity }} {{ batch?.purchaseUnit || ingredient?.baseUnit }}
+          </strong>
+        </div>
+        <div class="col-6">
+          <span>{{ '::ExpiryDate' | abpLocalization }}:</span>
+          <strong class="text-dark d-block">
+            {{ batch?.expiryDate ? (batch?.expiryDate | date:'dd/MM/yyyy') : ('::NoExpiry' | abpLocalization) }}
+          </strong>
+        </div>
+        <div class="col-6">
+          <span>{{ '::UnitCostHeader' | abpLocalization }}:</span>
+          <strong class="text-dark d-block font-monospace">
+            {{ batch?.unitCost ? (batch?.unitCost | number:'1.0-0') + ' ₫' : '—' }}
+          </strong>
+        </div>
+      </div>
+    </div>
+
+    <form (ngSubmit)="submit()">
+      <div class="mb-3">
+        <label class="form-label fw-bold small text-dark">
+          {{ '::DiscardReasonCategoryLabel' | abpLocalization }}
+        </label>
+        <select
+          class="form-select"
+          [(ngModel)]="selectedCategory"
+          name="selectedCategory"
+          [disabled]="isSubmitting"
+        >
+          @for (cat of reasonCategories; track cat.value) {
+            <option [value]="cat.value">{{ cat.key | abpLocalization }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="mb-2">
+        <label class="form-label fw-bold small text-dark">
+          {{ '::DiscardCustomNotesLabel' | abpLocalization }}
+        </label>
+        <textarea
+          class="form-control"
+          rows="3"
+          [(ngModel)]="customNotes"
+          name="customNotes"
+          [placeholder]="'::DiscardCustomNotesPlaceholder' | abpLocalization"
+          [disabled]="isSubmitting"
+        ></textarea>
+      </div>
+    </form>
+  </ng-template>
+
+  <ng-template #abpFooter>
+    <button
+      type="button"
+      class="btn btn-outline-secondary"
+      (click)="close()"
+      [disabled]="isSubmitting"
+    >
+      {{ '::Close' | abpLocalization }}
+    </button>
+    <button
+      type="button"
+      class="btn btn-danger"
+      (click)="submit()"
+      [disabled]="isSubmitting"
+    >
+      @if (isSubmitting) {
+        <i class="fa fa-spin fa-spinner me-1"></i>
+      } @else {
+        <i class="fa fa-ban me-1"></i>
+      }
+      {{ '::ConfirmDiscardAction' | abpLocalization }}
+    </button>
+  </ng-template>
+</abp-modal>

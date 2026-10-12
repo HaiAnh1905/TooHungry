@@ -1,0 +1,48 @@
+<div class="expiration-badge-container d-inline-flex align-items-center gap-2">
+  @switch (status) {
+    @case ('safe') {
+      <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+        <i class="fa fa-shield-check me-1"></i>
+        <span>{{ '::Status:Safe' | abpLocalization }}</span>
+      </span>
+    }
+    @case ('expiring_soon') {
+      <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1">
+        <i class="fa fa-triangle-exclamation me-1"></i>
+        <span>{{ expiringSoonLabel }}</span>
+      </span>
+    }
+    @case ('fresh_expired') {
+      <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">
+        <i class="fa fa-skull-crossbones me-1"></i>
+        <span>{{ '::Status:FreshExpired' | abpLocalization }}</span>
+      </span>
+      @if (allowDiscard) {
+        <button
+          type="button"
+          class="btn btn-sm btn-outline-danger btn-discard py-0 px-2"
+          (click)="onDiscard()"
+          [title]="'::DiscardBatch' | abpLocalization"
+        >
+          <i class="fa fa-trash-can me-1"></i>{{ '::DiscardBatchBtn' | abpLocalization }}
+        </button>
+      }
+    }
+    @case ('expired') {
+      <span class="badge bg-danger text-white px-2 py-1">
+        <i class="fa fa-ban me-1"></i>
+        <span>{{ '::Status:Expired' | abpLocalization }}</span>
+      </span>
+      @if (allowDiscard) {
+        <button
+          type="button"
+          class="btn btn-sm btn-outline-danger btn-discard py-0 px-2"
+          (click)="onDiscard()"
+          [title]="'::DiscardBatch' | abpLocalization"
+        >
+          <i class="fa fa-trash-can me-1"></i>{{ '::DiscardBatchBtn' | abpLocalization }}
+        </button>
+      }
+    }
+  }
+</div>

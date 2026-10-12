@@ -2,12 +2,14 @@ using System;
 using System.Threading.Tasks;
 using Acme.TooHungry.Tables;
 using Acme.TooHungry.DiningAreas;
-using Acme.TooHungry.Ingredients;
+using Acme.TooHungry.Units;
 using Volo.Abp.Authorization.Permissions;
 using Volo.Abp.Data;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.Domain.Repositories;
 using Volo.Abp.PermissionManagement;
+using Volo.Abp.Identity;
+using Volo.Abp.Guids;
 
 namespace Acme.TooHungry;
 
@@ -18,9 +20,11 @@ public class TooHungryDataSeederContributor : IDataSeedContributor, ITransientDe
     private readonly IRepository<DiningArea, Guid> _diningAreaRepository;
     private readonly IRepository<Acme.TooHungry.Dishes.Dish, Guid> _dishRepository;
     private readonly IRepository<Acme.TooHungry.Dishes.DishCategory, Guid> _dishCategoryRepository;
-    private readonly IRepository<Unit, Guid> _unitRepository;
-    private readonly IRepository<IngredientCategory, Guid> _ingredientCategoryRepository;
-    private readonly IRepository<Ingredient, Guid> _ingredientRepository;
+    private readonly IdentityRoleManager _roleManager;
+    private readonly IGuidGenerator _guidGenerator;
+
+    private readonly IPermissionDefinitionManager _permissionDefinitionManager;
+    private readonly IPermissionManager _permissionManager;
 
     public TooHungryDataSeederContributor(
         IPermissionDataSeeder permissionDataSeeder,
@@ -28,25 +32,86 @@ public class TooHungryDataSeederContributor : IDataSeedContributor, ITransientDe
         IRepository<DiningArea, Guid> diningAreaRepository,
         IRepository<Acme.TooHungry.Dishes.Dish, Guid> dishRepository,
         IRepository<Acme.TooHungry.Dishes.DishCategory, Guid> dishCategoryRepository,
-        IRepository<Unit, Guid> unitRepository,
-        IRepository<IngredientCategory, Guid> ingredientCategoryRepository,
-        IRepository<Ingredient, Guid> ingredientRepository)
+        IdentityRoleManager roleManager,
+        IGuidGenerator guidGenerator,
+        IPermissionDefinitionManager permissionDefinitionManager,
+        IPermissionManager permissionManager)
     {
         _permissionDataSeeder = permissionDataSeeder;
         _tableRepository = tableRepository;
         _diningAreaRepository = diningAreaRepository;
         _dishRepository = dishRepository;
         _dishCategoryRepository = dishCategoryRepository;
-        _unitRepository = unitRepository;
-        _ingredientCategoryRepository = ingredientCategoryRepository;
-        _ingredientRepository = ingredientRepository;
+        _roleManager = roleManager;
+        _guidGenerator = guidGenerator;
+        _permissionDefinitionManager = permissionDefinitionManager;
+        _permissionManager = permissionManager;
     }
 
     public async Task SeedAsync(DataSeedContext context)
     {
+        var roles = new[] { "Manager", "InventoryStaff", "Waiter", "Cashier" };
+        foreach (var roleName in roles)
+        {
+            if (await _roleManager.FindByNameAsync(roleName) == null)
+            {
+                var role = new IdentityRole(
+                    _guidGenerator.Create(),
+                    roleName,
+                    context.TenantId
+                )
+                {
+                    IsStatic = true,
+                    IsPublic = true
+                };
+                await _roleManager.CreateAsync(role);
+            }
+        }
+
+        // Hợp nhất: Xóa Administrator rác nếu có, rồi đổi tên admin thành Administrator
+        var existingAdministrator = await _roleManager.FindByNameAsync("Administrator");
+        var systemAdmin = await _roleManager.FindByNameAsync("admin");
+
+        if (existingAdministrator != null && systemAdmin != null && existingAdministrator.Id != systemAdmin.Id)
+        {
+            // Gỡ cờ IsStatic để framework cho phép xóa/đổi tên
+            existingAdministrator.IsStatic = false;
+            await _roleManager.UpdateAsync(existingAdministrator);
+            
+            // Đổi tên tạm để tránh lỗi Unique Name constraint khi đổi tên admin thành Administrator ở bước sau
+            await _roleManager.SetRoleNameAsync(existingAdministrator, "Admin_To_Delete_" + Guid.NewGuid().ToString().Substring(0,5));
+            await _roleManager.UpdateAsync(existingAdministrator);
+            
+            await _roleManager.DeleteAsync(existingAdministrator);
+        }
+
+        if (systemAdmin != null)
+        {
+            systemAdmin.IsStatic = false;
+            await _roleManager.UpdateAsync(systemAdmin);
+
+            await _roleManager.SetRoleNameAsync(systemAdmin, "Administrator");
+            systemAdmin.IsStatic = true;
+            await _roleManager.UpdateAsync(systemAdmin);
+        }
+
+        // Grant ALL permissions to Administrator to recover lost access after rename
+        var allPermissions = await _permissionDefinitionManager.GetPermissionsAsync();
+        foreach (var permission in allPermissions)
+        {
+            try
+            {
+                await _permissionManager.SetForRoleAsync("Administrator", permission.Name, true);
+            }
+            catch (System.Exception)
+            {
+                // Skip permissions not compatible with the Role provider (like Client or User only)
+            }
+        }
+
         await _permissionDataSeeder.SeedAsync(
             RolePermissionValueProvider.ProviderName,
-            "admin",
+            "Administrator",
             new[]
             {
                 "TooHungry.Dishes",
@@ -59,102 +124,80 @@ public class TooHungryDataSeederContributor : IDataSeedContributor, ITransientDe
                 "TooHungry.DishCategories.Edit",
                 "TooHungry.DishCategories.Delete",
 
-                "TooHungry.Recipes",
-                "TooHungry.Recipes.Create",
-                "TooHungry.Recipes.Edit",
-                "TooHungry.Recipes.Delete",
-
                 "TooHungry.Orders",
                 "TooHungry.Orders.Create",
                 "TooHungry.Orders.Edit",
                 "TooHungry.Orders.Delete",
+                "TooHungry.Orders.Cancel",
 
-                "TooHungry.Inventories",
-                "TooHungry.Inventories.Create",
-                "TooHungry.Inventories.Edit",
-                "TooHungry.Inventories.Delete",
-
-                "TooHungry.Ingredients",
-                "TooHungry.Ingredients.Create",
-                "TooHungry.Ingredients.Edit",
-                "TooHungry.Ingredients.Delete",
-
-                "TooHungry.IngredientCategories",
-                "TooHungry.IngredientCategories.Create",
-                "TooHungry.IngredientCategories.Edit",
-                "TooHungry.IngredientCategories.Delete",
+                "TooHungry.Units",
+                "TooHungry.Units.Create",
+                "TooHungry.Units.Edit",
+                "TooHungry.Units.Delete",
 
                 "TooHungry.Tables",
                 "TooHungry.Tables.Create",
                 "TooHungry.Tables.Edit",
                 "TooHungry.Tables.Delete",
+                "TooHungry.Tables.UpdateStatus",
+                "TooHungry.Tables.Manage",
 
                 "TooHungry.DiningAreas",
                 "TooHungry.DiningAreas.Create",
                 "TooHungry.DiningAreas.Edit",
-                "TooHungry.DiningAreas.Delete"
+                "TooHungry.DiningAreas.Delete",
+                "TooHungry.DiningAreas.Manage",
+
+                "TooHungry.Reservations",
+                "TooHungry.Reservations.Create",
+                "TooHungry.Reservations.Update",
+                "TooHungry.Reservations.Cancel",
+                "TooHungry.Reservations.CheckIn"
             },
             context.TenantId
         );
 
-        // Seed Common Units
-        var commonUnits = new (string Name, string Abbreviation)[]
-        {
-            ("Kilogam", "kg"),
-            ("Gram", "g"),
-            ("Lít", "l"),
-            ("Mililít", "ml"),
-            ("Chai", "chai"),
-            ("Quả", "quả"),
-            ("Củ", "củ"),
-            ("Lon", "lon"),
-            ("Hộp", "hộp"),
-            ("Gói", "gói"),
-            ("Bó", "bó"),
-            ("Con", "con"),
-            ("Khúc", "khúc"),
-            ("Tép", "tép"),
-            ("Muỗng canh", "muỗng")
-        };
-
-        foreach (var unit in commonUnits)
-        {
-            var exists = await _unitRepository.AnyAsync(x => x.Name.ToLower() == unit.Name.ToLower() || (x.Abbreviation != null && x.Abbreviation.ToLower() == unit.Abbreviation.ToLower()));
-            if (!exists)
+        await _permissionDataSeeder.SeedAsync(
+            RolePermissionValueProvider.ProviderName,
+            "Waiter",
+            new[]
             {
-                await _unitRepository.InsertAsync(new Unit
-                {
-                    Name = unit.Name,
-                    Abbreviation = unit.Abbreviation
-                }, autoSave: true);
-            }
-        }
+                "TooHungry.Dishes",
+                "TooHungry.DishCategories",
+                "TooHungry.DiningAreas",
+                "TooHungry.Tables",
+                "TooHungry.Tables.Create",
+                "TooHungry.Tables.Edit",
+                "TooHungry.Tables.Delete",
+                "TooHungry.Tables.UpdateStatus",
+                "TooHungry.Orders",
+                "TooHungry.Orders.Create",
+                "TooHungry.Orders.Edit",
+                "TooHungry.Orders.Cancel",
+                "TooHungry.Orders.Delete",
+                "TooHungry.Reservations",
+                "TooHungry.Reservations.Create",
+                "TooHungry.Reservations.Update",
+                "TooHungry.Reservations.Cancel",
+                "TooHungry.Reservations.CheckIn"
+            },
+            context.TenantId
+        );
 
-        // Seed Common Ingredient Categories
-        var commonCategories = new (string Name, string Description)[]
-        {
-            ("Thịt & Gia cầm", "Các loại thịt tươi sống như thịt bò, thịt heo, thịt gà..."),
-            ("Hải sản", "Tôm, cua, cá, mực, nghêu, sò hải sản tươi sống"),
-            ("Rau củ & Nông sản", "Các loại rau xanh, củ quả tươi nông sản chọn lọc"),
-            ("Nấm & Thảo mộc", "Nấm tươi, nấm khô, ngò gai, húng quế, hương thảo"),
-            ("Gia vị & Nước xốt", "Muối, tiêu, đường, dầu ăn, nước mắm, sốt BBQ"),
-            ("Bơ sữa & Trứng", "Bơ lạt, phô mai, sữa tươi, kem béo, trứng gà"),
-            ("Đồ khô & Ngũ cốc", "Gạo, bột mì, mì Ý, bánh tráng, các loại đậu"),
-            ("Đồ uống & Pha chế", "Trà, cà phê, sirô, nước cốt trái cây dùng pha chế")
-        };
-
-        foreach (var cat in commonCategories)
-        {
-            var exists = await _ingredientCategoryRepository.AnyAsync(x => x.Name.ToLower() == cat.Name.ToLower());
-            if (!exists)
+        await _permissionDataSeeder.SeedAsync(
+            RolePermissionValueProvider.ProviderName,
+            "Manager",
+            new[]
             {
-                await _ingredientCategoryRepository.InsertAsync(new IngredientCategory
-                {
-                    Name = cat.Name,
-                    Description = cat.Description
-                }, autoSave: true);
-            }
-        }
+                "TooHungry.Reservations",
+                "TooHungry.Reservations.Create",
+                "TooHungry.Reservations.Update",
+                "TooHungry.Reservations.Cancel",
+                "TooHungry.Reservations.CheckIn",
+                "TooHungry.Tables.Manage"
+            },
+            context.TenantId
+        );
 
         // Seed Dining Areas
         DiningArea? floor1 = await _diningAreaRepository.FirstOrDefaultAsync(x => x.Name == "Tầng 1");
@@ -401,62 +444,6 @@ public class TooHungryDataSeederContributor : IDataSeedContributor, ITransientDe
                 {
                     dish.DishCategoryId = targetCat.Id;
                     await _dishRepository.UpdateAsync(dish);
-                }
-            }
-        }
-
-        // Seed Sample Ingredients if none exist
-        if (await _ingredientRepository.GetCountAsync() == 0)
-        {
-            var units = await _unitRepository.GetListAsync();
-            var ingCategories = await _ingredientCategoryRepository.GetListAsync();
-
-            var sampleIngredients = new (string Name, string CatName, string UnitAbbr)[]
-            {
-                ("Thăn nội bò cao cấp", "Thịt & Gia cầm", "kg"),
-                ("Sườn bò rút xương", "Thịt & Gia cầm", "kg"),
-                ("Ức gà phi-lê", "Thịt & Gia cầm", "kg"),
-                ("Thịt ba chỉ xông khói", "Thịt & Gia cầm", "g"),
-                ("Tôm hùm tươi nguyên con", "Hải sản tươi sống", "con"),
-                ("Tôm sú tươi", "Hải sản tươi sống", "kg"),
-                ("Mực ống tươi", "Hải sản tươi sống", "kg"),
-                ("Cá hồi Na Uy phi-lê", "Hải sản tươi sống", "kg"),
-                ("Xà lách Romaine tươi", "Rau củ & Nông sản", "kg"),
-                ("Cà chua bi đỏ ngọt", "Rau củ & Nông sản", "kg"),
-                ("Quả ớt chuông đỏ", "Rau củ & Nông sản", "quả"),
-                ("Nấm mỡ trắng tươi", "Nấm & Thảo mộc tươi", "g"),
-                ("Lá húng quế tây tươi (Basil)", "Nấm & Thảo mộc tươi", "bó"),
-                ("Lá hương thảo tươi (Rosemary)", "Nấm & Thảo mộc tươi", "bó"),
-                ("Tỏi củ tía thơm nồng", "Nấm & Thảo mộc tươi", "củ"),
-                ("Bơ lạt động vật", "Bơ sữa & Phô mai", "g"),
-                ("Phô mai Mozzarella bào", "Bơ sữa & Phô mai", "g"),
-                ("Phô mai Parmesan bột", "Bơ sữa & Phô mai", "g"),
-                ("Kem tươi Cooking Cream", "Bơ sữa & Phô mai", "hộp"),
-                ("Trứng gà tươi sạch", "Bơ sữa & Phô mai", "quả"),
-                ("Mì Ý Spaghetti No.5", "Đồ khô & Ngũ cốc", "gói"),
-                ("Mì ống Penne Rigate", "Đồ khô & Ngũ cốc", "gói"),
-                ("Bột mì đa dụng cao cấp", "Đồ khô & Ngũ cốc", "kg"),
-                ("Dầu ô-liu Extra Virgin", "Gia vị & Nước xốt", "chai"),
-                ("Tiêu đen xay", "Gia vị & Nước xốt", "g"),
-                ("Sốt cà chua Marinara", "Gia vị & Nước xốt", "hộp"),
-                ("Sốt BBQ nướng khói", "Gia vị & Nước xốt", "chai"),
-                ("Rượu vang đỏ Cabernet Sauvignon", "Đồ uống & Pha chế", "chai"),
-                ("Rượu vang trắng Chardonnay", "Đồ uống & Pha chế", "chai")
-            };
-
-            foreach (var item in sampleIngredients)
-            {
-                var cat = ingCategories.Find(c => c.Name.Equals(item.CatName, StringComparison.OrdinalIgnoreCase));
-                var unit = units.Find(u => (u.Abbreviation != null && u.Abbreviation.Equals(item.UnitAbbr, StringComparison.OrdinalIgnoreCase)) || u.Name.Equals(item.UnitAbbr, StringComparison.OrdinalIgnoreCase));
-
-                if (cat != null && unit != null)
-                {
-                    await _ingredientRepository.InsertAsync(new Ingredient
-                    {
-                        Name = item.Name,
-                        IngredientCategoryId = cat.Id,
-                        UnitId = unit.Id
-                    }, autoSave: true);
                 }
             }
         }

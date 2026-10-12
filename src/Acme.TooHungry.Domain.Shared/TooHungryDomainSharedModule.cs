@@ -59,6 +59,11 @@ public class TooHungryDomainSharedModule : AbpModule
         Configure<AbpExceptionLocalizationOptions>(options =>
         {
             options.MapCodeNamespace("TooHungry", typeof(TooHungryResource));
+            options.MapCodeNamespace("InventoryBatch", typeof(TooHungryResource));
+            options.MapCodeNamespace("Ingredient", typeof(TooHungryResource));
+            options.MapCodeNamespace("Recipe", typeof(TooHungryResource));
+            options.MapCodeNamespace("StockAdjustment", typeof(TooHungryResource));
+            options.MapCodeNamespace("Inventory", typeof(TooHungryResource));
         });
     }
 }

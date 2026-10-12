@@ -5,11 +5,13 @@ using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Volo.Abp;
+using Volo.Abp.Authorization;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Domain.Entities;
 using Volo.Abp.Domain.Repositories;
 using Acme.TooHungry.DiningAreas;
 using Acme.TooHungry.Orders;
+using Acme.TooHungry.Permissions;
 
 namespace Acme.TooHungry.Tables;
 
@@ -19,15 +21,18 @@ public class TableAppService : TooHungryAppService, ITableAppService
     private readonly IRepository<RestaurantTable, Guid> _tableRepository;
     private readonly IRepository<Order, Guid> _orderRepository;
     private readonly IRepository<DiningArea, Guid> _diningAreaRepository;
+    private readonly ITableRealtimeNotifier _realtimeNotifier;
 
     public TableAppService(
         IRepository<RestaurantTable, Guid> tableRepository,
         IRepository<Order, Guid> orderRepository,
-        IRepository<DiningArea, Guid> diningAreaRepository)
+        IRepository<DiningArea, Guid> diningAreaRepository,
+        ITableRealtimeNotifier realtimeNotifier)
     {
         _tableRepository = tableRepository;
         _orderRepository = orderRepository;
         _diningAreaRepository = diningAreaRepository;
+        _realtimeNotifier = realtimeNotifier;
     }
 
     /// <summary>
@@ -51,6 +56,13 @@ public class TableAppService : TooHungryAppService, ITableAppService
         else if (string.IsNullOrWhiteSpace(dto.Location) && !string.IsNullOrWhiteSpace(dto.DiningAreaName))
         {
             dto.Location = dto.DiningAreaName;
+        }
+
+        var activeOrder = await _orderRepository.FirstOrDefaultAsync(x => x.TableId == id && x.Status != OrderStatus.Completed && x.Status != OrderStatus.Cancelled);
+        if (activeOrder != null)
+        {
+            dto.ActiveOrderId = activeOrder.Id;
+            dto.HasActiveOrder = true;
         }
 
         return dto;
@@ -100,6 +112,14 @@ public class TableAppService : TooHungryAppService, ITableAppService
         var dtos = ObjectMapper.Map<List<RestaurantTable>, List<TableDto>>(items);
 
         // Đảm bảo mỗi bàn đều có tên khu vực đồng nhất giữa DiningAreaName và Location
+        var tableIds = items.Select(x => x.Id).ToList();
+        var activeOrders = (await _orderRepository.GetQueryableAsync())
+            .Where(x => x.TableId.HasValue && tableIds.Contains(x.TableId.Value) && x.Status != OrderStatus.Completed && x.Status != OrderStatus.Cancelled)
+            .Select(x => new { TableId = x.TableId!.Value, x.Id })
+            .ToList();
+
+        var activeOrderMap = activeOrders.ToDictionary(x => x.TableId, x => x.Id);
+
         foreach (var dto in dtos)
         {
             if (string.IsNullOrWhiteSpace(dto.DiningAreaName) && !string.IsNullOrWhiteSpace(dto.Location))
@@ -109,6 +129,12 @@ public class TableAppService : TooHungryAppService, ITableAppService
             else if (string.IsNullOrWhiteSpace(dto.Location) && !string.IsNullOrWhiteSpace(dto.DiningAreaName))
             {
                 dto.Location = dto.DiningAreaName;
+            }
+
+            if (activeOrderMap.TryGetValue(dto.Id, out var orderId))
+            {
+                dto.ActiveOrderId = orderId;
+                dto.HasActiveOrder = true;
             }
         }
 
@@ -120,6 +146,7 @@ public class TableAppService : TooHungryAppService, ITableAppService
     /// </summary>
     /// <param name="input">Thông tin bàn ăn cần tạo</param>
     /// <returns>Thông tin bàn ăn vừa tạo</returns>
+    [Authorize(TooHungryPermissions.Tables.Create)]
     public virtual async Task<TableDto> CreateAsync(CreateUpdateTableDto input)
     {
         // 1. Chuẩn hóa tên bàn
@@ -129,17 +156,32 @@ public class TableAppService : TooHungryAppService, ITableAppService
             throw new UserFriendlyException("Tên hoặc số bàn không được để trống!");
         }
 
-        // 2. Guard: Kiểm tra trùng tên bàn
+        if (input.Capacity < 1 || input.Capacity > 100)
+        {
+            throw new UserFriendlyException("Sức chứa bàn ăn phải là số nguyên từ 1 đến 100 chỗ ngồi!");
+        }
+
+        // 2. Guard: Kiểm tra trùng tên bàn trên toàn hệ thống
         var isExist = await _tableRepository.AnyAsync(x => x.Name.ToLower() == cleanName.ToLower());
         if (isExist)
         {
             throw new UserFriendlyException($"Bàn '{cleanName}' đã tồn tại trong danh sách!");
         }
 
+        // 3. Kiểm tra khu vực có đang hoạt động không
+        if (input.DiningAreaId.HasValue)
+        {
+            var area = await _diningAreaRepository.FindAsync(input.DiningAreaId.Value);
+            if (area != null && !area.IsActive)
+            {
+                throw new UserFriendlyException($"Khu vực '{area.Name}' đang bị vô hiệu hóa, không thể thêm bàn vào khu vực này!");
+            }
+        }
+
         var table = ObjectMapper.Map<CreateUpdateTableDto, RestaurantTable>(input);
         table.Name = cleanName;
 
-        // 3. Tự động đồng bộ trường Location theo Khu vực được chọn
+        // 4. Tự động đồng bộ trường Location theo Khu vực được chọn
         if (input.DiningAreaId.HasValue)
         {
             var area = await _diningAreaRepository.FindAsync(input.DiningAreaId.Value);
@@ -150,12 +192,16 @@ public class TableAppService : TooHungryAppService, ITableAppService
             var area = await _diningAreaRepository.FirstOrDefaultAsync(x => x.Name.ToLower() == input.Location.Trim().ToLower());
             if (area != null)
             {
+                if (!area.IsActive)
+                {
+                    throw new UserFriendlyException($"Khu vực '{area.Name}' đang bị vô hiệu hóa, không thể thêm bàn vào khu vực này!");
+                }
                 table.DiningAreaId = area.Id;
                 table.Location = area.Name;
             }
         }
 
-        // 4. Lưu vào cơ sở dữ liệu
+        // 5. Lưu vào cơ sở dữ liệu
         var inserted = await _tableRepository.InsertAsync(table, autoSave: true);
         var resDto = ObjectMapper.Map<RestaurantTable, TableDto>(inserted);
         if (string.IsNullOrWhiteSpace(resDto.DiningAreaName))
@@ -171,6 +217,7 @@ public class TableAppService : TooHungryAppService, ITableAppService
     /// <param name="id">Id của bàn ăn cần chỉnh sửa</param>
     /// <param name="input">Dữ liệu cập nhật mới</param>
     /// <returns>Thông tin bàn ăn sau khi cập nhật</returns>
+    [Authorize(TooHungryPermissions.Tables.Edit)]
     public virtual async Task<TableDto> UpdateAsync(Guid id, CreateUpdateTableDto input)
     {
         var cleanName = input.Name?.Trim() ?? string.Empty;
@@ -179,7 +226,12 @@ public class TableAppService : TooHungryAppService, ITableAppService
             throw new UserFriendlyException("Tên hoặc số bàn không được để trống!");
         }
 
-        // Guard 1: Kiểm tra trùng tên bàn với bàn khác
+        if (input.Capacity < 1 || input.Capacity > 100)
+        {
+            throw new UserFriendlyException("Sức chứa bàn ăn phải là số nguyên từ 1 đến 100 chỗ ngồi!");
+        }
+
+        // Guard 1: Kiểm tra trùng tên bàn với bàn khác trên toàn hệ thống
         var isExist = await _tableRepository.AnyAsync(x => x.Id != id && x.Name.ToLower() == cleanName.ToLower());
         if (isExist)
         {
@@ -187,6 +239,15 @@ public class TableAppService : TooHungryAppService, ITableAppService
         }
 
         var table = await _tableRepository.GetAsync(id);
+
+        if (input.DiningAreaId.HasValue && input.DiningAreaId != table.DiningAreaId)
+        {
+            var area = await _diningAreaRepository.FindAsync(input.DiningAreaId.Value);
+            if (area != null && !area.IsActive)
+            {
+                throw new UserFriendlyException($"Khu vực '{area.Name}' đang bị vô hiệu hóa, không thể chuyển bàn vào khu vực này!");
+            }
+        }
 
         // Guard 2: Khi bàn đang sử dụng (Occupied) thì không được phép chỉnh sửa thông tin bàn
         if (table.Status == TableStatus.Occupied)
@@ -201,7 +262,7 @@ public class TableAppService : TooHungryAppService, ITableAppService
                 throw new UserFriendlyException("Bàn đang được sử dụng (có khách), không được phép chỉnh sửa thông tin bàn!");
             }
 
-            if (input.Status != TableStatus.Occupied && input.Status != TableStatus.Available)
+            if (input.Status != TableStatus.Occupied && input.Status != TableStatus.Available && input.Status != TableStatus.Cleaning)
             {
                 throw new UserFriendlyException("Bàn đang có khách sử dụng! Vui lòng kết thúc bữa ăn hoặc thanh toán trước khi thay đổi trạng thái bàn.");
             }
@@ -263,6 +324,7 @@ public class TableAppService : TooHungryAppService, ITableAppService
     /// Xóa một bàn ăn khỏi hệ thống (kiểm tra ràng buộc khách đang ngồi và đơn hàng đang liên kết)
     /// </summary>
     /// <param name="id">Id của bàn ăn cần xóa</param>
+    [Authorize(TooHungryPermissions.Tables.Delete)]
     public virtual async Task DeleteAsync(Guid id)
     {
         var table = await _tableRepository.FindAsync(id);
@@ -288,12 +350,88 @@ public class TableAppService : TooHungryAppService, ITableAppService
     }
 
     /// <summary>
+    /// Đổi nhanh trạng thái bàn ăn (phục vụ & thu ngân)
+    /// </summary>
+    public virtual async Task<TableDto> ChangeStatusAsync(Guid id, TableStatus status)
+    {
+        if (!await AuthorizationService.IsGrantedAsync(TooHungryPermissions.Tables.UpdateStatus) &&
+            !await AuthorizationService.IsGrantedAsync(TooHungryPermissions.Tables.Edit) &&
+            !await AuthorizationService.IsGrantedAsync(TooHungryPermissions.Tables.Manage))
+        {
+            throw new AbpAuthorizationException("Bạn không có quyền cập nhật trạng thái bàn ăn!");
+        }
+
+        var table = await _tableRepository.GetAsync(id);
+
+        // Atomic Status & Concurrency checks:
+        if (table.Status == TableStatus.Disabled && status != TableStatus.Available && status != TableStatus.Disabled)
+        {
+            throw new UserFriendlyException("Bàn đang bị vô hiệu hóa! Vui lòng kích hoạt bàn trước khi sử dụng.");
+        }
+
+        if (table.Status == TableStatus.Cleaning && status == TableStatus.Occupied)
+        {
+            throw new UserFriendlyException("Bàn đang được dọn dẹp! Vui lòng hoàn tất dọn dẹp trước khi tiếp đón khách.");
+        }
+
+        if (table.Status == TableStatus.Occupied && status == TableStatus.Occupied)
+        {
+            throw new UserFriendlyException("Trạng thái bàn đã được cập nhật bởi nhân viên khác (Bàn đang có khách phục vụ)!");
+        }
+
+        if (table.Status == TableStatus.Occupied && status == TableStatus.Available)
+        {
+            var hasActiveOrder = await _orderRepository.AnyAsync(x => x.TableId == id && x.Status != OrderStatus.Completed && x.Status != OrderStatus.Cancelled);
+            if (hasActiveOrder)
+            {
+                throw new UserFriendlyException("Bàn đang có đơn hàng chưa hoàn tất thanh toán! Vui lòng thanh toán trước khi giải phóng bàn.");
+            }
+        }
+
+        table.Status = status;
+
+        if (status == TableStatus.Available || status == TableStatus.Disabled || status == TableStatus.Cleaning)
+        {
+            table.ReservedCustomerName = null;
+            table.ReservedCustomerPhone = null;
+            table.ReservedTime = null;
+            table.ReservedGuestCount = null;
+            table.ReservedNote = null;
+        }
+
+        await _tableRepository.UpdateAsync(table, autoSave: true);
+        await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name, table.DiningAreaId);
+
+        var dto = ObjectMapper.Map<RestaurantTable, TableDto>(table);
+        if (string.IsNullOrWhiteSpace(dto.DiningAreaName))
+        {
+            dto.DiningAreaName = table.Location;
+        }
+
+        var activeOrder = await _orderRepository.FirstOrDefaultAsync(x => x.TableId == id && x.Status != OrderStatus.Completed && x.Status != OrderStatus.Cancelled);
+        if (activeOrder != null)
+        {
+            dto.ActiveOrderId = activeOrder.Id;
+            dto.HasActiveOrder = true;
+        }
+
+        return dto;
+    }
+
+    /// <summary>
     /// Cập nhật trạng thái hàng loạt cho tất cả các bàn trong cùng một khu vực (ví dụ khóa / mở khu vực)
     /// </summary>
     /// <param name="diningAreaId">Id của khu vực ăn uống</param>
     /// <param name="status">Trạng thái mới áp dụng cho toàn bộ bàn trong khu vực</param>
     public virtual async Task SetAreaTablesStatusAsync(Guid diningAreaId, TableStatus status)
     {
+        if (!await AuthorizationService.IsGrantedAsync(TooHungryPermissions.Tables.UpdateStatus) &&
+            !await AuthorizationService.IsGrantedAsync(TooHungryPermissions.Tables.Edit) &&
+            !await AuthorizationService.IsGrantedAsync(TooHungryPermissions.Tables.Manage))
+        {
+            throw new AbpAuthorizationException("Bạn không có quyền cập nhật trạng thái bàn ăn!");
+        }
+
         var tables = await _tableRepository.GetListAsync(x => x.DiningAreaId == diningAreaId);
         foreach (var table in tables)
         {
@@ -311,5 +449,10 @@ public class TableAppService : TooHungryAppService, ITableAppService
         }
 
         await _tableRepository.UpdateManyAsync(tables, autoSave: true);
+
+        foreach (var table in tables)
+        {
+            await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name, table.DiningAreaId);
+        }
     }
 }

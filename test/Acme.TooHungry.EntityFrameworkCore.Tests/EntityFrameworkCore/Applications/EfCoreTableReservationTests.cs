@@ -1,0 +1,29 @@
+using Acme.TooHungry.Reservations;
+using Xunit;
+
+namespace Acme.TooHungry.EntityFrameworkCore.Applications;
+
+[Collection(TooHungryTestConsts.CollectionDefinitionName)]
+public class EfCoreTableReservationAppServiceCreateTests : TableReservationAppService_Create_Tests<TooHungryEntityFrameworkCoreTestModule>
+{
+}
+
+[Collection(TooHungryTestConsts.CollectionDefinitionName)]
+public class EfCoreTableReservationAppServiceCheckInTests : TableReservationAppService_CheckIn_Tests<TooHungryEntityFrameworkCoreTestModule>
+{
+}
+
+[Collection(TooHungryTestConsts.CollectionDefinitionName)]
+public class EfCoreTableReservationAppServiceUpdateTests : TableReservationAppService_Update_Tests<TooHungryEntityFrameworkCoreTestModule>
+{
+}
+
+[Collection(TooHungryTestConsts.CollectionDefinitionName)]
+public class EfCoreTableReservationAppServiceCancelTests : TableReservationAppService_Cancel_Tests<TooHungryEntityFrameworkCoreTestModule>
+{
+}
+
+[Collection(TooHungryTestConsts.CollectionDefinitionName)]
+public class EfCoreReservationAutoCancelBackgroundWorkerTests : ReservationAutoCancelBackgroundWorker_Tests<TooHungryEntityFrameworkCoreTestModule>
+{
+}

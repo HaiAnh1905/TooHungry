@@ -10,8 +10,15 @@ import { registerLocaleForEsBuild } from '@abp/ng.core/locale';
 import { provideThemeLeptonX } from '@abp/ng.theme.lepton-x';
 import { provideSideMenuLayout } from '@abp/ng.theme.lepton-x/layouts';
 import { provideLogo, withEnvironmentOptions } from '@abp/ng.theme.shared';
-import { ApplicationConfig } from '@angular/core';
+import { ApplicationConfig, importProvidersFrom } from '@angular/core';
 import { provideAnimations } from '@angular/platform-browser/animations';
+import { NZ_I18N, vi_VN } from 'ng-zorro-antd/i18n';
+import { FormsModule } from '@angular/forms';
+import { HttpClientModule } from '@angular/common/http';
+import { registerLocaleData } from '@angular/common';
+import vi from '@angular/common/locales/vi';
+
+registerLocaleData(vi);
 import { provideRouter } from '@angular/router';
 import { environment } from '../environments/environment';
 import { APP_ROUTES } from './app.routes';
@@ -40,5 +47,7 @@ export const appConfig: ApplicationConfig = {
     provideAccountConfig(),
     // provideTenantManagementConfig(),
     provideAbpThemeShared(),
+    importProvidersFrom(FormsModule, HttpClientModule),
+    { provide: NZ_I18N, useValue: vi_VN }
   ],
 };

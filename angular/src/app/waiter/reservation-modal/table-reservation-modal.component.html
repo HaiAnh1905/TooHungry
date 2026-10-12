@@ -1,0 +1,158 @@
+<abp-modal [(visible)]="visible" [busy]="isSaving()">
+  <ng-template #abpHeader>
+    <div class="reservation-modal-header d-flex align-items-center gap-2">
+      <div class="header-icon-wrapper">
+        <i class="fas fa-calendar-plus text-primary fs-5"></i>
+      </div>
+      <div>
+        <h4 class="m-0 fw-bold header-title">
+          {{ '::ReserveTableFor' | abpLocalization }} <span class="highlight-table">{{ table?.name }}</span>
+        </h4>
+        <small class="text-muted" *ngIf="table">
+          <i class="fas fa-users me-1"></i>{{ '::TableCapacity' | abpLocalization }}: {{ table.capacity }} {{ '::Guests' | abpLocalization }}
+        </small>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #abpBody>
+    <form [formGroup]="form" (ngSubmit)="submit()" id="create-reservation-form" class="reservation-form">
+      <!-- 1. Customer Name -->
+      <div class="mb-3">
+        <label class="form-label required fw-semibold">
+          <i class="fas fa-user text-muted me-1"></i>
+          {{ '::CustomerName' | abpLocalization }}
+        </label>
+        <input
+          type="text"
+          class="form-control modern-input"
+          formControlName="customerName"
+          [placeholder]="'::CustomerNamePlaceholder' | abpLocalization"
+          [class.is-invalid]="form.get('customerName')?.invalid && form.get('customerName')?.touched"
+          autofocus
+        />
+        <div class="invalid-feedback" *ngIf="form.get('customerName')?.errors?.['required']">
+          {{ '::FieldRequired' | abpLocalization }}
+        </div>
+        <div class="invalid-feedback" *ngIf="form.get('customerName')?.errors?.['maxlength']">
+          {{ '::MaxLengthExceeded' | abpLocalization: '128' }}
+        </div>
+      </div>
+
+      <!-- 2. Phone & Guests -->
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label required fw-semibold">
+            <i class="fas fa-phone text-muted me-1"></i>
+            {{ '::CustomerPhone' | abpLocalization }}
+          </label>
+          <input
+            type="tel"
+            class="form-control modern-input"
+            formControlName="customerPhone"
+            [placeholder]="'::CustomerPhonePlaceholder' | abpLocalization"
+            [class.is-invalid]="form.get('customerPhone')?.invalid && form.get('customerPhone')?.touched"
+          />
+          <div class="invalid-feedback" *ngIf="form.get('customerPhone')?.errors?.['required']">
+            {{ '::FieldRequired' | abpLocalization }}
+          </div>
+          <div class="invalid-feedback" *ngIf="form.get('customerPhone')?.errors?.['pattern']">
+            {{ '::InvalidPhoneNumber' | abpLocalization }}
+          </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label class="form-label required fw-semibold">
+            <i class="fas fa-user-group text-muted me-1"></i>
+            {{ '::GuestCount' | abpLocalization }}
+          </label>
+          <input
+            type="number"
+            class="form-control modern-input"
+            formControlName="guestCount"
+            min="1"
+            [max]="table?.capacity || 100"
+            [class.is-invalid]="form.get('guestCount')?.invalid && form.get('guestCount')?.touched"
+          />
+          <div class="invalid-feedback" *ngIf="form.get('guestCount')?.errors?.['max']">
+            {{ '::ExceedsTableCapacityError' | abpLocalization: (table?.capacity?.toString() || '') }}
+          </div>
+          <div class="invalid-feedback" *ngIf="form.get('guestCount')?.errors?.['min']">
+            {{ '::MinGuestsError' | abpLocalization }}
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Date & Time -->
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label required fw-semibold">
+            <i class="fas fa-calendar-day text-muted me-1"></i>
+            {{ '::ReservationDate' | abpLocalization }}
+          </label>
+          <input
+            type="date"
+            class="form-control modern-input"
+            formControlName="reservationDate"
+            [min]="minDate"
+            [max]="maxDate"
+            [class.is-invalid]="form.get('reservationDate')?.invalid && form.get('reservationDate')?.touched"
+          />
+          <div class="form-text small text-muted">
+            <i class="fas fa-info-circle me-1"></i>{{ '::MaxAdvance7DaysNote' | abpLocalization }}
+          </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label class="form-label required fw-semibold">
+            <i class="fas fa-clock text-muted me-1"></i>
+            {{ '::ReservationTime' | abpLocalization }}
+          </label>
+          <input
+            type="time"
+            class="form-control modern-input"
+            formControlName="reservationTime"
+            [class.is-invalid]="form.get('reservationTime')?.invalid && form.get('reservationTime')?.touched"
+          />
+          <div class="invalid-feedback" *ngIf="form.get('reservationTime')?.errors?.['outsideOpeningHours']">
+            {{ '::OutsideOpeningHoursError' | abpLocalization }}
+          </div>
+          <div class="form-text small text-muted" *ngIf="!form.get('reservationTime')?.errors?.['outsideOpeningHours']">
+            <i class="fas fa-clock me-1"></i>{{ '::OpeningHoursNote' | abpLocalization }}
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Notes -->
+      <div class="mb-2">
+        <label class="form-label fw-semibold">
+          <i class="fas fa-comment-dots text-muted me-1"></i>
+          {{ '::Note' | abpLocalization }}
+        </label>
+        <textarea
+          class="form-control modern-input"
+          rows="2"
+          formControlName="note"
+          [placeholder]="'::ReservationNotePlaceholder' | abpLocalization"
+          maxlength="512"
+        ></textarea>
+      </div>
+    </form>
+  </ng-template>
+
+  <ng-template #abpFooter>
+    <button type="button" class="btn btn-secondary px-3" (click)="close()">
+      {{ '::Cancel' | abpLocalization }}
+    </button>
+    <button
+      type="submit"
+      form="create-reservation-form"
+      class="btn btn-primary btn-save px-4"
+      [disabled]="form.invalid || isSaving()"
+    >
+      <i class="fas fa-spinner fa-spin me-1" *ngIf="isSaving()"></i>
+      <i class="fas fa-check me-1" *ngIf="!isSaving()"></i>
+      {{ '::ConfirmReservation' | abpLocalization }}
+    </button>
+  </ng-template>
+</abp-modal>

@@ -14,4 +14,7 @@ public interface IOrderAppService : IApplicationService
     Task DeleteAsync(Guid id);
     Task<OrderDto?> GetActiveOrderByTableIdAsync(Guid tableId);
     Task CompleteActiveOrderByTableIdAsync(Guid tableId);
+    Task<StockValidationResultDto> ValidateStockAsync(ValidateOrderStockInputDto input);
+    Task<OrderDto> SubmitOrderAsync(SubmitOrderInputDto input);
+    Task CancelOrderAsync(Guid id, CancelOrderInputDto? input = null);
 }

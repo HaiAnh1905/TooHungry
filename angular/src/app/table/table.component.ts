@@ -32,18 +32,25 @@ import {
 } from '@abp/ng.core';
 import { ConfirmationService, Confirmation, ThemeSharedModule, ToasterService } from '@abp/ng.theme.shared';
 import { DatatableComponent, NgxDatatableModule } from '@swimlane/ngx-datatable';
-import { Subscription, interval } from 'rxjs';
+import { Subscription, interval, forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { TableService } from '../proxy/tables/table.service';
-import { TableDto, TableStatus, tableStatusOptions, GetTablesInput } from '../proxy/tables/models';
+import { TableDto, GetTablesInput } from '../proxy/tables/models';
+import { TableStatus } from '../proxy/tables/table-status.enum';
 import { DiningAreaService } from '../proxy/dining-areas/dining-area.service';
 import { DiningAreaDto } from '../proxy/dining-areas/models';
-import { DishService } from '../proxy/dishes/dish.service';
+import { DishService } from '../proxy/controllers/dish.service';
 import { DishDto } from '../proxy/dishes/models';
+import { RecipeService } from '../proxy/recipes/recipe.service';
+import { RecipeDto } from '../proxy/recipes/models';
+import { IngredientService } from '../proxy/ingredients/ingredient.service';
+import { IngredientDto } from '../proxy/ingredients/models';
 import { OrderService } from '../proxy/orders/order.service';
 import { OrderStatus } from '../proxy/orders/order-status.enum';
 import { OrderDto } from '../proxy/orders/models';
 
 import { CustomSelectComponent, CustomSelectOption } from '../shared/components/custom-select/custom-select.component';
+import { TableSignalrService } from '../shared/services/table-signalr.service';
 
 @Component({
   selector: 'app-table',
@@ -56,6 +63,8 @@ import { CustomSelectComponent, CustomSelectOption } from '../shared/components/
 export class TableComponent implements OnInit, AfterViewInit, OnDestroy {
   public readonly list = inject(ListService);
   private readonly tableService = inject(TableService);
+  private readonly recipeService = inject(RecipeService);
+  private readonly ingredientService = inject(IngredientService);
   private readonly diningAreaService = inject(DiningAreaService);
   private readonly dishService = inject(DishService);
   private readonly orderService = inject(OrderService);
@@ -66,6 +75,7 @@ export class TableComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly tableSignalrService = inject(TableSignalrService);
 
   @ViewChild('table') table?: DatatableComponent;
   @ViewChild('tableWrapper') tableWrapper?: ElementRef;
@@ -76,7 +86,13 @@ export class TableComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly allTables = signal<TableDto[]>([]);
   readonly diningAreas = signal<DiningAreaDto[]>([]);
 
-  tableStatuses = tableStatusOptions;
+  tableStatuses = [
+    { value: TableStatus.Available, key: '::TableStatusAvailable' },
+    { value: TableStatus.Occupied, key: '::TableStatusOccupied' },
+    { value: TableStatus.Reserved, key: '::TableStatusReserved' },
+    { value: TableStatus.Cleaning, key: '::TableStatusCleaning' },
+    { value: TableStatus.Disabled, key: '::TableStatusDisabled' },
+  ];
   TableStatus = TableStatus;
 
   // Modal Gọi món cho bàn (Order Modal)
@@ -141,6 +157,7 @@ export class TableComponent implements OnInit, AfterViewInit, OnDestroy {
   private resizeObserver?: ResizeObserver;
   private listSubscription?: Subscription;
   private timerSubscription?: Subscription;
+  private signalrSubscription?: Subscription;
 
   // Helper so khớp bàn với khu vực (ưu tiên diningAreaId chuẩn, chỉ fallback location khi bàn chưa có diningAreaId)
   isTableInArea(t: TableDto, areaId: string | null): boolean {
@@ -233,7 +250,14 @@ export class TableComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly availableCount = computed(() => this.allTables().filter(t => t.status === TableStatus.Available).length);
   readonly occupiedCount = computed(() => this.allTables().filter(t => t.status === TableStatus.Occupied).length);
   readonly reservedCount = computed(() => this.allTables().filter(t => t.status === TableStatus.Reserved).length);
+  readonly cleaningCount = computed(() => this.allTables().filter(t => t.status === TableStatus.Cleaning).length);
   readonly disabledCount = computed(() => this.allTables().filter(t => t.status === TableStatus.Disabled).length);
+
+  readonly isRestaurantOpen = computed(() => {
+    const now = new Date(this.currentTime());
+    const hours = now.getHours();
+    return hours >= 9 && hours < 23;
+  });
 
   // Helper computed cho khu vực đang chọn
   readonly currentAreaTables = computed(() => {
@@ -302,6 +326,19 @@ export class TableComponent implements OnInit, AfterViewInit, OnDestroy {
     // Tự động cập nhật đồng hồ đếm thời gian trôi qua mỗi 10 giây thời gian thực
     this.timerSubscription = interval(10000).subscribe(() => {
       this.currentTime.set(Date.now());
+      this.cdr.markForCheck();
+    });
+
+    // Lắng nghe sự kiện cập nhật trạng thái bàn thời gian thực từ SignalR Hub
+    this.signalrSubscription = this.tableSignalrService.tableStatusChanged$.subscribe(event => {
+      this.allTables.update(tables =>
+        tables.map(t => (t.id === event.tableId ? { ...t, status: event.status as TableStatus } : t))
+      );
+      if (this.data?.items) {
+        this.data.items = this.data.items.map(t =>
+          t.id === event.tableId ? { ...t, status: event.status as TableStatus } : t
+        );
+      }
       this.cdr.markForCheck();
     });
   }
@@ -440,6 +477,7 @@ export class TableComponent implements OnInit, AfterViewInit, OnDestroy {
     this.resizeObserver?.disconnect();
     this.listSubscription?.unsubscribe();
     this.timerSubscription?.unsubscribe();
+    this.signalrSubscription?.unsubscribe();
   }
 
   private recalculateTable() {
@@ -507,7 +545,7 @@ export class TableComponent implements OnInit, AfterViewInit, OnDestroy {
     this.areaDropdownSearch = '';
     this.form = this.fb.group({
       name: [this.selectedItem.name || '', Validators.required],
-      capacity: [this.selectedItem.capacity || 4, [Validators.required, Validators.min(1)]],
+      capacity: [this.selectedItem.capacity || 4, [Validators.required, Validators.min(1), Validators.max(100)]],
       status: [this.selectedItem.status ?? TableStatus.Available, Validators.required],
       diningAreaId: [this.selectedItem.diningAreaId || null],
       location: [this.selectedItem.location || ''],
@@ -529,7 +567,7 @@ export class TableComponent implements OnInit, AfterViewInit, OnDestroy {
     this.diningAreaService.create(this.areaForm.value).subscribe({
       next: (newArea) => {
         this.isAreaModalOpen = false;
-        this.diningAreas.update(areas => [...areas, newArea].sort((a, b) => a.name.localeCompare(b.name)));
+        this.diningAreas.update(areas => [...areas, newArea].sort((a, b) => (a.name || '').localeCompare(b.name || '')));
         if (this.form) {
           this.form.patchValue({ diningAreaId: newArea.id });
         }
@@ -553,6 +591,7 @@ export class TableComponent implements OnInit, AfterViewInit, OnDestroy {
     { value: TableStatus.Available, key: '::TableStatusAvailable', descKey: '::TableStatusAvailableDesc', icon: 'fa-check-circle' },
     { value: TableStatus.Occupied, key: '::TableStatusOccupied', descKey: '::TableStatusOccupiedDesc', icon: 'fa-utensils' },
     { value: TableStatus.Reserved, key: '::TableStatusReserved', descKey: '::TableStatusReservedDesc', icon: 'fa-calendar-check' },
+    { value: TableStatus.Cleaning, key: '::TableStatusCleaning', descKey: '::TableStatusCleaningDesc', icon: 'fa-broom' },
     { value: TableStatus.Disabled, key: '::TableStatusDisabled', descKey: '::TableStatusDisabledDesc', icon: 'fa-ban' }
   ];
 
@@ -622,10 +661,10 @@ export class TableComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   getFilteredDiningAreas(): DiningAreaDto[] {
-    const list = this.diningAreas();
+    const list = this.diningAreas().filter(a => a.isActive !== false);
     if (!this.areaDropdownSearch) return list;
     const term = this.areaDropdownSearch.trim().toLowerCase();
-    return list.filter(a => a.name.toLowerCase().includes(term) || (a.description && a.description.toLowerCase().includes(term)));
+    return list.filter(a => (a.name || '').toLowerCase().includes(term) || (a.description && a.description.toLowerCase().includes(term)));
   }
 
   @HostListener('document:click', ['$event'])
@@ -661,7 +700,7 @@ export class TableComponent implements OnInit, AfterViewInit, OnDestroy {
 
     request.subscribe({
       next: () => {
-        if (this.selectedItem.id && this.form.value.status === TableStatus.Available) {
+        if (this.selectedItem.id && this.form.value.status === TableStatus.Available && this.selectedItem.status === TableStatus.Occupied) {
           this.orderService.completeActiveOrderByTableId(this.selectedItem.id).subscribe({
             error: () => {},
           });
@@ -715,7 +754,7 @@ export class TableComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Getter lấy thời gian tối thiểu cho input datetime-local (thời điểm hiện tại hoặc giờ đặt cũ nếu đang sửa)
   get minReservationTime(): string {
-    if (this.reservingTable?.status === TableStatus.Reserved && this.reservingTable.reservedTime) {
+    if (this.reservingTable?.status === TableStatus.Reserved && this.reservingTable?.reservedTime) {
       const existingDate = new Date(this.reservingTable.reservedTime);
       if (!isNaN(existingDate.getTime())) {
         return new Date(existingDate.getTime() - existingDate.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
@@ -1083,20 +1122,9 @@ export class TableComponent implements OnInit, AfterViewInit, OnDestroy {
     this.cdr.markForCheck();
     this.cdr.detectChanges();
 
-    // 2. Gửi request cập nhật lên máy chủ
+    // 2. Gửi request cập nhật lên máy chủ qua endpoint chuyên biệt đổi trạng thái
     this.tableService
-      .update(tableId, {
-        name: table.name,
-        capacity: table.capacity,
-        status: newStatus,
-        diningAreaId: table.diningAreaId,
-        location: table.location,
-        reservedCustomerName: newStatus === TableStatus.Available ? undefined : table.reservedCustomerName,
-        reservedCustomerPhone: newStatus === TableStatus.Available ? undefined : table.reservedCustomerPhone,
-        reservedTime: newStatus === TableStatus.Available ? undefined : table.reservedTime,
-        reservedGuestCount: newStatus === TableStatus.Available ? undefined : table.reservedGuestCount,
-        reservedNote: newStatus === TableStatus.Available ? undefined : table.reservedNote,
-      })
+      .changeStatus(tableId, newStatus as any)
       .subscribe({
         next: (updatedTable) => {
           if (updatedTable) {
@@ -1104,14 +1132,15 @@ export class TableComponent implements OnInit, AfterViewInit, OnDestroy {
               tables.map(t => (t.id === tableId ? { ...t, ...updatedTable, status: newStatus } : t))
             );
           }
-          if (newStatus === TableStatus.Available) {
+          if (newStatus === TableStatus.Available && originalTable?.status === TableStatus.Occupied) {
             this.orderService.completeActiveOrderByTableId(tableId).subscribe({
               error: () => {},
             });
           }
           this.cdr.markForCheck();
         },
-        error: () => {
+        error: (err) => {
+          this.toaster.error(err?.error?.message || err?.message || 'Có lỗi xảy ra khi đổi trạng thái bàn!');
           // Khôi phục trạng thái cũ nếu lỗi
           this.allTables.update(tables => tables.map(t => (t.id === tableId ? originalTable : t)));
           this.list.get();
@@ -1182,7 +1211,7 @@ export class TableComponent implements OnInit, AfterViewInit, OnDestroy {
 
           this.confirmation.info(message, title).subscribe((status: Confirmation.Status) => {
             if (status === Confirmation.Status.confirm) {
-              this.quickUpdateStatus(table, TableStatus.Available);
+              this.quickUpdateStatus(table, TableStatus.Cleaning);
             }
           });
         }
@@ -1195,7 +1224,7 @@ export class TableComponent implements OnInit, AfterViewInit, OnDestroy {
         const title = this.localizationService.instant('::ConfirmEndMealTitle');
         this.confirmation.info(message, title).subscribe((status: Confirmation.Status) => {
           if (status === Confirmation.Status.confirm) {
-            this.quickUpdateStatus(table, TableStatus.Available);
+            this.quickUpdateStatus(table, TableStatus.Cleaning);
           }
         });
       },
@@ -1297,7 +1326,7 @@ export class TableComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  getStatusBadgeClass(status: TableStatus): string {
+  getStatusBadgeClass(status: TableStatus | undefined | null): string {
     switch (status) {
       case TableStatus.Available:
         return 'badge-status-available';
@@ -1305,6 +1334,8 @@ export class TableComponent implements OnInit, AfterViewInit, OnDestroy {
         return 'badge-status-occupied';
       case TableStatus.Reserved:
         return 'badge-status-reserved';
+      case TableStatus.Cleaning:
+        return 'badge-status-cleaning';
       case TableStatus.Disabled:
         return 'badge-status-disabled';
       default:
@@ -1312,7 +1343,7 @@ export class TableComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  getStatusLabel(status: TableStatus): string {
+  getStatusLabel(status: TableStatus | undefined | null): string {
     switch (status) {
       case TableStatus.Available:
         return '::TableStatusAvailable';
@@ -1320,6 +1351,8 @@ export class TableComponent implements OnInit, AfterViewInit, OnDestroy {
         return '::TableStatusOccupied';
       case TableStatus.Reserved:
         return '::TableStatusReserved';
+      case TableStatus.Cleaning:
+        return '::TableStatusCleaning';
       case TableStatus.Disabled:
         return '::TableStatusDisabled';
       default:
@@ -1470,6 +1503,116 @@ export class TableComponent implements OnInit, AfterViewInit, OnDestroy {
     return item ? Number(item.get('quantity')?.value || 0) : 0;
   }
 
+  recipes: RecipeDto[] = [];
+  ingredients: IngredientDto[] = [];
+  recipeByDishId = new Map<string, RecipeDto>();
+  ingredientById = new Map<string, IngredientDto>();
+
+  getDishStockInfo(
+    dishId?: string,
+    quantity: number = 1
+  ): {
+    isOutOfStock: boolean;
+    isShortage: boolean;
+    warningMessage?: string;
+    ingredientName?: string;
+    unitStr?: string;
+    currentStock?: number;
+    missingAmount?: number;
+  } {
+    if (!dishId) return { isOutOfStock: false, isShortage: false };
+    const recipe = this.recipeByDishId.get(dishId);
+    if (!recipe || !recipe.ingredients || recipe.ingredients.length === 0) {
+      return { isOutOfStock: false, isShortage: false };
+    }
+
+    for (const item of recipe.ingredients) {
+      const ing = this.ingredientById.get(item.ingredientId);
+      if (!ing) continue;
+
+      const currentStock = Number(ing.currentStock || 0);
+      const conversion = Number(item.conversionFactor || 1);
+      const neededPerDish = Number(item.quantity || 0) * conversion;
+      const totalNeeded = neededPerDish * quantity;
+      const unitStr = ing.baseUnit || item.warehouseUnitName || item.unit || '';
+
+      if (currentStock <= 0) {
+        return {
+          isOutOfStock: true,
+          isShortage: true,
+          ingredientName: ing.name,
+          unitStr,
+          currentStock: 0,
+          missingAmount: totalNeeded,
+          warningMessage: this.localizationService.instant(
+            '::StockShortageOutOfStock',
+            ing.name,
+            unitStr
+          ),
+        };
+      }
+
+      if (currentStock < totalNeeded) {
+        const missing = Number((totalNeeded - currentStock).toFixed(1));
+        return {
+          isOutOfStock: false,
+          isShortage: true,
+          ingredientName: ing.name,
+          unitStr,
+          currentStock,
+          missingAmount: missing,
+          warningMessage: this.localizationService.instant(
+            '::StockShortageDeficit',
+            missing.toString(),
+            unitStr,
+            ing.name,
+            currentStock.toString()
+          ),
+        };
+      }
+    }
+
+    return { isOutOfStock: false, isShortage: false };
+  }
+
+  initialDishQuantities = new Map<string, number>();
+  initialOrderSnapshot = '';
+
+  private getOrderSnapshot(): string {
+    if (!this.orderForm) return '';
+    const items = (this.orderItemsArray?.controls || [])
+      .map(c => ({
+        dishId: c.get('dishId')?.value,
+        quantity: Number(c.get('quantity')?.value || 0),
+        unitPrice: Number(c.get('unitPrice')?.value || 0),
+      }))
+      .sort((a, b) => (a.dishId || '').localeCompare(b.dishId || ''));
+
+    const note = (this.orderForm.get('note')?.value || '').trim();
+    return JSON.stringify({ items, note });
+  }
+
+  get hasOrderChanged(): boolean {
+    if (!this.activeOrderId) return true;
+    return this.getOrderSnapshot() !== this.initialOrderSnapshot;
+  }
+
+  isDishOutOfStock(dishId?: string): boolean {
+    return this.getDishStockInfo(dishId, 1).isOutOfStock;
+  }
+
+  getDishStockWarning(dishId?: string, quantity: number = 1): string | null {
+    if (!dishId) return null;
+    const initialQty = this.initialDishQuantities.get(dishId) || 0;
+    // Nếu món đã có trong đơn từ trước và không tăng số lượng -> không hiện cảnh báo
+    if (initialQty > 0 && quantity <= initialQty) {
+      return null;
+    }
+
+    const info = this.getDishStockInfo(dishId, quantity);
+    return info.warningMessage || null;
+  }
+
   openOrderModal(table: TableDto) {
     this.selectedTableForOrder = table;
     this.dishSearchTerm = '';
@@ -1485,7 +1628,6 @@ export class TableComponent implements OnInit, AfterViewInit, OnDestroy {
               this.activeOrderId = null;
               this.initOrderForm();
             }
-            // Mặc định đóng tất cả category dropdown
             this.expandedCategories = new Set<string>();
             this.isOrderModalOpen = true;
             this.cdr.markForCheck();
@@ -1507,15 +1649,37 @@ export class TableComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     };
 
-    // Tải danh sách món ăn từ DishService nếu chưa có
-    if (!this.dishes || this.dishes.length === 0) {
-      this.dishService.getList({ maxResultCount: 200, skipCount: 0 }).subscribe(res => {
-        this.dishes = res.items || [];
+    // Tải đồng bộ món ăn, công thức và tồn kho nguyên liệu
+    forkJoin({
+      dishesRes: this.dishService.getList({ maxResultCount: 200, skipCount: 0 } as any).pipe(catchError(() => of({ items: [] }))),
+      recipesRes: this.recipeService.getList({ maxResultCount: 1000 } as any).pipe(catchError(() => of({ items: [] }))),
+      ingredientsRes: this.ingredientService.getList({ maxResultCount: 1000 } as any).pipe(catchError(() => of({ items: [] }))),
+    }).subscribe({
+      next: ({ dishesRes, recipesRes, ingredientsRes }) => {
+        this.dishes = (dishesRes as any)?.items || [];
+        this.recipes = (recipesRes as any)?.items || [];
+        this.ingredients = (ingredientsRes as any)?.items || [];
+
+        this.recipeByDishId.clear();
+        for (const r of this.recipes) {
+          if (r.dishId && r.isActive) {
+            this.recipeByDishId.set(r.dishId, r);
+          }
+        }
+
+        this.ingredientById.clear();
+        for (const ing of this.ingredients) {
+          if (ing.id) {
+            this.ingredientById.set(ing.id, ing);
+          }
+        }
+
         setupModal();
-      });
-    } else {
-      setupModal();
-    }
+      },
+      error: () => {
+        setupModal();
+      },
+    });
   }
 
   private loadOrderToForm(order: OrderDto) {
@@ -1537,6 +1701,14 @@ export class TableComponent implements OnInit, AfterViewInit, OnDestroy {
     });
     this.calculateOrderTotal();
     this.dishSearchTerm = '';
+
+    this.initialDishQuantities.clear();
+    for (const item of order.items || []) {
+      if (item.dishId) {
+        this.initialDishQuantities.set(item.dishId, item.quantity || 0);
+      }
+    }
+    this.initialOrderSnapshot = this.getOrderSnapshot();
   }
 
   private initOrderForm() {
@@ -1549,6 +1721,22 @@ export class TableComponent implements OnInit, AfterViewInit, OnDestroy {
       items: this.fb.array([]),
     });
     this.dishSearchTerm = '';
+    this.initialDishQuantities.clear();
+    this.initialOrderSnapshot = '';
+  }
+
+  private lastWarningMsg = '';
+  private lastWarningTime = 0;
+
+  private showStockWarningToast(message?: string, title?: string) {
+    if (!message) return;
+    const now = Date.now();
+    if (this.lastWarningMsg === message && now - this.lastWarningTime < 1500) {
+      return;
+    }
+    this.lastWarningMsg = message;
+    this.lastWarningTime = now;
+    this.toaster.warn(message, title);
   }
 
   addDishToOrder(dish: DishDto) {
@@ -1556,24 +1744,43 @@ export class TableComponent implements OnInit, AfterViewInit, OnDestroy {
     const existingIndex = this.orderItemsArray.controls.findIndex(
       c => c.get('dishId')?.value === dish.id
     );
+
     if (existingIndex >= 0) {
       this.increaseQuantity(existingIndex);
-    } else {
-      this.orderItemsArray.push(
-        this.fb.group({
-          dishId: [dish.id, Validators.required],
-          quantity: [1, [Validators.required, Validators.min(1)]],
-          unitPrice: [dish.price || 0, [Validators.required, Validators.min(0)]],
-        })
-      );
-      this.calculateOrderTotal();
+      return;
     }
+
+    const stockInfo = this.getDishStockInfo(dish.id, 1);
+    if (stockInfo.isShortage && stockInfo.warningMessage) {
+      this.showStockWarningToast(stockInfo.warningMessage, `Cảnh báo: ${dish.name}`);
+    }
+
+    this.orderItemsArray.push(
+      this.fb.group({
+        dishId: [dish.id, Validators.required],
+        quantity: [1, [Validators.required, Validators.min(1)]],
+        unitPrice: [dish.price || 0, [Validators.required, Validators.min(0)]],
+      })
+    );
+    this.calculateOrderTotal();
   }
 
   increaseQuantity(index: number) {
     const row = this.orderItemsArray.at(index);
     const current = Number(row.get('quantity')?.value || 1);
-    row.patchValue({ quantity: current + 1 });
+    const dishId = row.get('dishId')?.value;
+    const newQty = current + 1;
+
+    const initialQty = this.initialDishQuantities.get(dishId) || 0;
+    // Chỉ hiện cảnh báo nếu số lượng mới vượt quá số lượng ban đầu của đơn
+    if (newQty > initialQty) {
+      const stockInfo = this.getDishStockInfo(dishId, newQty);
+      if (stockInfo.isShortage && stockInfo.warningMessage) {
+        this.showStockWarningToast(stockInfo.warningMessage, `Cảnh báo: ${this.getDishName(dishId)}`);
+      }
+    }
+
+    row.patchValue({ quantity: newQty });
     this.calculateOrderTotal();
   }
 
@@ -1623,44 +1830,80 @@ export class TableComponent implements OnInit, AfterViewInit, OnDestroy {
     const formVal = { ...this.orderForm.value };
     formVal.tableId = this.selectedTableForOrder.id;
 
-    if (this.activeOrderId) {
-      // Cập nhật Order hiện có
-      this.orderService.update(this.activeOrderId, formVal).subscribe({
-        next: () => {
-          const tableName = this.selectedTableForOrder?.name || '';
-          this.toaster.success(
-            this.localizationService.instant('::OrderUpdatedSuccessfully', tableName)
-          );
-          this.isOrderModalOpen = false;
-          this.orderForm.reset();
-          this.activeOrderId = null;
-          this.cdr.markForCheck();
-        },
-        error: () => {
-          // Handled by ABP global error handler
-        },
-      });
-    } else {
-      // Tạo Order mới
-      formVal.orderDate = new Date().toISOString();
-      formVal.status = OrderStatus.Pending;
+    const executeSave = () => {
+      if (this.activeOrderId) {
+        this.orderService.update(this.activeOrderId, formVal).subscribe({
+          next: () => {
+            const tableName = this.selectedTableForOrder?.name || '';
+            this.toaster.success(
+              this.localizationService.instant('::OrderUpdatedSuccessfully', tableName)
+            );
+            this.isOrderModalOpen = false;
+            this.orderForm.reset();
+            this.activeOrderId = null;
+            this.cdr.markForCheck();
+          },
+          error: () => {},
+        });
+      } else {
+        formVal.orderDate = new Date().toISOString();
+        formVal.status = OrderStatus.Pending;
 
-      this.orderService.create(formVal).subscribe({
-        next: () => {
-          const tableName = this.selectedTableForOrder?.name || '';
-          this.toaster.success(
-            this.localizationService.instant('::OrderCreatedSuccessfully', tableName)
-          );
-          this.isOrderModalOpen = false;
-          this.orderForm.reset();
-          this.activeOrderId = null;
-          this.cdr.markForCheck();
-        },
-        error: () => {
-          // Handled by ABP global error handler
-        },
-      });
+        this.orderService.create(formVal).subscribe({
+          next: () => {
+            const tableName = this.selectedTableForOrder?.name || '';
+            this.toaster.success(
+              this.localizationService.instant('::OrderCreatedSuccessfully', tableName)
+            );
+            this.isOrderModalOpen = false;
+            this.orderForm.reset();
+            this.activeOrderId = null;
+            this.cdr.markForCheck();
+          },
+          error: () => {},
+        });
+      }
+    };
+
+    // Kiểm tra xem trong đơn có món nào thiếu/hết nguyên liệu không (chỉ xét món mới hoặc món tăng số lượng)
+    const shortages: string[] = [];
+    for (const item of this.orderItemsArray.controls) {
+      const dId = item.get('dishId')?.value;
+      const q = Number(item.get('quantity')?.value || 1);
+      const initialQty = this.initialDishQuantities.get(dId) || 0;
+
+      // Nếu món đã có từ trước và không tăng số lượng -> không cảnh báo
+      if (initialQty > 0 && q <= initialQty) {
+        continue;
+      }
+
+      const s = this.getDishStockInfo(dId, q);
+      if (s.isShortage && s.warningMessage) {
+        const line = this.localizationService.instant(
+          '::StockShortageDishLine',
+          this.getDishName(dId),
+          q.toString(),
+          s.warningMessage
+        );
+        shortages.push(line);
+      }
     }
+
+    if (shortages.length > 0) {
+      const alertList = shortages.join('<br>');
+      const alertMsg = this.localizationService.instant('::OrderHasStockShortageAlert', alertList);
+      this.confirmation.warn(
+        alertMsg,
+        this.localizationService.instant('::StockShortageWarningTitle'),
+        {
+          hideCancelBtn: true,
+          yesText: '::Close',
+        }
+      );
+      return;
+    }
+
+    executeSave();
   }
 
   // Điều hướng phụ trợ nếu cần

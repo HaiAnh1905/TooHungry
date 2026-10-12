@@ -333,6 +333,26 @@
           }
         }
 
+        &.btn-deactivate-icon {
+          background: #fffbeb;
+          color: #d97706;
+
+          &:hover {
+            background: #fef3c7;
+            color: #b45309;
+          }
+        }
+
+        &.btn-activate-icon {
+          background: #ecfdf5;
+          color: #059669;
+
+          &:hover {
+            background: #d1fae5;
+            color: #047857;
+          }
+        }
+
         &.btn-delete-icon {
           background: #fee2e2;
           color: #dc2626;

@@ -40,16 +40,18 @@ export class CustomSelectComponent implements ControlValueAccessor {
   @Input() leadIcon?: string;
   @Input() minWidth: string = '160px';
   @Input() size: 'sm' | 'md' = 'md';
-  @Input() placement: 'top' | 'bottom' = 'bottom';
+  @Input() placement: 'top' | 'bottom' | 'auto' = 'auto';
   @Input() searchable: boolean = false;
   @Input() disabled: boolean = false;
   @Input() searchPlaceholder: string = 'Tìm kiếm...';
+  @Input() maxHeight: string = '360px';
 
   @Output() selectionChange = new EventEmitter<any>();
 
   isOpen = false;
   searchQuery = '';
   value: any = null;
+  calculatedPlacement: 'top' | 'bottom' = 'bottom';
 
   private onChange: (val: any) => void = () => {};
   private onTouched: () => void = () => {};
@@ -75,13 +77,51 @@ export class CustomSelectComponent implements ControlValueAccessor {
     this.cdr.markForCheck();
   }
 
+  private static activeSelectInstance: CustomSelectComponent | null = null;
+
+  closeDropdown(): void {
+    if (this.isOpen) {
+      this.isOpen = false;
+      this.searchQuery = '';
+      if (CustomSelectComponent.activeSelectInstance === this) {
+        CustomSelectComponent.activeSelectInstance = null;
+      }
+      this.cdr.markForCheck();
+    }
+  }
+
   toggleDropdown(event?: Event) {
     if (this.disabled) return;
     if (event) {
       event.stopPropagation();
       event.preventDefault();
     }
-    this.isOpen = !this.isOpen;
+
+    if (this.isOpen) {
+      this.closeDropdown();
+      return;
+    }
+
+    // Đóng dropdown khác nếu đang mở
+    if (CustomSelectComponent.activeSelectInstance && CustomSelectComponent.activeSelectInstance !== this) {
+      CustomSelectComponent.activeSelectInstance.closeDropdown();
+    }
+
+    if (this.placement === 'auto') {
+      const rect = this.el.nativeElement.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      // Nếu bên dưới còn dưới 250px và bên trên rộng rãi hơn thì lật lên trên
+      if (spaceBelow < 250 && spaceAbove > spaceBelow) {
+        this.calculatedPlacement = 'top';
+      } else {
+        this.calculatedPlacement = 'bottom';
+      }
+    } else {
+      this.calculatedPlacement = this.placement;
+    }
+    this.isOpen = true;
+    CustomSelectComponent.activeSelectInstance = this;
     this.searchQuery = '';
     this.onTouched();
     this.cdr.markForCheck();
@@ -95,8 +135,7 @@ export class CustomSelectComponent implements ControlValueAccessor {
     this.value = opt.value;
     this.onChange(this.value);
     this.selectionChange.emit(this.value);
-    this.isOpen = false;
-    this.cdr.markForCheck();
+    this.closeDropdown();
   }
 
   isSelected(opt: CustomSelectOption): boolean {

@@ -1,0 +1,300 @@
+<div class="role-management-page">
+  <!-- 1. TOP HEADER: Tiêu đề & Nút Thêm mới -->
+  <div class="page-header-row d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+    <div>
+      <h2 class="page-title m-0">
+        {{ '::Menu:Roles' | abpLocalization }}
+      </h2>
+      <p class="page-subtitle m-0 mt-1 text-muted">
+        {{ '::RolesSubtitle' | abpLocalization }}
+      </p>
+    </div>
+    <div>
+      <!-- Không hiển thị nút Thêm mới vì yêu cầu chỉ quản lý 5 role mặc định -->
+    </div>
+  </div>
+
+  <!-- 4. DATA TABLE CARD & PAGINATION FOOTER -->
+  <div class="data-card-wrapper shadow-sm rounded bg-white">
+    <ngx-datatable
+      #table
+      class="sedap-modern-table"
+      [rows]="roles"
+      [count]="totalCount"
+      [limit]="pageSize"
+      [offset]="pageIndex"
+      [externalPaging]="true"
+      (page)="setPage($event)"
+      columnMode="force"
+      [headerHeight]="48"
+      [messages]="{
+        emptyMessage: '::NoDataAvailable' | abpLocalization,
+        totalMessage: '::RoleCount' | abpLocalization
+      }"
+      [rowHeight]="56"
+      [loadingIndicator]="loading"
+    >
+      <!-- Cột STT -->
+      <ngx-datatable-column
+        [width]="65"
+        [minWidth]="55"
+        [maxWidth]="75"
+        [canAutoResize]="false"
+        [sortable]="false"
+      >
+        <ng-template ngx-datatable-header-template>
+          <span class="w-100 text-center header-title-centered">{{ '::Index' | abpLocalization }}</span>
+        </ng-template>
+        <ng-template let-rowIndex="rowIndex" ngx-datatable-cell-template>
+          <span class="stt-text fw-bold text-muted w-100 text-center d-block">{{ pageIndex * pageSize + rowIndex + 1 }}</span>
+        </ng-template>
+      </ngx-datatable-column>
+
+      <!-- Cột 1: Tên Vai trò -->
+      <ngx-datatable-column
+        [name]="'::RoleName' | abpLocalization"
+        prop="name"
+        [minWidth]="200"
+        [flexGrow]="3"
+        [canAutoResize]="true"
+      >
+        <ng-template let-row="row" ngx-datatable-cell-template>
+          <div class="d-flex align-items-center gap-2">
+            <div class="dish-avatar-icon flex-shrink-0" style="width: 32px; height: 32px; background: #fff3e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ff9800;">
+              <i class="fa fa-shield-halved"></i>
+            </div>
+            <span class="fw-bold text-dark">{{ row.name }}</span>
+          </div>
+        </ng-template>
+      </ngx-datatable-column>
+
+      <!-- Cột 2: Mặc định -->
+      <ngx-datatable-column
+        [name]="'::IsDefault' | abpLocalization"
+        prop="isDefault"
+        [width]="150"
+        [minWidth]="120"
+        [maxWidth]="180"
+        [canAutoResize]="false"
+        [sortable]="false"
+      >
+        <ng-template let-row="row" ngx-datatable-cell-template>
+          <span class="badge" [ngClass]="row.isDefault ? 'bg-primary' : 'bg-secondary'">
+            <ng-container *ngIf="row.isDefault">{{ '::Yes' | abpLocalization }}</ng-container>
+            <ng-container *ngIf="!row.isDefault">{{ '::No' | abpLocalization }}</ng-container>
+          </span>
+        </ng-template>
+      </ngx-datatable-column>
+
+      <!-- Cột 3: Cố định -->
+      <ngx-datatable-column
+        [name]="'::IsStatic' | abpLocalization"
+        prop="isStatic"
+        [width]="150"
+        [minWidth]="120"
+        [maxWidth]="180"
+        [canAutoResize]="false"
+        [sortable]="false"
+      >
+        <ng-template let-row="row" ngx-datatable-cell-template>
+          <span class="badge" [ngClass]="row.isStatic ? 'bg-primary' : 'bg-secondary'">
+            <ng-container *ngIf="row.isStatic">{{ '::Yes' | abpLocalization }}</ng-container>
+            <ng-container *ngIf="!row.isStatic">{{ '::No' | abpLocalization }}</ng-container>
+          </span>
+        </ng-template>
+      </ngx-datatable-column>
+
+      <!-- Cột Thao tác (Actions) -->
+      <ngx-datatable-column
+        [width]="150"
+        [minWidth]="120"
+        [maxWidth]="180"
+        [canAutoResize]="false"
+        [sortable]="false"
+      >
+        <ng-template ngx-datatable-header-template>
+          <span class="w-100 text-center header-title-centered">{{ '::Actions' | abpLocalization }}</span>
+        </ng-template>
+        <ng-template let-row="row" ngx-datatable-cell-template>
+          <div class="actions-container d-flex justify-content-center">
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-primary"
+              (click)="openPermissions(row)"
+            >
+              <i class="fa fa-key me-1"></i> {{ '::AssignPermissions' | abpLocalization }}
+            </button>
+          </div>
+        </ng-template>
+      </ngx-datatable-column>
+    </ngx-datatable>
+
+    <!-- 5. CUSTOM FOOTER PAGINATION BAR -->
+    <div class="custom-table-footer d-flex align-items-center justify-content-between flex-wrap gap-3 p-3 border-top">
+      <!-- Bên trái: Số lượng bản ghi + Select số dòng -->
+      <div class="d-flex align-items-center flex-wrap gap-3">
+        <span class="records-summary-text text-muted">
+          {{ '::ShowingRecords' | abpLocalization }}
+          <strong>{{ fromRecord }} - {{ toRecord }}</strong>
+          {{ '::OfTotal' | abpLocalization }}
+          <strong>{{ totalCount }}</strong>
+          {{ '::RoleCount' | abpLocalization }}
+        </span>
+
+        <div class="d-flex align-items-center gap-2 page-size-box">
+          <span class="page-size-label text-muted">{{ '::Display' | abpLocalization }}:</span>
+          <app-custom-select
+            [options]="pageSizeOptions"
+            [ngModel]="pageSize"
+            (selectionChange)="changePageSize($event)"
+            size="sm"
+            placement="top"
+            minWidth="100px"
+          ></app-custom-select>
+        </div>
+      </div>
+
+      <!-- Bên phải: Dãy nút điều hướng phân trang -->
+      <div class="d-flex align-items-center pagination-btn-group" style="gap: 5px;">
+        <button type="button" class="btn btn-sm btn-light" [disabled]="pageIndex === 0" (click)="firstPage()">
+          <i class="fa fa-angle-double-left"></i>
+        </button>
+
+        <button type="button" class="btn btn-sm btn-light" [disabled]="pageIndex === 0" (click)="prevPage()">
+          <i class="fa fa-angle-left me-1"></i> {{ '::PreviousPage' | abpLocalization }}
+        </button>
+
+        <span class="current-page-badge">
+          {{ '::Page' | abpLocalization }} <strong>{{ pageIndex + 1 }}</strong> / {{ totalPages }}
+        </span>
+
+        <button type="button" class="btn btn-sm btn-light" [disabled]="pageIndex >= totalPages - 1" (click)="nextPage()">
+          {{ '::NextPage' | abpLocalization }} <i class="fa fa-angle-right ms-1"></i>
+        </button>
+
+        <button type="button" class="btn btn-sm btn-light" [disabled]="pageIndex >= totalPages - 1" (click)="lastPage()">
+          <i class="fa fa-angle-double-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Phân quyền Vai trò -->
+<abp-modal [(visible)]="isPermissionModalVisible" [options]="{ size: 'md', windowClass: 'modern-modal' }">
+  <ng-template #abpHeader>
+    <div class="d-flex align-items-center gap-3">
+      <div class="modal-header-icon bg-warning text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+        <i class="fa fa-shield-halved"></i>
+      </div>
+      <div>
+        <h5 class="m-0 modal-title-text fw-bold text-dark">
+          {{ '::PermissionsForRole' | abpLocalization }} <span class="text-primary">{{ selectedRoleName }}</span>
+        </h5>
+        <span class="modal-subtitle-text text-muted" style="font-size: 0.85rem;">
+          {{ '::PermissionsModalSubtitle' | abpLocalization }}
+        </span>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #abpBody>
+    <div class="permissions-container custom-scrollbar" *ngIf="permissionGroups.length > 0" style="max-height: 60vh; overflow-y: auto; overflow-x: hidden; padding-right: 5px;">
+      
+      <!-- Toolbar: Select All and Expand/Collapse -->
+      <div class="permission-toolbar d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+        <div class="form-check m-0 d-flex align-items-center gap-2">
+          <input type="checkbox" class="form-check-input premium-checkbox-input m-0" id="selectAllPerms"
+                 [checked]="isAllSelected"
+                 [indeterminate]="isMasterIndeterminate"
+                 (change)="selectAll($any($event.target).checked)"
+                 style="cursor: pointer;">
+          <label class="form-check-label fw-bold mb-0 user-select-none" for="selectAllPerms" style="cursor: pointer;">
+            {{ '::SelectAll' | abpLocalization }}
+          </label>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <button type="button" class="btn btn-sm btn-toolbar-action" (click)="toggleExpandAll(true)">
+            <i class="fa fa-angle-double-down me-1"></i> {{ '::ExpandAll' | abpLocalization }}
+          </button>
+          <button type="button" class="btn btn-sm btn-toolbar-action" (click)="toggleExpandAll(false)">
+            <i class="fa fa-angle-double-up me-1"></i> {{ '::CollapseAll' | abpLocalization }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Lặp qua các nhóm (thực tế chỉ còn TooHungry) -->
+      <div class="permission-group-section mb-4" *ngFor="let group of permissionGroups">
+        
+        <div class="row g-3">
+          <!-- Render mỗi quyền cha thành 1 card riêng -->
+          <div class="col-12" *ngFor="let parent of group.formattedPermissions">
+            <div class="permission-card mb-2">
+              
+              <!-- Tiêu đề Card: Parent Permission -->
+              <div class="card-header-premium d-flex align-items-center rounded-top">
+                <input type="checkbox" class="form-check-input premium-checkbox-input flex-shrink-0" 
+                       [id]="'perm_' + parent.name"
+                       [(ngModel)]="parent.isGranted"
+                       [indeterminate]="isIndeterminate(parent)"
+                       (change)="toggleParent(group, parent)"
+                       style="cursor: pointer;">
+                <label class="form-check-label mb-0 w-100" [for]="'perm_' + parent.name" style="cursor: pointer;">
+                  {{ parent.displayName }}
+                </label>
+                <div class="ms-auto ps-2" *ngIf="parent.children?.length > 0">
+                  <button type="button" class="btn btn-sm p-1 chevron-toggle-btn" style="line-height: 1; border-radius: 4px;" (click)="parent.isExpanded = !parent.isExpanded">
+                    <i class="fa" [ngClass]="parent.isExpanded ? 'fa-chevron-up' : 'fa-chevron-down'" style="font-size: 0.8rem;"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Nội dung Card: Child Permissions -->
+              <div class="card-body" *ngIf="parent.children?.length > 0" [style.display]="parent.isExpanded ? 'block' : 'none'">
+                <div class="d-flex flex-column">
+                  <div class="child-permission-item" *ngFor="let child of parent.children">
+                    <input class="form-check-input premium-checkbox-input flex-shrink-0" type="checkbox" 
+                           [id]="'perm_' + child.name" 
+                           [(ngModel)]="child.isGranted"
+                           (change)="childChanged(group, parent, child)"
+                           style="cursor: pointer;">
+                    <label class="form-check-label d-flex align-items-center w-100 m-0 p-0" [for]="'perm_' + child.name" style="cursor: pointer; user-select: none;">
+                      <i class="fa fa-level-up-alt fa-rotate-90 text-muted me-2 mt-1 flex-shrink-0" style="font-size: 0.75rem;"></i>
+                      <span class="child-label-text">{{ child.displayName }}</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+              
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Empty Loading/Error State -->
+    <div *ngIf="permissionGroups.length === 0" class="text-center py-5">
+      <div *ngIf="modalLoading" class="text-primary mb-3">
+        <span class="spinner-border spinner-border-lg" role="status"></span>
+        <div class="mt-2 text-muted">{{ '::LoadingPermissions' | abpLocalization }}</div>
+      </div>
+      <div *ngIf="!modalLoading" class="text-muted">
+        <div class="mb-2" style="font-size: 2rem; color: #ced4da;"><i class="fa fa-folder-open"></i></div>
+        {{ '::NoPermissionsFound' | abpLocalization }}
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #abpFooter>
+    <button type="button" class="btn btn-outline-secondary" (click)="isPermissionModalVisible = false">
+      {{ '::Cancel' | abpLocalization }}
+    </button>
+    <button type="button" class="btn btn-primary" (click)="savePermissions()" [disabled]="modalLoading">
+      <span *ngIf="modalLoading" class="spinner-border spinner-border-sm me-1"></span>
+      <i *ngIf="!modalLoading" class="fa fa-check me-1"></i>
+      {{ '::SaveChanges' | abpLocalization }}
+    </button>
+  </ng-template>
+</abp-modal>

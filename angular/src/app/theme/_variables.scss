@@ -1,0 +1,31 @@
+/* Variables for Acme.TooHungry */
+
+$primary-color: #f5222d; // Red primary for a restaurant management app
+$secondary-color: #ff4d4f;
+$background-color: #f0f2f5;
+$text-color: #333333;
+$sidebar-bg-color: #ffffff;
+$sidebar-text-color: #000000;
+$header-bg-color: #f5222d;
+$header-text-color: #ffffff;
+
+/* NG-ZORRO Class Overrides if needed */
+.ant-btn-primary {
+  background-color: $primary-color;
+  border-color: $primary-color;
+}
+
+.ant-btn-primary:hover, .ant-btn-primary:focus {
+  background-color: $secondary-color;
+  border-color: $secondary-color;
+}
+
+.ant-layout-header {
+  background-color: $header-bg-color;
+  color: $header-text-color;
+}
+
+.ant-layout-sider {
+  background-color: $sidebar-bg-color;
+  color: $sidebar-text-color;
+}

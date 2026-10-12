@@ -11,7 +11,11 @@ public interface IDishAppService : IApplicationService
     Task<PagedResultDto<DishDto>> GetListAsync(GetDishesInput input);
     Task<DishDto> CreateAsync(CreateUpdateDishDto input);
     Task<DishDto> UpdateAsync(Guid id, CreateUpdateDishDto input);
+    Task<DishDto> ToggleActiveAsync(Guid id);
+    Task<BulkActionResultDto> BulkToggleActiveAsync(BulkToggleActiveDishDto input);
     Task DeleteAsync(Guid id);
+    Task DeleteWithReasonAsync(Guid id, DeleteDishDto input);
+    Task<ListResultDto<DishDto>> GetMenuForPosAsync();
 }
 
 public interface IDishCategoryAppService : IApplicationService
@@ -20,14 +24,5 @@ public interface IDishCategoryAppService : IApplicationService
     Task<PagedResultDto<DishCategoryDto>> GetListAsync(PagedAndSortedResultRequestDto input);
     Task<DishCategoryDto> CreateAsync(CreateUpdateDishCategoryDto input);
     Task<DishCategoryDto> UpdateAsync(Guid id, CreateUpdateDishCategoryDto input);
-    Task DeleteAsync(Guid id);
-}
-
-public interface IRecipeAppService : IApplicationService
-{
-    Task<RecipeDto> GetAsync(Guid id);
-    Task<PagedResultDto<RecipeDto>> GetListAsync(PagedAndSortedResultRequestDto input);
-    Task<RecipeDto> CreateAsync(CreateUpdateRecipeDto input);
-    Task<RecipeDto> UpdateAsync(Guid id, CreateUpdateRecipeDto input);
     Task DeleteAsync(Guid id);
 }

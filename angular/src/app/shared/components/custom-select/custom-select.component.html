@@ -3,7 +3,7 @@
   [class.is-open]="isOpen"
   [class.is-disabled]="disabled"
   [class.size-sm]="size === 'sm'"
-  [class.placement-top]="placement === 'top'"
+  [class.placement-top]="calculatedPlacement === 'top'"
   [style.min-width]="minWidth"
 >
   <!-- Trigger Button -->
@@ -51,7 +51,7 @@
         </div>
       }
 
-      <div class="options-list-scroll">
+      <div class="options-list-scroll" [style.maxHeight]="maxHeight">
         @for (opt of filteredOptions; track $index) {
           <div
             class="custom-option-item"

@@ -35,33 +35,3 @@ public class CreateUpdateDemandForecastDto
     public string? Note { get; set; }
     public List<CreateUpdateDemandForecastItemDto> Items { get; set; } = new();
 }
-
-public class IngredientPlanItemDto : EntityDto<Guid>
-{
-    public Guid IngredientPlanId { get; set; }
-    public Guid IngredientId { get; set; }
-    public string? IngredientName { get; set; }
-    public decimal RequiredQuantity { get; set; }
-}
-
-public class CreateUpdateIngredientPlanItemDto
-{
-    public Guid IngredientId { get; set; }
-    public decimal RequiredQuantity { get; set; }
-}
-
-public class IngredientPlanDto : AuditedEntityDto<Guid>
-{
-    public Guid DemandForecastId { get; set; }
-    public DateTime PlanDate { get; set; }
-    public PlanStatus Status { get; set; }
-    public List<IngredientPlanItemDto> Items { get; set; } = new();
-}
-
-public class CreateUpdateIngredientPlanDto
-{
-    public Guid DemandForecastId { get; set; }
-    public DateTime PlanDate { get; set; } = DateTime.Now;
-    public PlanStatus Status { get; set; } = PlanStatus.Draft;
-    public List<CreateUpdateIngredientPlanItemDto> Items { get; set; } = new();
-}

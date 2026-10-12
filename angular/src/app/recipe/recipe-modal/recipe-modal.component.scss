@@ -1,0 +1,126 @@
+.modal-header-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(255, 107, 0, 0.12);
+  color: #ff6b00;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+}
+
+.modal-title-text {
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.modal-subtitle-wrapper {
+  font-size: 0.85rem;
+}
+
+.status-badge-active {
+  background-color: #ecfdf5 !important;
+  color: #047857 !important;
+  border: 1px solid #a7f3d0 !important;
+  font-weight: 700 !important;
+  font-size: 0.82rem !important;
+  padding: 0.35rem 0.75rem !important;
+  border-radius: 8px !important;
+  display: inline-flex;
+  align-items: center;
+}
+
+.status-badge-warning {
+  background-color: #fff7ed !important;
+  color: #c2410c !important;
+  border: 1.5px solid #fed7aa !important;
+  font-weight: 700 !important;
+  font-size: 0.82rem !important;
+  padding: 0.35rem 0.75rem !important;
+  border-radius: 8px !important;
+  display: inline-flex;
+  align-items: center;
+}
+
+.text-orange {
+  color: #ff6b00 !important;
+}
+
+.bg-orange {
+  background-color: #ff6b00 !important;
+}
+
+.bg-orange-subtle {
+  background-color: rgba(255, 107, 0, 0.12) !important;
+  color: #ff6b00 !important;
+  font-weight: 600;
+}
+
+.btn-orange {
+  background-color: #ff6b00;
+  border-color: #ff6b00;
+  color: #ffffff;
+  font-weight: 600;
+  transition: all 0.2s ease;
+
+  &:hover, &:focus {
+    background-color: #e05e00;
+    border-color: #e05e00;
+    color: #ffffff;
+  }
+}
+
+.btn-outline-orange {
+  border-color: #ff6b00;
+  color: #ff6b00;
+  font-weight: 600;
+
+  &:hover, &:focus {
+    background-color: #ff6b00;
+    color: #ffffff;
+  }
+}
+
+.recipe-form {
+  min-height: 380px;
+  display: flex;
+  flex-direction: column;
+}
+
+.recipe-table-wrapper {
+  overflow: visible !important;
+  min-height: 280px;
+  position: relative;
+}
+
+.recipe-table {
+  font-size: 0.9rem;
+  margin-bottom: 0;
+  
+  th {
+    font-weight: 600;
+    background-color: #f8fafc;
+    color: #475569;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+
+  tr {
+    position: relative;
+
+    &:has(.is-open) {
+      z-index: 1050;
+    }
+  }
+
+  td {
+    overflow: visible !important;
+    position: relative;
+    vertical-align: middle;
+
+    &:has(.is-open) {
+      z-index: 1050;
+    }
+  }
+}

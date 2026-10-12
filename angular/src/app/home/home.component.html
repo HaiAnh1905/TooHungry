@@ -127,24 +127,84 @@
         </a>
       </div>
 
-      <!-- Nguyên liệu trong kho -->
+      <!-- Đơn vị tính -->
       <div class="col-sm-6 col-xl-3">
-        <a routerLink="/ingredients" class="card stat-card stat-card-interactive h-100 text-decoration-none" [title]="{ key: '::ManageIngredients', defaultValue: 'Quản lý Nguyên liệu' } | abpLocalization">
+        <a routerLink="/units" class="card stat-card stat-card-interactive h-100 text-decoration-none" [title]="{ key: '::ManageUnits', defaultValue: 'Quản lý Đơn vị tính' } | abpLocalization">
           <div class="card-body p-4 d-flex align-items-center justify-content-between">
             <div class="stat-content flex-grow-1 pe-2">
-              <span class="stat-label d-block mb-1">{{ { key: '::InventoryStock', defaultValue: 'Kho nguyên liệu' } | abpLocalization }}</span>
-              <h2 class="stat-number d-block mb-2 mt-1">{{ stats.totalIngredients }}</h2>
+              <span class="stat-label d-block mb-1">{{ { key: '::Menu:Units', defaultValue: 'Đơn vị tính' } | abpLocalization }}</span>
+              <h2 class="stat-number d-block mb-2 mt-1">{{ stats.totalUnits }}</h2>
               <span class="badge bg-orange-subtle">
-                <i class="fas fa-boxes-stacked me-1"></i>{{ { key: '::PortionedStock', defaultValue: 'Hàng định lượng' } | abpLocalization }}
+                <i class="fas fa-balance-scale me-1"></i>{{ { key: '::SystemUnits', defaultValue: 'Đơn vị đo' } | abpLocalization }}
               </span>
             </div>
             <div class="stat-icon-wrapper flex-shrink-0">
-              <i class="fas fa-carrot"></i>
+              <i class="fas fa-balance-scale"></i>
             </div>
           </div>
         </a>
       </div>
     </div>
+
+    <!-- WIDGET CẢNH BÁO KHO & THIẾU HỤT NGUYÊN LIỆU (T027) -->
+    @if (alerts && alerts.length > 0) {
+      <div class="card border-0 shadow-sm rounded-4 mb-4 border-start border-danger border-4 bg-white overflow-hidden">
+        <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-danger rounded-circle p-2 d-inline-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
+              <i class="fas fa-bell text-white"></i>
+            </span>
+            <h5 class="fw-bold mb-0 text-dark">
+              {{ '::InventoryAlerts' | abpLocalization }}
+              <span class="badge bg-danger-subtle text-danger ms-2 fs-6">{{ alerts.length }} cảnh báo</span>
+            </h5>
+          </div>
+          <a routerLink="/inventory" class="btn btn-sm btn-outline-danger">
+            <i class="fas fa-sliders me-1"></i>Kiểm kê xử lý kho
+          </a>
+        </div>
+        <div class="card-body pt-0 pb-3">
+          <div class="row g-2">
+            @for (alert of alerts.slice(0, 4); track $index) {
+              <div class="col-md-6">
+                <div class="inventory-alert-item p-2 px-3 rounded-3 border d-flex align-items-center justify-content-between"
+                     [ngClass]="{
+                       'alert-danger-bg': alert.alertType === 'OUT_OF_STOCK' || alert.alertType === 'EXPIRED',
+                       'alert-warning-bg': alert.alertType === 'SHORTAGE' || alert.alertType === 'EXPIRING_SOON'
+                     }">
+                  <div class="d-flex align-items-center gap-2">
+                    @if (alert.alertType === 'OUT_OF_STOCK') {
+                      <i class="fas fa-box-open text-danger fs-5"></i>
+                    } @else if (alert.alertType === 'EXPIRED') {
+                      <i class="fas fa-ban text-danger fs-5"></i>
+                    } @else if (alert.alertType === 'SHORTAGE') {
+                      <i class="fas fa-triangle-exclamation text-warning fs-5"></i>
+                    } @else {
+                      <i class="fas fa-clock text-warning fs-5"></i>
+                    }
+                    <div>
+                      <strong class="text-dark small d-block">{{ alert.message }}</strong>
+                      <span class="text-muted" style="font-size: 0.75rem;">
+                        {{ alert.ingredientName }} @if (alert.batchCode) { - Lô: {{ alert.batchCode }} }
+                      </span>
+                    </div>
+                  </div>
+                  @if (alert.alertType === 'OUT_OF_STOCK') {
+                    <span class="badge bg-danger text-white">{{ '::OutOfStock' | abpLocalization }}</span>
+                  } @else if (alert.alertType === 'EXPIRED') {
+                    <span class="badge bg-danger text-white">{{ '::Expired' | abpLocalization }}</span>
+                  } @else if (alert.alertType === 'SHORTAGE') {
+                    <span class="badge bg-warning text-dark">{{ '::RunningOut' | abpLocalization }}</span>
+                  } @else {
+                    <span class="badge bg-warning text-dark">{{ '::ExpiringSoon' | abpLocalization }}</span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    }
 
     <!-- Bảng Món ăn mới nhất & Phím tắt nhanh -->
     <div class="row g-4">
@@ -272,13 +332,23 @@
                 <div>
                   <h6 class="fw-bold mb-1 text-dark">{{ { key: '::ManagementTipTitle', defaultValue: 'Gợi ý quản lý' } | abpLocalization }}</h6>
                   <small class="text-muted">
-                    {{ { key: '::ManagementTipContent', defaultValue: 'Hãy liên kết các món ăn với nguyên liệu tương ứng trong công thức (Recipe) để hệ thống tự động trừ kho khi tạo Order.' } | abpLocalization }}
+                    {{ { key: '::ManagementTipContent', defaultValue: 'Quản lý thực đơn, danh mục và đơn vị tính một cách nhanh chóng, chính xác.' } | abpLocalization }}
                   </small>
                 </div>
               </div>
             </div>
           </div>
         </div>
+        <!-- Thêm một debug block để xem quyền của user hiện tại -->
+        <div class="card mt-4">
+          <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0">Debug Permissions</h5>
+          </div>
+          <div class="card-body bg-dark text-light p-3">
+            <pre style="color: #0f0; margin: 0; font-size: 12px;">{{ debugPermissions }}</pre>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>

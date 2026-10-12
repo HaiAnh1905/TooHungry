@@ -11,5 +11,7 @@ public class DiningArea : FullAuditedAggregateRoot<Guid>
 
     public string? Description { get; set; }
 
+    public bool IsActive { get; set; } = true;
+
     public ICollection<RestaurantTable> Tables { get; set; } = new List<RestaurantTable>();
 }

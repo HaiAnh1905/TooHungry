@@ -8,9 +8,16 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using System.ComponentModel.DataAnnotations;
 using Volo.Abp;
 
 namespace Acme.TooHungry.Controllers;
+
+public class UploadImageInput
+{
+    [Required]
+    public IFormFile File { get; set; } = null!;
+}
 
 [RemoteService]
 [Route("api/app/media")]
@@ -31,8 +38,9 @@ public class MediaController : TooHungryController
     /// <param name="file">File ảnh được chọn từ máy tính</param>
     /// <returns>Đối tượng JSON chứa URL hình ảnh an toàn (SecureUrl) từ Cloudinary</returns>
     [HttpPost("upload-dish-image")]
-    public virtual async Task<IActionResult> UploadDishImageAsync([FromForm] IFormFile? file)
+    public virtual async Task<IActionResult> UploadDishImageAsync(IFormFile file)
     {
+        
         // 1. Kiểm tra tính hợp lệ của file upload
         if (file == null || file.Length == 0)
         {
@@ -99,3 +107,4 @@ public class MediaController : TooHungryController
         });
     }
 }
+
