@@ -1,4 +1,4 @@
-import type { CreateUpdateOrderDto, OrderDto } from './models';
+import type { CancelOrderInputDto, CreateUpdateOrderDto, OrderDto, StockValidationResultDto, SubmitOrderInputDto, ValidateOrderStockInputDto } from './models';
 import { RestService, Rest } from '@abp/ng.core';
 import type { PagedAndSortedResultRequestDto, PagedResultDto } from '@abp/ng.core';
 import { Injectable, inject } from '@angular/core';
@@ -9,6 +9,14 @@ import { Injectable, inject } from '@angular/core';
 export class OrderService {
   private restService = inject(RestService);
   apiName = 'Default';
+  
+
+  completeActiveOrderByTableId = (tableId: string, config?: Partial<Rest.Config>) =>
+    this.restService.request<any, void>({
+      method: 'POST',
+      url: `/api/app/order/complete-active-order-by-table-id/${tableId}`,
+    },
+    { apiName: this.apiName,...config });
   
 
   create = (input: CreateUpdateOrderDto, config?: Partial<Rest.Config>) =>
@@ -38,6 +46,15 @@ export class OrderService {
     { apiName: this.apiName,...config });
   
 
+  getActiveOrderByTableId = (tableId: string, config?: Partial<Rest.Config>) =>
+    this.restService.request<any, OrderDto>({
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+      url: `/api/app/order/active-order-by-table-id/${tableId}`,
+    },
+    { apiName: this.apiName,...config });
+  
+
   getList = (input: PagedAndSortedResultRequestDto, config?: Partial<Rest.Config>) =>
     this.restService.request<any, PagedResultDto<OrderDto>>({
       method: 'GET',
@@ -57,18 +74,30 @@ export class OrderService {
     },
     { apiName: this.apiName,...config });
 
-  getActiveOrderByTableId = (tableId: string, config?: Partial<Rest.Config>) =>
-    this.restService.request<any, OrderDto>({
-      method: 'GET',
+  validateStock = (input: ValidateOrderStockInputDto, config?: Partial<Rest.Config>) =>
+    this.restService.request<any, StockValidationResultDto>({
+      method: 'POST',
       headers: { Accept: 'application/json' },
-      url: `/api/app/table-orders/active/${tableId}`,
+      url: '/api/app/order/validate-stock',
+      body: input,
     },
     { apiName: this.apiName,...config });
 
-  completeActiveOrderByTableId = (tableId: string, config?: Partial<Rest.Config>) =>
+  submitOrder = (input: SubmitOrderInputDto, config?: Partial<Rest.Config>) =>
+    this.restService.request<any, OrderDto>({
+      method: 'POST',
+      headers: { Accept: 'application/json' },
+      url: '/api/app/order/submit-order',
+      body: input,
+    },
+    { apiName: this.apiName,...config });
+
+  cancelOrder = (id: string, input?: CancelOrderInputDto, config?: Partial<Rest.Config>) =>
     this.restService.request<any, void>({
       method: 'POST',
-      url: `/api/app/table-orders/complete/${tableId}`,
+      headers: { Accept: 'application/json' },
+      url: `/api/app/order/${id}/cancel`,
+      body: input,
     },
     { apiName: this.apiName,...config });
 }

@@ -121,6 +121,23 @@
       </div>
     </div>
 
+    <!-- Đang dọn dẹp (Cleaning) -->
+    <div class="col-6 col-md">
+      <div
+        class="summary-card card-cleaning-status"
+        (click)="filterByStatus(TableStatus.Cleaning)"
+        [class.active]="selectedStatus() === TableStatus.Cleaning"
+      >
+        <div class="summary-icon">
+          <i class="fa fa-broom"></i>
+        </div>
+        <div class="summary-info">
+          <span class="summary-label">{{ '::CleaningTables' | abpLocalization }}</span>
+          <h3 class="summary-number text-info">{{ cleaningCount() }}</h3>
+        </div>
+      </div>
+    </div>
+
     <!-- Bàn tạm ngưng / Bị hỏng (Disabled) -->
     <div class="col-6 col-md">
       <div
@@ -255,6 +272,7 @@
                 [class.table-available]="t.status === TableStatus.Available"
                 [class.table-occupied]="t.status === TableStatus.Occupied"
                 [class.table-reserved]="t.status === TableStatus.Reserved"
+                [class.table-cleaning]="t.status === TableStatus.Cleaning"
                 [class.table-disabled]="t.status === TableStatus.Disabled"
               >
                 <!-- 1. Card Top: Tên bàn & Vị trí (Trái) + Badge trạng thái (Phải) -->
@@ -301,10 +319,10 @@
                     <!-- Ghế phía trên -->
                     <div class="chairs-row chairs-top">
                       <span class="chair-pill"></span>
-                      @if (t.capacity >= 4) {
+                      @if ((t.capacity || 0) >= 4) {
                         <span class="chair-pill"></span>
                       }
-                      @if (t.capacity >= 8) {
+                      @if ((t.capacity || 0) >= 8) {
                         <span class="chair-pill"></span>
                       }
                     </div>
@@ -320,10 +338,10 @@
                     <!-- Ghế phía dưới -->
                     <div class="chairs-row chairs-bottom">
                       <span class="chair-pill"></span>
-                      @if (t.capacity >= 4) {
+                      @if ((t.capacity || 0) >= 4) {
                         <span class="chair-pill"></span>
                       }
-                      @if (t.capacity >= 8) {
+                      @if ((t.capacity || 0) >= 8) {
                         <span class="chair-pill"></span>
                       }
                     </div>
@@ -342,6 +360,16 @@
                         </div>
                         <div class="secondary-info-line mt-0.5">
                           <span>{{ '::TableUnderMaintenance' | abpLocalization }}</span>
+                        </div>
+                      </div>
+                    } @else if (t.status === TableStatus.Cleaning) {
+                      <div class="info-slot-box info-cleaning-box w-100 text-center">
+                        <div class="primary-info-line">
+                          <i class="fa fa-broom text-info"></i>
+                          <span>{{ '::TableStatusCleaning' | abpLocalization }}</span>
+                        </div>
+                        <div class="secondary-info-line mt-0.5">
+                          <span>{{ '::TableUnderCleaning' | abpLocalization }}</span>
                         </div>
                       </div>
                     } @else if (
@@ -407,6 +435,7 @@
                           type="button"
                           class="btn btn-action-main btn-occupy flex-grow-1"
                           (click)="quickUpdateStatus(t, TableStatus.Occupied)"
+                          [disabled]="!isRestaurantOpen()"
                         >
                           <i class="fa fa-user-check"></i>
                           <span>{{ '::QuickCheckIn' | abpLocalization }}</span>
@@ -429,7 +458,7 @@
                         </button>
                       </div>
                     } @else if (t.status === TableStatus.Occupied) {
-                      <!-- Đang có khách -> Trả bàn / Dọn xong hoặc Gọi món (Order) -->
+                      <!-- Đang có khách -> Trả bàn / Gọi món (Order) -->
                       <div class="d-flex gap-2">
                         <button
                           type="button"
@@ -455,6 +484,7 @@
                           type="button"
                           class="btn btn-action-main btn-occupy flex-grow-1"
                           (click)="quickUpdateStatus(t, TableStatus.Occupied)"
+                          [disabled]="!isRestaurantOpen()"
                         >
                           <i class="fa fa-user-check"></i>
                           <span>{{ '::QuickCheckIn' | abpLocalization }}</span>
@@ -476,6 +506,16 @@
                           <i class="fa fa-ban"></i>
                         </button>
                       </div>
+                    } @else if (t.status === TableStatus.Cleaning) {
+                      <!-- Bàn đang dọn dẹp -> Nút Dọn xong (Hoàn tất dọn dẹp -> Sẵn sàng phục vụ) -->
+                      <button
+                        type="button"
+                        class="btn btn-action-main btn-enable w-100"
+                        (click)="quickUpdateStatus(t, TableStatus.Available)"
+                      >
+                        <i class="fa fa-check"></i>
+                        <span>{{ '::DoneCleaning' | abpLocalization }}</span>
+                      </button>
                     } @else {
                       <!-- Bàn tạm ngưng / Bị hỏng -> Nút Mở lại bàn hoạt động -->
                       <button
@@ -737,6 +777,15 @@
                   [title]="'::Order' | abpLocalization"
                 >
                   <i class="fa fa-utensils"></i>
+                </button>
+              } @else if (row.status === TableStatus.Cleaning) {
+                <button
+                  type="button"
+                  class="icon-action-btn btn-enable-inline"
+                  (click)="quickUpdateStatus(row, TableStatus.Available)"
+                  [title]="'::DoneCleaning' | abpLocalization"
+                >
+                  <i class="fa fa-check"></i>
                 </button>
               } @else {
                 <button
@@ -1209,7 +1258,7 @@
               id="area-desc"
               class="form-control custom-form-input"
               formControlName="description"
-              placeholder="Ghi chú thêm về khu vực này..."
+              [placeholder]="'::AreaDescriptionPlaceholder' | abpLocalization"
             />
           </div>
         </div>
@@ -1974,7 +2023,11 @@
                   @if (isCategoryExpanded(group.categoryName)) {
                     <div class="category-dishes-wrapper">
                       @for (dish of group.dishes; track dish.id) {
-                        <div class="pos-dish-card" [class.is-selected]="getItemQuantityInOrder(dish.id) > 0">
+                        <div
+                          class="pos-dish-card"
+                          [class.is-selected]="getItemQuantityInOrder(dish.id) > 0"
+                          [class.is-out-of-stock]="isDishOutOfStock(dish.id)"
+                        >
                           <!-- Thumbnail ảnh món ăn -->
                           <div class="pos-dish-thumb-box">
                             @if (dish.imageUrl) {
@@ -1994,6 +2047,12 @@
                           <div class="dish-card-info">
                             <div class="dish-name-row">
                               <span class="dish-title">{{ dish.name }}</span>
+                              @if (isDishOutOfStock(dish.id)) {
+                                <span class="dish-stock-pill-out">
+                                  <i class="fa fa-triangle-exclamation"></i>
+                                  <span>{{ '::OutOfStock' | abpLocalization }}</span>
+                                </span>
+                              }
                             </div>
                             <div class="dish-price-row">
                               <span class="dish-price-val">{{ dish.price | number: '1.0-0' }}</span>
@@ -2010,6 +2069,7 @@
                             <button
                               type="button"
                               class="btn btn-sm btn-order-dish"
+                              [class.btn-dish-out-of-stock]="isDishOutOfStock(dish.id)"
                               (click)="addDishToOrder(dish)"
                             >
                               <i class="fa fa-cart-plus"></i>
@@ -2061,60 +2121,74 @@
             <!-- Danh sách món đã đặt trong formArray items -->
             <div formArrayName="items" class="cart-items-scroll mb-2">
               @for (itemGroup of orderItemsArray.controls; track $index) {
-                <div [formGroupName]="$index" class="pos-cart-item-row">
-                  <div class="cart-item-info">
-                    <div class="cart-item-name">
-                      {{ getDishName(itemGroup.get('dishId')?.value) }}
+                <div
+                  [formGroupName]="$index"
+                  class="pos-cart-item-row"
+                  [class.has-stock-warning]="getDishStockWarning(itemGroup.get('dishId')?.value, itemGroup.get('quantity')?.value)"
+                >
+                  <div class="cart-item-main">
+                    <div class="cart-item-info">
+                      <div class="cart-item-name">
+                        {{ getDishName(itemGroup.get('dishId')?.value) }}
+                      </div>
+                      <div class="cart-item-unit-price">
+                        {{ itemGroup.get('unitPrice')?.value | number: '1.0-0' }} đ
+                      </div>
                     </div>
-                    <div class="cart-item-unit-price">
-                      {{ itemGroup.get('unitPrice')?.value | number: '1.0-0' }} đ
-                    </div>
-                  </div>
 
-                  <!-- Stepper tăng giảm số lượng [-] [qty] [+] -->
-                  <div class="quantity-stepper-wrap">
+                    <!-- Stepper tăng giảm số lượng [-] [qty] [+] -->
+                    <div class="quantity-stepper-wrap">
+                      <button
+                        type="button"
+                        class="stepper-btn btn-minus"
+                        (click)="decreaseQuantity($index)"
+                        title="Giảm"
+                      >
+                        <i class="fa fa-minus"></i>
+                      </button>
+                      <input
+                        type="number"
+                        min="1"
+                        class="stepper-input"
+                        formControlName="quantity"
+                        (input)="calculateOrderTotal()"
+                      />
+                      <button
+                        type="button"
+                        class="stepper-btn btn-plus"
+                        (click)="increaseQuantity($index)"
+                        title="Tăng"
+                      >
+                        <i class="fa fa-plus"></i>
+                      </button>
+                    </div>
+
+                    <!-- Thành tiền của dòng món -->
+                    <div class="cart-item-total">
+                      <span class="total-num">
+                        {{ (itemGroup.get('unitPrice')?.value * itemGroup.get('quantity')?.value) | number: '1.0-0' }}
+                      </span>
+                      <span class="total-curr">đ</span>
+                    </div>
+
+                    <!-- Nút xóa món -->
                     <button
                       type="button"
-                      class="stepper-btn btn-minus"
-                      (click)="decreaseQuantity($index)"
-                      title="Giảm"
+                      class="btn-remove-cart-item"
+                      (click)="removeOrderItem($index)"
+                      [title]="'::Delete' | abpLocalization"
                     >
-                      <i class="fa fa-minus"></i>
-                    </button>
-                    <input
-                      type="number"
-                      min="1"
-                      class="stepper-input"
-                      formControlName="quantity"
-                      (input)="calculateOrderTotal()"
-                    />
-                    <button
-                      type="button"
-                      class="stepper-btn btn-plus"
-                      (click)="increaseQuantity($index)"
-                      title="Tăng"
-                    >
-                      <i class="fa fa-plus"></i>
+                      <i class="fa fa-times"></i>
                     </button>
                   </div>
 
-                  <!-- Thành tiền của dòng món -->
-                  <div class="cart-item-total">
-                    <span class="total-num">
-                      {{ (itemGroup.get('unitPrice')?.value * itemGroup.get('quantity')?.value) | number: '1.0-0' }}
-                    </span>
-                    <span class="total-curr">đ</span>
-                  </div>
-
-                  <!-- Nút xóa món -->
-                  <button
-                    type="button"
-                    class="btn-remove-cart-item"
-                    (click)="removeOrderItem($index)"
-                    [title]="'::Delete' | abpLocalization"
-                  >
-                    <i class="fa fa-times"></i>
-                  </button>
+                  <!-- Banner cảnh báo hết / thiếu nguyên liệu trong kho -->
+                  @if (getDishStockWarning(itemGroup.get('dishId')?.value, itemGroup.get('quantity')?.value); as warning) {
+                    <div class="cart-item-stock-warning">
+                      <i class="fa fa-triangle-exclamation"></i>
+                      <span [innerHTML]="warning"></span>
+                    </div>
+                  }
                 </div>
               }
 
@@ -2173,7 +2247,7 @@
       <button
         form="table-order-form"
         class="btn btn-order-modal-submit"
-        [disabled]="orderForm?.invalid || orderItemsArray.length === 0"
+        [disabled]="orderForm?.invalid || orderItemsArray.length === 0 || !hasOrderChanged"
       >
         @if (activeOrderId) {
           <i class="fa fa-save"></i>

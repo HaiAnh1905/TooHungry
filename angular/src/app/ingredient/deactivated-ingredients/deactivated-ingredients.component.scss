@@ -1,0 +1,75 @@
+.deactivated-ingredients-page {
+  .page-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1e293b;
+  }
+
+  .btn-back {
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-weight: 500;
+  }
+
+  .search-input-wrapper {
+    position: relative;
+    width: 100%;
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #94a3b8;
+    }
+
+    .modern-search-input {
+      padding-left: 36px;
+      padding-right: 32px;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      height: 38px;
+      font-size: 0.9rem;
+
+      &:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+      }
+    }
+
+    .btn-clear-search {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      padding: 0;
+
+      &:hover {
+        color: #64748b;
+      }
+    }
+  }
+
+  table {
+    th {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      font-weight: 600;
+      padding-top: 14px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    td {
+      padding-top: 14px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+  }
+}

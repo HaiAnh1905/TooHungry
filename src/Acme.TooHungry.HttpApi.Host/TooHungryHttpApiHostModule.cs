@@ -40,10 +40,14 @@ using Volo.Abp.Swashbuckle;
 using Volo.Abp.Studio.Client.AspNetCore;
 using Volo.Abp.Security.Claims;
 
+using Volo.Abp.AspNetCore.SignalR;
+using Acme.TooHungry.Hubs;
+
 namespace Acme.TooHungry;
 
 [DependsOn(
     typeof(TooHungryHttpApiModule),
+    typeof(AbpAspNetCoreSignalRModule),
     typeof(AbpStudioClientAspNetCoreModule),
     typeof(AbpAspNetCoreMvcUiLeptonXLiteThemeModule),
     typeof(AbpAutofacModule),
@@ -300,6 +304,9 @@ public class TooHungryHttpApiHostModule : AbpModule
         });
         app.UseAuditing();
         app.UseAbpSerilogEnrichers();
-        app.UseConfiguredEndpoints();
+        app.UseConfiguredEndpoints(endpoints =>
+        {
+            endpoints.MapHub<TableHub>("/signalr-hubs/table");
+        });
     }
 }

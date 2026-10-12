@@ -7,7 +7,7 @@
         <span>{{ '::ManageDiningAreas' | abpLocalization }}</span>
       </h2>
       <p class="page-subtitle m-0 mt-1">
-        Danh sách các khu vực, tầng phục vụ và cấu hình bàn ăn trong nhà hàng
+        {{ '::ManageDiningAreasSubtitle' | abpLocalization }}
       </p>
     </div>
     <div class="d-flex align-items-center gap-2">
@@ -23,14 +23,14 @@
     </div>
   </div>
 
-  <!-- 2. KPI STATS BANNER: Thống kê nhanh các chỉ số khu vực -->
+  <!-- 2. KPI STATS BANNER: Thống kê nhanh các chỉ số {{ '::AreaCountText' | abpLocalization }} -->
   <div class="stats-banner-grid mb-4">
     <div class="stat-card">
       <div class="stat-icon-wrapper bg-orange-soft">
         <i class="fas fa-map-marked-alt text-orange"></i>
       </div>
       <div class="stat-info">
-        <span class="stat-label">Tổng số khu vực</span>
+        <span class="stat-label">{{ '::TotalAreas' | abpLocalization }}</span>
         <h3 class="stat-value">{{ totalAreasCount() }}</h3>
       </div>
     </div>
@@ -40,7 +40,7 @@
         <i class="fas fa-chair text-blue"></i>
       </div>
       <div class="stat-info">
-        <span class="stat-label">Tổng bàn phân bổ</span>
+        <span class="stat-label">{{ '::TotalAllocatedTables' | abpLocalization }}</span>
         <h3 class="stat-value">{{ totalTablesCount() }}</h3>
       </div>
     </div>
@@ -50,12 +50,12 @@
         <i class="fas fa-crown text-green"></i>
       </div>
       <div class="stat-info">
-        <span class="stat-label">Khu vực nhiều bàn nhất</span>
+        <span class="stat-label">{{ '::BusiestArea' | abpLocalization }}</span>
         <h3 class="stat-value text-truncate" style="max-width: 180px;">
           {{ busiestArea() ? busiestArea()?.name : '—' }}
         </h3>
         <span class="stat-subtext" *ngIf="busiestArea()">
-          ({{ busiestArea()?.tableCount }} bàn)
+          ({{ busiestArea()?.tableCount }} {{ '::TableCount' | abpLocalization }})
         </span>
       </div>
     </div>
@@ -72,7 +72,7 @@
           class="form-control search-input"
           [(ngModel)]="searchTerm"
           (ngModelChange)="onSearchChange()"
-          placeholder="Tìm kiếm theo tên khu vực, mô tả..."
+          [placeholder]="'::SearchAreaPlaceholder' | abpLocalization"
         />
         @if (searchTerm) {
           <button type="button" class="btn-clear-search" (click)="searchTerm = ''; onSearchChange()">
@@ -113,11 +113,11 @@
       <div class="empty-icon-circle mx-auto mb-3">
         <i class="fas fa-map-marker-slash"></i>
       </div>
-      <h4 class="empty-title">Không tìm thấy khu vực nào</h4>
-      <p class="empty-desc">Thử thay đổi từ khóa tìm kiếm hoặc nhấn "+ Thêm khu vực mới" để tạo khu vực bàn ăn đầu tiên.</p>
+      <h4 class="empty-title">{{ '::NoAreasFound' | abpLocalization }}</h4>
+      <p class="empty-desc">{{ '::NoAreasFoundDesc' | abpLocalization }}</p>
       <button type="button" class="btn btn-primary btn-add-theme mt-2" (click)="createArea()">
         <i class="fa fa-plus-circle"></i>
-        <span>Thêm khu vực ngay</span>
+        <span>{{ '::AddAreaNow' | abpLocalization }}</span>
       </button>
     </div>
   } @else {
@@ -128,23 +128,29 @@
           <div class="area-card-header d-flex align-items-start justify-content-between">
             <div class="d-flex align-items-center gap-3">
               <div class="area-badge-icon">
-                <i class="fas" [ngClass]="getAreaIcon(area.name)"></i>
+                <i class="fas" [ngClass]="getAreaIcon(area.name || '')"></i>
               </div>
               <div>
                 <h4 class="area-name m-0">{{ area.name }}</h4>
-                <span class="table-count-badge">
-                  <i class="fas fa-chair me-1"></i>
-                  {{ area.tableCount }} bàn ăn
-                </span>
+                <div class="d-flex align-items-center gap-2 mt-1">
+                  <span class="table-count-badge">
+                    <i class="fas fa-chair me-1"></i>
+                    {{ area.tableCount }} {{ '::TableCountText' | abpLocalization }}
+                  </span>
+                </div>
               </div>
             </div>
 
+            <span class="badge" [ngClass]="area.isActive ? 'bg-success' : 'bg-secondary'">
+              <i class="fas me-1" [ngClass]="area.isActive ? 'fa-check-circle' : 'fa-ban'"></i>
+              {{ (area.isActive ? '::Active' : '::Inactive') | abpLocalization }}
+            </span>
           </div>
 
           <!-- Card Body: Mô tả -->
           <div class="area-card-body">
             <p class="area-desc" [class.no-desc]="!area.description">
-              {{ area.description || 'Chưa có mô tả chi tiết cho khu vực này.' }}
+              {{ area.description || ('::NoAreaDescription' | abpLocalization) }}
             </p>
           </div>
 
@@ -154,28 +160,29 @@
               [routerLink]="['/tables']"
               [queryParams]="{ areaId: area.id }"
               class="btn btn-sm btn-outline-view-tables"
-              title="Xem danh sách bàn trong khu vực này"
+              [title]="'::ViewAreaTablesTooltip' | abpLocalization"
             >
               <i class="fas fa-external-link-alt me-1"></i>
-              Xem bàn
+              {{ '::ViewTables' | abpLocalization }}
             </a>
 
             <div class="d-flex align-items-center gap-2">
               <button
                 type="button"
-                class="btn-icon-btn btn-edit-icon"
-                (click)="editArea(area)"
-                title="Chỉnh sửa khu vực"
+                class="btn-icon-btn"
+                [ngClass]="area.isActive ? 'btn-deactivate-icon' : 'btn-activate-icon'"
+                (click)="toggleActive(area)"
+                [title]="(area.isActive ? '::DeactivateArea' : '::ActivateArea') | abpLocalization"
               >
-                <i class="fas fa-pen"></i>
+                <i class="fas fa-power-off" [ngClass]="area.isActive ? 'text-warning' : 'text-success'"></i>
               </button>
               <button
                 type="button"
-                class="btn-icon-btn btn-delete-icon"
-                (click)="deleteArea(area)"
-                title="Xóa khu vực"
+                class="btn-icon-btn btn-edit-icon"
+                (click)="editArea(area)"
+                [title]="'::EditArea' | abpLocalization"
               >
-                <i class="fas fa-trash"></i>
+                <i class="fas fa-pen"></i>
               </button>
             </div>
           </div>
@@ -194,7 +201,7 @@
             <strong>{{ areaFromRecord() }} - {{ areaToRecord() }}</strong>
             {{ '::OfTotal' | abpLocalization }}
             <strong>{{ filteredAreas().length }}</strong>
-            khu vực
+            {{ '::AreaCountText' | abpLocalization }}
           </span>
 
           <div class="d-flex align-items-center gap-2 page-size-box">
@@ -259,17 +266,17 @@
       <div class="modal-header-custom d-flex align-items-center gap-2">
         <i class="fas fa-map-location-dot text-primary-accent"></i>
         <h4 class="modal-title m-0">
-          {{ selectedItem.id ? 'Chỉnh sửa Khu vực bàn' : 'Thêm Khu vực bàn mới' }}
+          {{ (selectedItem.id ? '::EditDiningArea' : '::AddNewDiningArea') | abpLocalization }}
         </h4>
       </div>
     </ng-template>
 
     <ng-template #abpBody>
       <form [formGroup]="form" (ngSubmit)="save()" id="area-form" class="area-modal-form">
-        <!-- Tên khu vực -->
+        <!-- {{ '::AreaName' | abpLocalization }} -->
         <div class="mb-3">
           <label class="form-label required-label" for="area-name">
-            Tên khu vực
+            {{ '::AreaName' | abpLocalization }}
           </label>
           <div class="input-group">
             <span class="input-group-text"><i class="fas fa-map-marker-alt"></i></span>
@@ -278,36 +285,36 @@
               id="area-name"
               class="form-control"
               formControlName="name"
-              placeholder="VD: Tầng 1, Khu VIP, Sân vườn, Ban công..."
+              [placeholder]="'::AreaNameExample' | abpLocalization"
               autofocus
             />
           </div>
           @if (form.get('name')?.invalid && (form.get('name')?.dirty || form.get('name')?.touched)) {
             <div class="text-danger small mt-1">
               @if (form.get('name')?.errors?.['required']) {
-                Vui lòng nhập tên khu vực bàn ăn!
+                {{ '::AreaNameRequired' | abpLocalization }}
               }
               @if (form.get('name')?.errors?.['maxlength']) {
-                Tên khu vực không được vượt quá 128 ký tự!
+                {{ '::AreaNameMaxLength' | abpLocalization }}
               }
             </div>
           }
         </div>
 
-        <!-- Mô tả khu vực -->
+        <!-- Mô tả {{ '::AreaCountText' | abpLocalization }} -->
         <div class="mb-3">
           <label class="form-label" for="area-desc">
-            Mô tả / Ghi chú đặc điểm
+            {{ '::AreaDescription' | abpLocalization }}
           </label>
           <textarea
             id="area-desc"
             class="form-control"
             formControlName="description"
             rows="3"
-            placeholder="VD: Khu vực yên tĩnh, có điều hòa riêng, phù hợp tiếp khách sang trọng..."
+            [placeholder]="'::AreaDescriptionExample' | abpLocalization"
           ></textarea>
           <div class="form-text text-muted small">
-            Mô tả giúp nhân viên phục vụ nắm rõ đặc trưng của từng không gian bàn ăn.
+            {{ '::AreaDescriptionHint' | abpLocalization }}
           </div>
         </div>
       </form>
@@ -321,7 +328,7 @@
           abpClose
           [disabled]="isSaving"
         >
-          Hủy bỏ
+          {{ '::Cancel' | abpLocalization }}
         </button>
         <button
           type="button"
@@ -331,10 +338,10 @@
         >
           @if (isSaving) {
             <i class="fa fa-spin fa-spinner me-1"></i>
-            <span>Đang lưu...</span>
+            <span>{{ '::Saving' | abpLocalization }}</span>
           } @else {
             <i class="fa fa-check me-1"></i>
-            <span>{{ selectedItem.id ? 'Lưu thay đổi' : 'Tạo khu vực' }}</span>
+            <span>{{ (selectedItem.id ? '::SaveChanges' : '::CreateArea') | abpLocalization }}</span>
           }
         </button>
       </div>

@@ -45,9 +45,11 @@ export class DishCategoryComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Filter & Search states
   searchTerm = '';
-  sortBy = 'name asc';
+  sortBy = 'displayOrder asc, name asc';
 
   readonly sortOptions: CustomSelectOption[] = [
+    { value: 'displayOrder asc, name asc', label: '::SortDisplayOrderAsc', icon: 'fa-sort-numeric-down' },
+    { value: 'displayOrder desc', label: '::SortDisplayOrderDesc', icon: 'fa-sort-numeric-down-alt' },
     { value: 'name asc', label: '::SortNameAsc', icon: 'fa-sort-alpha-down' },
     { value: 'name desc', label: '::SortNameDesc', icon: 'fa-sort-alpha-down-alt' },
   ];
@@ -212,6 +214,7 @@ export class DishCategoryComponent implements OnInit, AfterViewInit, OnDestroy {
     this.form = this.fb.group({
       name: [this.selectedItem.name || '', Validators.required],
       description: [this.selectedItem.description || ''],
+      displayOrder: [this.selectedItem.displayOrder ?? 0, [Validators.min(0)]],
     });
   }
 

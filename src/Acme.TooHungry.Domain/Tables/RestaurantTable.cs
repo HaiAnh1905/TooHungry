@@ -28,5 +28,6 @@ public class RestaurantTable : FullAuditedAggregateRoot<Guid>
     public string? ReservedNote { get; set; }
 
     public ICollection<Order> Orders { get; set; } = new List<Order>();
+    public ICollection<Acme.TooHungry.Reservations.TableReservation> Reservations { get; set; } = new List<Acme.TooHungry.Reservations.TableReservation>();
 }
 

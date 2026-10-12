@@ -1,5 +1,8 @@
-import { authGuard, permissionGuard } from '@abp/ng.core';
+import { authGuard, eLayoutType } from '@abp/ng.core';
+import { smartPermissionGuard } from './shared/guards/smart-permission.guard';
+import { waiterAuthGuard } from './waiter/guards/waiter-auth.guard';
 import { Routes } from '@angular/router';
+
 export const APP_ROUTES: Routes = [
   {
     path: '',
@@ -16,12 +19,21 @@ export const APP_ROUTES: Routes = [
   },
   {
     path: 'identity',
-    loadChildren: () => import('@abp/ng.identity').then(c => c.createRoutes()),
+    children: [
+      {
+        path: 'users',
+        loadComponent: () => import('./identity/users/users').then(c => c.Users),
+        canActivate: [authGuard, smartPermissionGuard],
+        data: { requiredPolicy: 'AbpIdentity.Users' },
+      },
+      {
+        path: 'roles',
+        loadComponent: () => import('./identity/roles/roles').then(c => c.Roles),
+        canActivate: [authGuard, smartPermissionGuard],
+        data: { requiredPolicy: 'AbpIdentity.Roles' },
+      },
+    ],
   },
-  // {
-  //   path: 'tenant-management',
-  //   loadChildren: () => import('@abp/ng.tenant-management').then(c => c.createRoutes()),
-  // },
   {
     path: 'setting-management',
     loadChildren: () => import('@abp/ng.setting-management').then(c => c.createRoutes()),
@@ -29,42 +41,32 @@ export const APP_ROUTES: Routes = [
   {
     path: 'dishes',
     loadComponent: () => import('./dish/dish.component').then(c => c.DishComponent),
-    canActivate: [authGuard],
+    canActivate: [authGuard, smartPermissionGuard],
+    data: { requiredPolicy: 'TooHungry.Dishes' },
   },
   {
     path: 'dish-categories',
     loadComponent: () => import('./dish-category/dish-category.component').then(c => c.DishCategoryComponent),
-    canActivate: [authGuard],
-  },
-  {
-    path: 'recipes',
-    loadComponent: () => import('./recipe/recipe.component').then(c => c.RecipeComponent),
-    canActivate: [authGuard],
+    canActivate: [authGuard, smartPermissionGuard],
+    data: { requiredPolicy: 'TooHungry.DishCategories' },
   },
   {
     path: 'orders',
     loadComponent: () => import('./order/order.component').then(c => c.OrderComponent),
-    canActivate: [authGuard],
+    canActivate: [authGuard, smartPermissionGuard],
+    data: { requiredPolicy: 'TooHungry.Orders' },
   },
   {
-    path: 'inventories',
-    loadComponent: () => import('./inventory/inventory.component').then(c => c.InventoryComponent),
-    canActivate: [authGuard],
-  },
-  {
-    path: 'ingredients',
-    loadComponent: () => import('./ingredient/ingredient.component').then(c => c.IngredientComponent),
-    canActivate: [authGuard],
-  },
-  {
-    path: 'ingredient-categories',
-    loadComponent: () => import('./ingredient-category/ingredient-category.component').then(c => c.IngredientCategoryComponent),
-    canActivate: [authGuard],
+    path: 'units',
+    loadComponent: () => import('./unit/unit.component').then(c => c.UnitComponent),
+    canActivate: [authGuard, smartPermissionGuard],
+    data: { requiredPolicy: 'TooHungry.Units' },
   },
   {
     path: 'areas',
     loadComponent: () => import('./dining-area/dining-area.component').then(c => c.DiningAreaComponent),
-    canActivate: [authGuard],
+    canActivate: [authGuard, smartPermissionGuard],
+    data: { requiredPolicy: 'TooHungry.DiningAreas' },
   },
   {
     path: 'dining-areas',
@@ -74,11 +76,79 @@ export const APP_ROUTES: Routes = [
   {
     path: 'tables',
     loadComponent: () => import('./table/table.component').then(c => c.TableComponent),
-    canActivate: [authGuard],
+    canActivate: [authGuard, smartPermissionGuard],
+    data: { requiredPolicy: 'TooHungry.Tables' },
+  },
+  {
+    path: 'waiter',
+    loadComponent: () =>
+      import('./waiter/layout/waiter-layout.component').then(c => c.WaiterLayoutComponent),
+    canActivate: [authGuard, waiterAuthGuard],
+    data: { layout: eLayoutType.empty },
+    children: [
+      {
+        path: '',
+        redirectTo: 'tables',
+        pathMatch: 'full',
+      },
+      {
+        path: 'tables',
+        loadComponent: () =>
+          import('./waiter/tables/waiter-tables.component').then(c => c.WaiterTablesComponent),
+        canActivate: [smartPermissionGuard],
+        data: { requiredPolicy: 'TooHungry.Tables' },
+      },
+      {
+        path: 'order/:tableId',
+        loadComponent: () =>
+          import('./waiter/order/waiter-order.component').then(c => c.WaiterOrderComponent),
+        canActivate: [smartPermissionGuard],
+        data: { requiredPolicy: 'TooHungry.Orders' },
+      },
+      {
+        path: 'payment/:orderId',
+        redirectTo: '/payment/:orderId',
+        pathMatch: 'full',
+      },
+      {
+        path: '**',
+        redirectTo: 'tables',
+      },
+    ],
   },
   {
     path: 'payment/:orderId',
     loadComponent: () => import('./payment/payment.component').then(c => c.PaymentComponent),
-    canActivate: [authGuard],
+    canActivate: [authGuard, smartPermissionGuard],
+    data: { requiredPolicy: 'TooHungry.Orders', layout: eLayoutType.empty },
+  },
+  {
+    path: 'recipes',
+    loadComponent: () => import('./recipe/recipe.component').then(c => c.RecipeComponent),
+    canActivate: [authGuard, smartPermissionGuard],
+    data: { requiredPolicy: 'TooHungry.Recipes' },
+  },
+  {
+    path: 'ingredients/deactivated',
+    loadComponent: () =>
+      import('./ingredient/deactivated-ingredients/deactivated-ingredients.component').then(
+        c => c.DeactivatedIngredientsComponent
+      ),
+    canActivate: [authGuard, smartPermissionGuard],
+    data: { requiredPolicy: 'TooHungry.Ingredients' },
+  },
+  {
+    path: 'ingredients',
+    loadComponent: () => import('./ingredient/ingredient.component').then(c => c.IngredientComponent),
+    canActivate: [authGuard, smartPermissionGuard],
+    data: { requiredPolicy: 'TooHungry.Ingredients' },
+  },
+  {
+    path: 'inventory',
+    loadComponent: () => import('./inventory/inventory.component').then(c => c.InventoryComponent),
+    canActivate: [authGuard, smartPermissionGuard],
+    data: { requiredPolicy: 'TooHungry.Inventories' },
   },
 ];
+
+

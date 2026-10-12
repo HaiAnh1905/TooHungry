@@ -1,0 +1,134 @@
+<div class="waiter-app-wrapper">
+  <!-- 1. TOPBAR CỐ ĐỊNH TRÊN CÙNG (64px) -->
+  <header class="waiter-topbar">
+    <div class="topbar-left">
+      <!-- Nút mở drawer trên mobile/tablet -->
+      <button
+        type="button"
+        class="btn-toggle-drawer d-lg-none"
+        (click)="sidebarService.toggleDrawer()"
+        [title]="'::OpenFilters' | abpLocalization"
+        aria-label="Toggle Filters"
+      >
+        <i class="fas fa-sliders"></i>
+        @if (sidebarService.activeFilterCount() > 0) {
+          <span class="badge-filter-count">{{ sidebarService.activeFilterCount() }}</span>
+        }
+      </button>
+
+      <div class="brand-logo" routerLink="/waiter/tables">
+        <div class="brand-icon-wrapper">
+          <i class="fas fa-utensils brand-icon"></i>
+        </div>
+        <span class="brand-name">Acme.TooHungry</span>
+      </div>
+
+      <span class="portal-badge d-none d-sm-inline-flex">
+        {{ '::WaiterPortalTitle' | abpLocalization }}
+      </span>
+    </div>
+
+    <div class="topbar-right">
+      <!-- Trạng thái kết nối thời gian thực -->
+      <div class="status-indicator d-none d-md-flex" [class.online]="userInfo().isOnline">
+        <span class="status-dot"></span>
+        <span class="status-text">
+          {{ (userInfo().isOnline ? '::RealtimeConnected' : '::RealtimeDisconnected') | abpLocalization }}
+        </span>
+      </div>
+
+      <!-- Huy hiệu ca trực tự động theo giờ -->
+      <span class="shift-badge" [ngClass]="userInfo().shiftType">
+        <i class="far fa-clock me-1"></i>
+        <span>{{ userInfo().shiftLocalizationKey | abpLocalization }}</span>
+      </span>
+
+      <!-- Thông tin nhân viên phục vụ -->
+      <div class="user-profile">
+        <div class="avatar-circle">{{ userInitials() }}</div>
+        <div class="user-meta d-none d-md-block">
+          <div class="user-name">{{ userInfo().fullName }}</div>
+          <div class="user-role">{{ '::WaiterRoleBadge' | abpLocalization }}</div>
+        </div>
+      </div>
+
+      <!-- Nút lối tắt quay lại quản trị (Admin / Manager) -->
+      @if (userInfo().canReturnToAdmin) {
+        <button
+          type="button"
+          class="btn btn-outline-admin"
+          (click)="returnToAdmin()"
+          [title]="'::ReturnToAdmin' | abpLocalization"
+          aria-label="Return to Admin"
+        >
+          <i class="fas fa-arrow-left"></i>
+          <span class="d-none d-lg-inline ms-1">{{ '::ReturnToAdmin' | abpLocalization }}</span>
+        </button>
+      }
+
+      <!-- Nút đăng xuất nhanh -->
+      <button
+        type="button"
+        class="btn btn-logout"
+        (click)="logout()"
+        [title]="'::Logout' | abpLocalization"
+        aria-label="Logout"
+      >
+        <i class="fas fa-arrow-right-from-bracket"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- 2. VÙNG NỘI DUNG CHÍNH (SIDEBAR + MAIN CONTENT) -->
+  <div class="waiter-body-layout">
+    <!-- SIDEBAR DESKTOP (>= 992px) -->
+    @if (sidebarService.hasTemplate()) {
+      <aside class="waiter-desktop-sidebar d-none d-lg-block">
+        <div class="sidebar-inner-content">
+          @if (sidebarService.sidebarTemplate()) {
+            <ng-container *ngTemplateOutlet="sidebarService.sidebarTemplate()!"></ng-container>
+          }
+        </div>
+      </aside>
+    }
+
+    <!-- MAIN CONTENT (<router-outlet>) -->
+    <main class="waiter-main-content">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+
+  <!-- 3. MOBILE/TABLET OFFCANVAS DRAWER (< 992px) -->
+  <div
+    class="waiter-drawer-backdrop d-lg-none"
+    [class.show]="sidebarService.isDrawerOpen()"
+    (click)="sidebarService.closeDrawer()"
+  ></div>
+
+  <aside
+    class="waiter-mobile-drawer d-lg-none"
+    [class.open]="sidebarService.isDrawerOpen()"
+  >
+    <div class="drawer-header">
+      <h5 class="drawer-title m-0">
+        <i class="fas fa-filter me-2 text-primary-orange"></i>
+        {{ sidebarService.titleKey() | abpLocalization }}
+      </h5>
+      <button
+        type="button"
+        class="btn-close-drawer"
+        (click)="sidebarService.closeDrawer()"
+        [title]="'::CloseFilters' | abpLocalization"
+        aria-label="Close Drawer"
+      >
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="drawer-body">
+      @if (sidebarService.sidebarTemplate()) {
+        <ng-container *ngTemplateOutlet="sidebarService.sidebarTemplate()!"></ng-container>
+      }
+    </div>
+  </aside>
+</div>

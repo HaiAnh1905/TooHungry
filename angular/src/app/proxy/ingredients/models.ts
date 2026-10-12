@@ -1,35 +1,67 @@
-import type { AuditedEntityDto } from '@abp/ng.core';
+import { StorageType } from '../inventories/models';
 
-export interface CreateUpdateIngredientCategoryDto {
-  name?: string;
-  description?: string | null;
+export enum ConsumptionMethod {
+  RECIPE = 0,
+  MANUAL = 1,
+  HYBRID = 2,
 }
 
-export interface CreateUpdateIngredientDto {
-  name?: string;
+export interface IngredientDto {
+  id: string;
+  name: string;
+  code?: string;
+  baseUnit?: string | null;
+  unitName?: string;
   unitId?: string;
-  ingredientCategoryId?: string;
+  minStock: number;
+  estimatedPrice?: number;
+  storageType: StorageType;
+  consumptionMethod: ConsumptionMethod;
+  currentStock: number;
+  expiredStock?: number;
+  canEditUnit?: boolean;
+  isActive: boolean;
+  deactivationReason?: string;
+  creationTime?: string;
 }
 
-export interface CreateUpdateUnitDto {
-  name?: string;
-  abbreviation?: string | null;
-}
-
-export interface IngredientCategoryDto extends AuditedEntityDto<string> {
-  name?: string;
-  description?: string | null;
-}
-
-export interface IngredientDto extends AuditedEntityDto<string> {
-  name?: string;
+export interface CreateIngredientDto {
+  name: string;
+  code?: string;
+  baseUnit?: string | null;
   unitId?: string;
-  unitName?: string | null;
-  ingredientCategoryId?: string;
-  ingredientCategoryName?: string | null;
+  minStock: number;
+  estimatedPrice?: number;
+  storageType: StorageType;
+  consumptionMethod: ConsumptionMethod;
 }
 
-export interface UnitDto extends AuditedEntityDto<string> {
-  name?: string;
-  abbreviation?: string | null;
+export interface UpdateIngredientDto {
+  name: string;
+  code?: string;
+  baseUnit?: string | null;
+  unitId?: string;
+  minStock: number;
+  estimatedPrice?: number;
+  storageType: StorageType;
+  consumptionMethod: ConsumptionMethod;
+  isActive?: boolean;
+}
+
+export interface GetIngredientsInput {
+  filter?: string;
+  storageType?: StorageType;
+  consumptionMethod?: ConsumptionMethod;
+  isActive?: boolean;
+  skipCount?: number;
+  maxResultCount?: number;
+  sorting?: string;
+}
+
+export interface SmartRestoreDto {
+  newMinStock: number;
+}
+
+export interface DeactivateInput {
+  reason: string;
 }

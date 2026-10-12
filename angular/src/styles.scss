@@ -1,5 +1,9 @@
+@use 'app/theme/variables';
 /* Google Fonts: Plus Jakarta Sans */
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+/* NG-ZORRO Core Styles & Custom Variables */
+@import 'ng-zorro-antd/ng-zorro-antd.min.css';
 
 :root {
   /* Brand Colors: White & Vibrant Orange Theme with Warm French Beige Canvas */
@@ -502,6 +506,16 @@ lpx-brand-logo a {
   .lpx-nav-menu .outer-menu-item::before {
     display: none !important;
     content: none !important;
+  }
+
+  /* ẨN MỤC QUẢN TRỊ (ADMINISTRATION) MẶC ĐỊNH KHỎI SIDEBAR */
+  .lpx-nav-menu .outer-menu-item:has(a[title*="Quản trị"]),
+  .lpx-nav-menu .outer-menu-item:has(a[title*="Administration"]),
+  .lpx-nav-menu .outer-menu-item:has([data-lpx-nav-text="AbpUiNavigation::Menu:Administration"]),
+  .lpx-nav-menu .outer-menu-item:has(.fa-wrench),
+  .lpx-nav-menu li:has(.fa-wrench),
+  .lpx-nav-menu li:has([data-lpx-nav-text="AbpUiNavigation::Menu:Administration"]) {
+    display: none !important;
   }
 }
 
@@ -1436,9 +1450,7 @@ lpx-language-selection .lpx-language-selection,
 /* 5. POPUP DROPDOWN MENU TỪ TOPBAR */
 .action-group-menu,
 .lpx-topbar .dropdown-menu {
-  position: absolute !important;
-  top: calc(100% + 8px) !important;
-  right: 0 !important;
+  margin-top: 8px !important;
   background-color: #ffffff !important;
   border-radius: 14px !important;
   border: 1px solid var(--th-border-beige) !important;
@@ -2104,10 +2116,15 @@ abp-permission-management,
    RECIPE MODAL (WARM ORANGE RECIPE BUILDER) - GLOBAL STYLES FOR PORTAL OVERLAYS
    ========================================================================== */
 .modal:has(.recipe-modal-form) .modal-dialog,
-.modal-dialog:has(.recipe-modal-form) {
-  max-width: 780px !important;
+.modal:has(.recipe-form) .modal-dialog,
+.modal-dialog:has(.recipe-modal-form),
+.modal-dialog:has(.recipe-form) {
+  max-width: 1040px !important;
   width: 95vw !important;
   margin: 1.75rem auto !important;
+  display: flex !important;
+  align-items: center !important;
+  min-height: calc(100% - 3.5rem) !important;
 
   .modal-content {
     border-radius: 22px !important;
@@ -2115,10 +2132,15 @@ abp-permission-management,
     box-shadow: 0 24px 60px rgba(30, 25, 21, 0.18), 0 4px 20px rgba(255, 82, 27, 0.08) !important;
     overflow: visible !important;
     background: #ffffff !important;
+    min-height: 540px !important;
+    max-height: calc(100vh - 3.5rem) !important;
+    display: flex !important;
+    flex-direction: column !important;
   }
 
   .modal-header,
   .abp-modal-header {
+    flex-shrink: 0 !important;
     border-top-left-radius: 22px !important;
     border-top-right-radius: 22px !important;
     background: linear-gradient(180deg, #fff9f5 0%, #ffffff 100%) !important;
@@ -2153,10 +2175,13 @@ abp-permission-management,
 
   .modal-body,
   .abp-modal-body {
+    flex: 1 1 auto !important;
+    min-height: 380px !important;
     padding: 1.35rem 1.65rem !important;
     background: #ffffff !important;
     max-height: calc(100vh - 12rem) !important;
     overflow-y: auto !important;
+    overflow-x: visible !important;
 
     &::-webkit-scrollbar {
       width: 6px;
@@ -2176,6 +2201,7 @@ abp-permission-management,
 
   .modal-footer,
   .abp-modal-footer {
+    flex-shrink: 0 !important;
     border-bottom-left-radius: 22px !important;
     border-bottom-right-radius: 22px !important;
     background: #faf8f5 !important;
@@ -2283,6 +2309,147 @@ abp-permission-management,
     border-bottom-right-radius: 22px !important;
     position: relative !important;
     z-index: 10 !important;
+  }
+}
+
+/* ==========================================================================
+   CUSTOM SMALL MODAL (COMPACT MODAL ~ 1/2 SIZE)
+   ========================================================================== */
+.custom-small-modal {
+  .modal-dialog {
+    max-width: 360px !important;
+    width: 90% !important;
+    margin: 1.5rem auto !important;
+  }
+
+  .modal-content {
+    border-radius: 20px !important;
+    border: 1px solid rgba(255, 107, 53, 0.15) !important;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12) !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+  }
+
+  .modal-header,
+  .abp-modal-header {
+    padding: 0.85rem 1.15rem !important;
+    border-bottom: 1px solid #f6f1e8 !important;
+
+    .modal-header-icon {
+      width: 34px !important;
+      height: 34px !important;
+      font-size: 14px !important;
+      border-radius: 8px !important;
+    }
+
+    .modal-title-text {
+      font-size: 1.02rem !important;
+      font-weight: 700 !important;
+    }
+
+    .modal-subtitle-text {
+      font-size: 0.76rem !important;
+      color: #8c7e73 !important;
+    }
+
+    .btn-close,
+    #abp-modal-close-button {
+      padding: 0.45rem !important;
+      font-size: 0.75rem !important;
+    }
+  }
+
+  .modal-body,
+  .abp-modal-body {
+    padding: 0.95rem 1.15rem !important;
+    overflow: visible !important;
+  }
+
+  .modal-footer,
+  .abp-modal-footer {
+    padding: 0.75rem 1.15rem !important;
+    border-top: 1px solid #f6f1e8 !important;
+
+    .btn-modal-close,
+    .btn-modal-save {
+      padding: 0.42rem 0.95rem !important;
+      font-size: 0.82rem !important;
+      border-radius: 8px !important;
+    }
+  }
+}
+
+/* ==========================================================================
+   CUSTOM DEACTIVATE MODAL (~ 1/3 SCREEN WIDTH)
+   ========================================================================== */
+.custom-deactivate-modal {
+  .modal-dialog {
+    max-width: 580px !important;
+    width: 34vw !important;
+    min-width: 450px !important;
+    margin: 1.5rem auto !important;
+
+    @media (max-width: 768px) {
+      width: 92% !important;
+      min-width: auto !important;
+      max-width: 450px !important;
+    }
+  }
+
+  .modal-content {
+    border-radius: 20px !important;
+    border: 1px solid rgba(255, 107, 53, 0.15) !important;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12) !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+  }
+
+  .modal-header,
+  .abp-modal-header {
+    padding: 1rem 1.35rem !important;
+    border-bottom: 1px solid #f6f1e8 !important;
+
+    .modal-header-icon {
+      width: 40px !important;
+      height: 40px !important;
+      font-size: 18px !important;
+      border-radius: 10px !important;
+    }
+
+    .modal-title-text {
+      font-size: 1.15rem !important;
+      font-weight: 700 !important;
+    }
+
+    .modal-subtitle-text {
+      font-size: 0.82rem !important;
+      color: #8c7e73 !important;
+    }
+
+    .btn-close,
+    #abp-modal-close-button {
+      padding: 0.5rem !important;
+      font-size: 0.85rem !important;
+    }
+  }
+
+  .modal-body,
+  .abp-modal-body {
+    padding: 1.25rem 1.35rem !important;
+    overflow: visible !important;
+  }
+
+  .modal-footer,
+  .abp-modal-footer {
+    padding: 0.9rem 1.35rem !important;
+    border-top: 1px solid #f6f1e8 !important;
+
+    .btn-modal-close,
+    .btn-modal-save {
+      padding: 0.5rem 1.25rem !important;
+      font-size: 0.88rem !important;
+      border-radius: 10px !important;
+    }
   }
 }
 
@@ -3103,3 +3270,118 @@ select.meta-input,
   }
 }
 
+/* ==========================================================================
+   Định dạng văn bản xuống dòng cho các Modal Cảnh báo & Xác nhận của ABP
+   ========================================================================== */
+abp-confirmation,
+.abp-confirmation,
+abp-confirmation-dialog,
+.swal2-html-container,
+.swal2-content,
+.abp-confirmation-modal,
+.confirmation-dialog {
+  white-space: pre-line !important;
+  word-break: break-word !important;
+
+  p,
+  span,
+  div,
+  .message,
+  .text-muted,
+  .confirmation-message {
+    white-space: pre-line !important;
+    word-break: break-word !important;
+    line-height: 1.6 !important;
+
+    b,
+    strong {
+      font-weight: 700 !important;
+    }
+  }
+}
+
+/* ==========================================================================
+   MODERN MODAL OVERRIDES (For Users & Roles)
+   ========================================================================== */
+.modern-modal .modal-content {
+  border-radius: 16px !important;
+  border: none !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1) !important;
+  overflow: visible !important;
+}
+
+/* Allow dropdown to escape modal boundaries */
+.modern-modal .modal-body {
+  overflow: visible !important;
+  padding: 1.5rem 1.75rem !important;
+}
+
+/* Header & Footer adjustments */
+.modern-modal .modal-header {
+  border-bottom: 1px solid #f1f5f9 !important;
+  padding: 1.25rem 1.75rem !important;
+}
+.modern-modal .modal-footer {
+  border-top: 1px solid #f1f5f9 !important;
+  padding: 1.25rem 1.75rem !important;
+  background-color: #fafaf9 !important;
+  border-radius: 0 0 16px 16px !important;
+}
+
+/* Modern Inputs */
+.modern-modal .form-control,
+.modern-modal .input-group-text,
+.modern-modal .form-select {
+  border-radius: 8px !important;
+  border: 1px solid #e2e8f0 !important;
+  background-color: #f8fafc !important;
+  color: #334155 !important;
+  transition: all 0.2s ease !important;
+}
+
+.modern-modal .form-control,
+.modern-modal .form-select {
+  padding: 0.65rem 1rem !important;
+  font-size: 0.95rem !important;
+}
+
+.modern-modal .form-control:focus,
+.modern-modal .form-select:focus {
+  background-color: #ffffff !important;
+  border-color: #ff6b35 !important;
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1) !important;
+}
+
+/* Input group seamless design */
+.modern-modal .input-group {
+  border-radius: 8px !important;
+}
+.modern-modal .input-group .input-group-text {
+  border-right: none !important;
+  background-color: #f8fafc !important;
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  color: #94a3b8 !important;
+}
+.modern-modal .input-group .form-control {
+  border-left: none !important;
+  padding-left: 0.25rem !important;
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+}
+.modern-modal .input-group:focus-within .input-group-text {
+  border-color: #ff6b35 !important;
+  background-color: #ffffff !important;
+  color: #ff6b35 !important;
+}
+.modern-modal .input-group:focus-within .form-control {
+  border-color: #ff6b35 !important;
+  background-color: #ffffff !important;
+}
+
+/* Buttons in footer */
+.modern-modal .modal-footer .btn {
+  border-radius: 8px !important;
+  padding: 0.5rem 1.25rem !important;
+  font-weight: 600 !important;
+}

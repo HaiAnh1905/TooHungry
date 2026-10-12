@@ -23,6 +23,10 @@ public class TableDto : FullAuditedEntityDto<Guid>
     public DateTime? ReservedTime { get; set; }
     public int? ReservedGuestCount { get; set; }
     public string? ReservedNote { get; set; }
+
+    // Active order info
+    public Guid? ActiveOrderId { get; set; }
+    public bool HasActiveOrder { get; set; }
 }
 
 public class CreateUpdateTableDto
@@ -50,4 +54,9 @@ public class GetTablesInput : PagedAndSortedResultRequestDto
     public string? Filter { get; set; }
     public TableStatus? Status { get; set; }
     public Guid? DiningAreaId { get; set; }
+}
+
+public class ChangeTableStatusDto
+{
+    public TableStatus Status { get; set; }
 }

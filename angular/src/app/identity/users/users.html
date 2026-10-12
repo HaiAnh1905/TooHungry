@@ -1,0 +1,297 @@
+<div class="user-management-page">
+  <!-- 1. TOP HEADER: Tiêu đề & Nút Thêm mới -->
+  <div class="page-header-row d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+    <div>
+      <h2 class="page-title m-0">
+        {{ '::Menu:Users' | abpLocalization }}
+      </h2>
+      <p class="page-subtitle m-0 mt-1 text-muted">
+        {{ '::UsersSubtitle' | abpLocalization }}
+      </p>
+    </div>
+    <div>
+      <button
+        id="create-user"
+        class="btn btn-primary btn-add-user"
+        type="button"
+        (click)="openModal()"
+      >
+        <i class="fa fa-plus-circle me-1"></i>
+        <span>{{ '::AddNewUser' | abpLocalization }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 4. DATA TABLE CARD & PAGINATION FOOTER -->
+  <div class="data-card-wrapper shadow-sm rounded bg-white">
+    <ngx-datatable
+      #table
+      class="sedap-modern-table"
+      [rows]="users"
+      [count]="totalCount"
+      [limit]="pageSize"
+      [offset]="pageIndex"
+      [externalPaging]="true"
+      (page)="setPage($event)"
+      columnMode="force"
+      [headerHeight]="48"
+      [messages]="{
+        emptyMessage: '::NoDataAvailable' | abpLocalization,
+        totalMessage: '::UserCount' | abpLocalization
+      }"
+      [rowHeight]="56"
+      [loadingIndicator]="loading"
+    >
+      <!-- Cột STT -->
+      <ngx-datatable-column
+        [width]="65"
+        [minWidth]="55"
+        [maxWidth]="75"
+        [canAutoResize]="false"
+        [sortable]="false"
+      >
+        <ng-template ngx-datatable-header-template>
+          <span class="w-100 text-center header-title-centered">{{ '::Index' | abpLocalization }}</span>
+        </ng-template>
+        <ng-template let-rowIndex="rowIndex" ngx-datatable-cell-template>
+          <span class="stt-text fw-bold text-muted w-100 text-center d-block">{{ pageIndex * pageSize + rowIndex + 1 }}</span>
+        </ng-template>
+      </ngx-datatable-column>
+
+      <!-- Cột 1: Tên đăng nhập -->
+      <ngx-datatable-column
+        [name]="'::UserName' | abpLocalization"
+        prop="userName"
+        [minWidth]="180"
+        [flexGrow]="2"
+        [canAutoResize]="true"
+      >
+        <ng-template let-row="row" ngx-datatable-cell-template>
+          <div class="d-flex align-items-center gap-2">
+            <div class="dish-avatar-icon flex-shrink-0" style="width: 32px; height: 32px; background: #eef2f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #556ee6;">
+              <i class="fa fa-user"></i>
+            </div>
+            <span class="fw-bold text-dark">{{ row.userName }}</span>
+          </div>
+        </ng-template>
+      </ngx-datatable-column>
+
+      <!-- Cột 2: Họ tên -->
+      <ngx-datatable-column
+        [name]="'::FullName' | abpLocalization"
+        prop="name"
+        [minWidth]="150"
+        [flexGrow]="2"
+        [canAutoResize]="true"
+      >
+      </ngx-datatable-column>
+
+      <!-- Cột 3: Email -->
+      <ngx-datatable-column
+        [name]="'::Email' | abpLocalization"
+        prop="email"
+        [minWidth]="200"
+        [flexGrow]="3"
+        [canAutoResize]="true"
+      >
+        <ng-template let-row="row" ngx-datatable-cell-template>
+          <span class="text-muted"><i class="fa fa-envelope me-2 text-primary"></i>{{ row.email }}</span>
+        </ng-template>
+      </ngx-datatable-column>
+
+      <!-- Cột 4: Trạng thái (IsActive Switch) -->
+      <ngx-datatable-column
+        [name]="'::Status' | abpLocalization"
+        [width]="165"
+        [minWidth]="150"
+        [maxWidth]="180"
+        [canAutoResize]="false"
+        [sortable]="false"
+      >
+        <ng-template let-row="row" ngx-datatable-cell-template>
+          <div class="form-check form-switch d-flex align-items-center gap-2 m-0 p-0 text-nowrap">
+            <input
+              class="form-check-input m-0"
+              type="checkbox"
+              role="switch"
+              [checked]="row.isActive"
+              (click)="toggleActive(row, $event)"
+              style="cursor: pointer;"
+            />
+            <span class="status-indicator-label text-nowrap" [class.active]="row.isActive">
+              <ng-container *ngIf="row.isActive">{{ '::AccountStatusActive' | abpLocalization }}</ng-container>
+              <ng-container *ngIf="!row.isActive">{{ '::AccountStatusLocked' | abpLocalization }}</ng-container>
+            </span>
+          </div>
+        </ng-template>
+      </ngx-datatable-column>
+
+      <!-- Cột Thao tác (Actions) -->
+      <ngx-datatable-column
+        [width]="100"
+        [minWidth]="90"
+        [maxWidth]="120"
+        [canAutoResize]="false"
+        [sortable]="false"
+      >
+        <ng-template ngx-datatable-header-template>
+          <span class="w-100 text-center header-title-centered">{{ '::Actions' | abpLocalization }}</span>
+        </ng-template>
+        <ng-template let-row="row" ngx-datatable-cell-template>
+          <div class="actions-container d-flex justify-content-center gap-2">
+            <button
+              type="button"
+              class="icon-action-btn btn-edit text-primary border-0 bg-transparent"
+              (click)="openModal(row)"
+            >
+              <i class="fa fa-pen"></i>
+            </button>
+          </div>
+        </ng-template>
+      </ngx-datatable-column>
+    </ngx-datatable>
+
+    <!-- 5. CUSTOM FOOTER PAGINATION BAR -->
+    <div class="custom-table-footer d-flex align-items-center justify-content-between flex-wrap gap-3 p-3 border-top">
+      <!-- Bên trái: Số lượng bản ghi + Select số dòng -->
+      <div class="d-flex align-items-center flex-wrap gap-3">
+        <span class="records-summary-text text-muted">
+          {{ '::ShowingRecords' | abpLocalization }}
+          <strong>{{ fromRecord }} - {{ toRecord }}</strong>
+          {{ '::OfTotal' | abpLocalization }}
+          <strong>{{ totalCount }}</strong>
+          {{ '::UserCount' | abpLocalization }}
+        </span>
+
+        <div class="d-flex align-items-center gap-2 page-size-box">
+          <span class="page-size-label text-muted">{{ '::Display' | abpLocalization }}:</span>
+          <app-custom-select
+            [options]="pageSizeOptions"
+            [ngModel]="pageSize"
+            (selectionChange)="changePageSize($event)"
+            size="sm"
+            placement="top"
+            minWidth="100px"
+          ></app-custom-select>
+        </div>
+      </div>
+
+      <!-- Bên phải: Dãy nút điều hướng phân trang -->
+      <div class="d-flex align-items-center pagination-btn-group" style="gap: 5px;">
+        <button type="button" class="btn btn-sm btn-light" [disabled]="pageIndex === 0" (click)="firstPage()">
+          <i class="fa fa-angle-double-left"></i>
+        </button>
+
+        <button type="button" class="btn btn-sm btn-light" [disabled]="pageIndex === 0" (click)="prevPage()">
+          <i class="fa fa-angle-left me-1"></i> {{ '::PreviousPage' | abpLocalization }}
+        </button>
+
+        <span class="current-page-badge">
+          {{ '::Page' | abpLocalization }} <strong>{{ pageIndex + 1 }}</strong> / {{ totalPages }}
+        </span>
+
+        <button type="button" class="btn btn-sm btn-light" [disabled]="pageIndex >= totalPages - 1" (click)="nextPage()">
+          {{ '::NextPage' | abpLocalization }} <i class="fa fa-angle-right ms-1"></i>
+        </button>
+
+        <button type="button" class="btn btn-sm btn-light" [disabled]="pageIndex >= totalPages - 1" (click)="lastPage()">
+          <i class="fa fa-angle-double-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Thêm/Sửa Người dùng -->
+<abp-modal [(visible)]="isModalVisible" [options]="{ size: 'lg', windowClass: 'modern-modal' }">
+  <ng-template #abpHeader>
+    <div class="d-flex align-items-center gap-3">
+      <div class="modal-header-icon bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+        <i class="fa fa-user"></i>
+      </div>
+      <div>
+        <h5 class="m-0 modal-title-text fw-bold text-dark">
+          <ng-container *ngIf="selectedId">{{ '::EditUser' | abpLocalization }}</ng-container>
+          <ng-container *ngIf="!selectedId">{{ '::NewUser' | abpLocalization }}</ng-container>
+        </h5>
+        <span class="modal-subtitle-text text-muted" style="font-size: 0.85rem;">
+          {{ '::UserModalSubtitle' | abpLocalization }}
+        </span>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #abpBody>
+    <form id="user-form" [formGroup]="form" (ngSubmit)="save()" autocomplete="off">
+      <div class="row g-3">
+        <!-- Tên đăng nhập -->
+        <div class="col-md-6">
+          <label class="form-label fw-bold">{{ '::UserName' | abpLocalization }} <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" formControlName="userName" [placeholder]="'::EnterUsername' | abpLocalization" autofocus autocomplete="new-password" />
+        </div>
+
+        <!-- Họ tên -->
+        <div class="col-md-6">
+          <label class="form-label fw-bold">{{ '::FullName' | abpLocalization }} <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" formControlName="name" [placeholder]="'::EnterFullName' | abpLocalization" autocomplete="new-password" />
+        </div>
+
+        <!-- Email -->
+        <div class="col-12">
+          <label class="form-label fw-bold">{{ '::Email' | abpLocalization }} <span class="text-danger">*</span></label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="fa fa-envelope"></i></span>
+            <input type="email" class="form-control" formControlName="email" [placeholder]="'::EnterEmail' | abpLocalization" autocomplete="new-password" />
+          </div>
+        </div>
+
+        <!-- Mật khẩu -->
+        <div class="col-12">
+          <label class="form-label fw-bold">{{ '::Password' | abpLocalization }} <span *ngIf="!selectedId" class="text-danger">*</span></label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="fa fa-lock"></i></span>
+            <input *ngIf="selectedId" type="password" class="form-control" formControlName="password" [placeholder]="'::PasswordPlaceholderEdit' | abpLocalization" autocomplete="new-password" />
+            <input *ngIf="!selectedId" type="password" class="form-control" formControlName="password" [placeholder]="'::PasswordPlaceholderNew' | abpLocalization" autocomplete="new-password" />
+          </div>
+        </div>
+
+        <!-- Vai trò -->
+        <div class="col-12">
+          <label class="form-label fw-bold">{{ '::Role' | abpLocalization }}</label>
+          <app-custom-select
+            class="w-100 d-block"
+            [options]="modalRoleOptions"
+            formControlName="roleNames"
+            [placeholder]="'::SelectOneRole' | abpLocalization"
+            leadIcon="fa-shield-halved"
+            minWidth="100%"
+          ></app-custom-select>
+          <small *ngIf="checkingAdmin" class="text-primary d-block mt-1"><i class="fa fa-spinner fa-spin me-1"></i>{{ '::CheckingAdmin' | abpLocalization }}</small>
+          <small *ngIf="adminExistsError" class="text-danger d-block mt-1"><i class="fa fa-exclamation-triangle me-1"></i>{{ '::AdminAlreadyExistsError' | abpLocalization }}</small>
+        </div>
+
+        <!-- Trạng thái -->
+        <div class="col-12 mt-4">
+          <div class="form-check form-switch d-flex align-items-center m-0 p-0 gap-2">
+            <input class="form-check-input m-0 float-none" style="width: 2.5rem; height: 1.25rem; cursor: pointer;" type="checkbox" id="user-is-active" formControlName="isActive" />
+            <label class="form-check-label m-0 fw-bold" for="user-is-active" style="cursor: pointer;">
+              {{ '::AccountActiveLabel' | abpLocalization }}
+            </label>
+          </div>
+        </div>
+      </div>
+    </form>
+  </ng-template>
+
+  <ng-template #abpFooter>
+    <button type="button" class="btn btn-outline-secondary" (click)="isModalVisible = false">
+      {{ '::Cancel' | abpLocalization }}
+    </button>
+    <button type="button" class="btn btn-primary" (click)="save()" >
+      <span *ngIf="modalLoading" class="spinner-border spinner-border-sm me-1"></span>
+      <i *ngIf="!modalLoading" class="fa fa-check me-1"></i>
+      {{ '::SaveChanges' | abpLocalization }}
+    </button>
+  </ng-template>
+</abp-modal>
+

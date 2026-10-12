@@ -926,6 +926,16 @@
       box-shadow: 0 2px 8px rgba(249, 115, 22, 0.1);
     }
 
+    &.is-out-of-stock {
+      border-color: #fecaca;
+      background: #fffafa;
+
+      &:hover {
+        border-color: #f87171;
+        box-shadow: 0 3px 10px rgba(239, 68, 68, 0.08);
+      }
+    }
+
     .pos-dish-thumb-box {
       width: 46px;
       height: 46px;
@@ -972,6 +982,25 @@
           font-weight: 700;
           font-size: 0.88rem;
           color: #1e293b;
+        }
+
+        .dish-stock-pill-out {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 0.68rem;
+          font-weight: 700;
+          color: #dc2626;
+          background: #fee2e2;
+          border: 1px solid #fecaca;
+          padding: 1px 7px;
+          border-radius: 9999px;
+          white-space: nowrap;
+
+          i {
+            font-size: 0.68rem;
+            margin: 0 !important;
+          }
         }
       }
 
@@ -1033,6 +1062,19 @@
           border-color: #ea580c;
           box-shadow: 0 3px 8px rgba(234, 88, 12, 0.3);
           transform: translateY(-1px);
+        }
+
+        &.btn-dish-out-of-stock {
+          background: #fef2f2;
+          border-color: #fca5a5;
+          color: #dc2626;
+
+          &:hover {
+            background: #dc2626;
+            color: #ffffff;
+            border-color: #dc2626;
+            box-shadow: 0 3px 8px rgba(220, 38, 38, 0.3);
+          }
         }
       }
     }
@@ -1216,8 +1258,8 @@
   /* Từng dòng món đã đặt */
   .pos-cart-item-row {
     display: flex;
-    align-items: center;
-    gap: 8px;
+    flex-direction: column;
+    gap: 6px;
     padding: 8px 10px;
     background: #f8fafc;
     border: 1px solid #e2e8f0;
@@ -1227,6 +1269,45 @@
     &:hover {
       background: #f1f5f9;
       border-color: #cbd5e1;
+    }
+
+    &.has-stock-warning {
+      background: #fff8f8;
+      border-color: #fca5a5;
+      box-shadow: 0 1px 4px rgba(239, 68, 68, 0.08);
+
+      &:hover {
+        background: #fff2f2;
+        border-color: #f87171;
+      }
+    }
+
+    .cart-item-main {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .cart-item-stock-warning {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      background: #fee2e2;
+      border: 1px solid #fecaca;
+      border-radius: 6px;
+      padding: 5px 8px;
+      font-size: 0.73rem;
+      font-weight: 600;
+      color: #b91c1c;
+      line-height: 1.35;
+
+      i {
+        color: #ef4444;
+        font-size: 0.78rem;
+        margin-top: 1px;
+        flex-shrink: 0;
+      }
     }
 
     .cart-item-info {

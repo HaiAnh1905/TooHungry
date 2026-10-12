@@ -14,4 +14,8 @@ public interface IDiningAreaAppService :
         CreateUpdateDiningAreaDto>
 {
     Task<ListResultDto<DiningAreaDto>> GetLookupAsync();
+
+    Task DeactivateAsync(Guid id);
+
+    Task ActivateAsync(Guid id);
 }

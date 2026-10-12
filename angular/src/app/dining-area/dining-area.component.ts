@@ -218,6 +218,7 @@ export class DiningAreaComponent implements OnInit, OnDestroy {
     this.form = this.fb.group({
       name: [this.selectedItem.name || '', [Validators.required, Validators.maxLength(128)]],
       description: [this.selectedItem.description || '', [Validators.maxLength(500)]],
+      isActive: [this.selectedItem.isActive ?? true],
     });
   }
 
@@ -242,6 +243,7 @@ export class DiningAreaComponent implements OnInit, OnDestroy {
     const input: CreateUpdateDiningAreaDto = {
       name: this.form.value.name?.trim(),
       description: this.form.value.description?.trim() || undefined,
+      isActive: this.form.value.isActive ?? true,
     };
 
     const request = this.selectedItem.id
@@ -254,30 +256,69 @@ export class DiningAreaComponent implements OnInit, OnDestroy {
         this.isModalOpen = false;
         this.toaster.success(
           this.selectedItem.id
-            ? `Cập nhật khu vực "${input.name}" thành công!`
-            : `Thêm mới khu vực "${input.name}" thành công!`
+            ? this.localizationService.instant('::AreaUpdateSuccess', input.name || '')
+            : this.localizationService.instant('::AreaCreateSuccess', input.name || '')
         );
         this.list.get();
         this.cdr.markForCheck();
       },
       error: err => {
         this.isSaving = false;
-        this.toaster.error(err?.error?.message || err?.message || 'Có lỗi xảy ra khi lưu khu vực!');
+        this.toaster.error(err?.error?.message || err?.message || this.localizationService.instant('::AreaSaveError'));
         this.cdr.markForCheck();
       },
     });
   }
 
+  toggleActive(area: DiningAreaDto) {
+    if (area.isActive) {
+      this.confirmation
+        .warn(
+          this.localizationService.instant('::DisableAreaConfirmMessage', area.name || ''),
+          this.localizationService.instant('::DisableAreaConfirmTitle')
+        )
+        .subscribe((status: Confirmation.Status) => {
+          if (status === Confirmation.Status.confirm && area.id) {
+            this.diningAreaService.deactivate(area.id).subscribe({
+              next: () => {
+                this.toaster.success(this.localizationService.instant('::DisableAreaSuccess', area.name || ''));
+                this.list.get();
+                this.cdr.markForCheck();
+              },
+              error: err => {
+                this.toaster.error(err?.error?.message || err?.message || this.localizationService.instant('::DisableAreaError'));
+                this.cdr.markForCheck();
+              },
+            });
+          }
+        });
+    } else {
+      if (area.id) {
+        this.diningAreaService.activate(area.id).subscribe({
+          next: () => {
+            this.toaster.success(this.localizationService.instant('::EnableAreaSuccess', area.name || ''));
+            this.list.get();
+            this.cdr.markForCheck();
+          },
+          error: err => {
+            this.toaster.error(err?.error?.message || err?.message || this.localizationService.instant('::EnableAreaError'));
+            this.cdr.markForCheck();
+          },
+        });
+      }
+    }
+  }
+
   deleteArea(area: DiningAreaDto) {
-    if (area.tableCount > 0) {
+    if ((area.tableCount || 0) > 0) {
       this.toaster.warn(
-        `Khu vực "${area.name}" đang có ${area.tableCount} bàn ăn. Vui lòng chuyển hoặc xóa bàn trước khi xóa khu vực này!`
+        this.localizationService.instant('::AreaHasTablesWarning', area.name || '', (area.tableCount || 0).toString())
       );
       return;
     }
 
-    const confirmMsg = `Bạn có chắc chắn muốn xóa khu vực "${area.name}" không?`;
-    const confirmTitle = 'Xác nhận xóa khu vực';
+    const confirmMsg = this.localizationService.instant('::DeleteAreaConfirmMessage', area.name || '');
+    const confirmTitle = this.localizationService.instant('::DeleteAreaConfirmTitle');
 
     this.confirmation
       .warn(confirmMsg, confirmTitle)
@@ -285,12 +326,12 @@ export class DiningAreaComponent implements OnInit, OnDestroy {
         if (status === Confirmation.Status.confirm && area.id) {
           this.diningAreaService.delete(area.id).subscribe({
             next: () => {
-              this.toaster.success(`Đã xóa khu vực "${area.name}" thành công!`);
+              this.toaster.success(this.localizationService.instant('::DeleteAreaSuccess', area.name || ''));
               this.list.get();
               this.cdr.markForCheck();
             },
             error: err => {
-              this.toaster.error(err?.error?.message || err?.message || 'Không thể xóa khu vực này!');
+              this.toaster.error(err?.error?.message || err?.message || this.localizationService.instant('::DeleteAreaError'));
               this.cdr.markForCheck();
             },
           });

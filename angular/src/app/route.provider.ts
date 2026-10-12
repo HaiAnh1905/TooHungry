@@ -1,19 +1,21 @@
 import { AuthService, ConfigStateService, RoutesService, eLayoutType } from '@abp/ng.core';
+import { eThemeSharedRouteNames } from '@abp/ng.theme.shared';
 import { inject, provideAppInitializer } from '@angular/core';
-
 export const APP_ROUTE_PROVIDER = [
   provideAppInitializer(() => {
     configureRoutes();
   }),
 ];
-
 function configureRoutes() {
   const routes = inject(RoutesService);
   const authService = inject(AuthService);
   const configState = inject(ConfigStateService);
-
   const initialInvisible = !authService.isAuthenticated;
 
+  // Bỏ menu Quản trị (Administration) mặc định của ABP khỏi sidebar
+  routes.remove([eThemeSharedRouteNames.Administration, 'AbpUiNavigation::Menu:Administration']);
+  routes.patch(eThemeSharedRouteNames.Administration, { invisible: true });
+  routes.patch('AbpUiNavigation::Menu:Administration', { invisible: true });
   routes.add([
     {
       path: '/',
@@ -21,13 +23,14 @@ function configureRoutes() {
       iconClass: 'fas fa-chart-line',
       order: 1,
       layout: eLayoutType.application,
+      requiredPolicy: 'TooHungry.Dashboard',
     },
     {
       name: '::Menu:DishGroup',
       iconClass: 'fas fa-utensils',
       layout: eLayoutType.application,
       order: 2,
-      invisible: initialInvisible,
+      requiredPolicy: 'TooHungry.Dishes || TooHungry.DishCategories || TooHungry.Recipes',
     },
     {
       path: '/dishes',
@@ -36,7 +39,7 @@ function configureRoutes() {
       iconClass: 'fas fa-bowl-food',
       layout: eLayoutType.application,
       order: 1,
-      invisible: initialInvisible,
+      requiredPolicy: 'TooHungry.Dishes',
     },
     {
       path: '/dish-categories',
@@ -45,7 +48,7 @@ function configureRoutes() {
       iconClass: 'fas fa-tags',
       layout: eLayoutType.application,
       order: 2,
-      invisible: initialInvisible,
+      requiredPolicy: 'TooHungry.DishCategories',
     },
     {
       path: '/recipes',
@@ -54,31 +57,31 @@ function configureRoutes() {
       iconClass: 'fas fa-book-open',
       layout: eLayoutType.application,
       order: 3,
-      invisible: initialInvisible,
+      requiredPolicy: 'TooHungry.Recipes',
     },
     {
       path: '/orders',
       name: '::Menu:Orders',
       iconClass: 'fas fa-receipt',
       layout: eLayoutType.application,
-      order: 3,
-      invisible: initialInvisible,
+      order: 4,
+      requiredPolicy: 'TooHungry.Orders',
     },
     {
       name: '::Menu:InventoryGroup',
       iconClass: 'fas fa-boxes-stacked',
       layout: eLayoutType.application,
-      order: 4,
-      invisible: initialInvisible,
+      order: 5,
+      requiredPolicy: 'TooHungry.Inventories || TooHungry.Ingredients || TooHungry.Units',
     },
     {
-      path: '/inventories',
-      name: '::Menu:Inventories',
+      path: '/inventory',
+      name: '::Menu:Inventory',
       parentName: '::Menu:InventoryGroup',
       iconClass: 'fas fa-warehouse',
       layout: eLayoutType.application,
       order: 1,
-      invisible: initialInvisible,
+      requiredPolicy: 'TooHungry.Inventories',
     },
     {
       path: '/ingredients',
@@ -87,48 +90,75 @@ function configureRoutes() {
       iconClass: 'fas fa-carrot',
       layout: eLayoutType.application,
       order: 2,
-      invisible: initialInvisible,
+      requiredPolicy: 'TooHungry.Ingredients',
     },
     {
-      path: '/ingredient-categories',
-      name: '::Menu:IngredientCategories',
+      path: '/units',
+      name: '::Menu:Units',
       parentName: '::Menu:InventoryGroup',
-      iconClass: 'fas fa-tags',
+      iconClass: 'fas fa-scale-balanced',
       layout: eLayoutType.application,
       order: 3,
-      invisible: initialInvisible,
+      requiredPolicy: 'TooHungry.Units',
     },
     {
-      path: '/areas',
-      name: '::Menu:DiningAreas',
-      iconClass: 'fas fa-map-location-dot',
+      name: '::Menu:TableGroup',
+      iconClass: 'fas fa-chair',
       layout: eLayoutType.application,
-      order: 5,
-      invisible: initialInvisible,
+      order: 6,
+      requiredPolicy: 'TooHungry.Tables || TooHungry.DiningAreas',
+    },
+    {
+      path: '/waiter/tables',
+      name: '::Menu:WaiterTables',
+      parentName: '::Menu:TableGroup',
+      iconClass: 'fas fa-table-cells-large',
+      layout: eLayoutType.application,
+      order: 1,
+      requiredPolicy: 'TooHungry.Tables',
     },
     {
       path: '/tables',
       name: '::Menu:Tables',
+      parentName: '::Menu:TableGroup',
       iconClass: 'fas fa-chair',
       layout: eLayoutType.application,
-      order: 6,
-      invisible: initialInvisible,
+      order: 2,
+      requiredPolicy: 'TooHungry.Tables',
+    },
+    {
+      path: '/areas',
+      name: '::Menu:DiningAreas',
+      parentName: '::Menu:TableGroup',
+      iconClass: 'fas fa-map-location-dot',
+      layout: eLayoutType.application,
+      order: 3,
+      requiredPolicy: 'TooHungry.DiningAreas',
+    },
+    {
+      name: '::Menu:IdentityGroup',
+      iconClass: 'fas fa-shield-halved',
+      layout: eLayoutType.application,
+      order: 99,
+      requiredPolicy: 'AbpIdentity.Roles || AbpIdentity.Users', // Admin only usually
+    },
+    {
+      path: '/identity/users',
+      name: '::Menu:Users',
+      parentName: '::Menu:IdentityGroup',
+      iconClass: 'fas fa-users',
+      layout: eLayoutType.application,
+      order: 1,
+      requiredPolicy: 'AbpIdentity.Users',
+    },
+    {
+      path: '/identity/roles',
+      name: '::Menu:Roles',
+      parentName: '::Menu:IdentityGroup',
+      iconClass: 'fas fa-user-tag',
+      layout: eLayoutType.application,
+      order: 2,
+      requiredPolicy: 'AbpIdentity.Roles',
     },
   ]);
-
-  // Lắng nghe trạng thái đăng nhập để tự động ẩn/hiện menu
-  configState.getDeep$('currentUser.isAuthenticated').subscribe(isAuth => {
-    const shouldHide = !isAuth;
-    routes.patch('::Menu:DishGroup', { invisible: shouldHide });
-    routes.patch('::Menu:Dishes', { invisible: shouldHide });
-    routes.patch('::Menu:DishCategories', { invisible: shouldHide });
-    routes.patch('::Menu:Recipes', { invisible: shouldHide });
-    routes.patch('::Menu:Orders', { invisible: shouldHide });
-    routes.patch('::Menu:InventoryGroup', { invisible: shouldHide });
-    routes.patch('::Menu:Inventories', { invisible: shouldHide });
-    routes.patch('::Menu:Ingredients', { invisible: shouldHide });
-    routes.patch('::Menu:IngredientCategories', { invisible: shouldHide });
-    routes.patch('::Menu:DiningAreas', { invisible: shouldHide });
-    routes.patch('::Menu:Tables', { invisible: shouldHide });
-  });
 }

@@ -1,328 +1,279 @@
-import {
-  Component,
-  OnInit,
-  AfterViewInit,
-  OnDestroy,
-  ChangeDetectorRef,
-  inject,
-  ViewChild,
-  ElementRef,
-} from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormArray, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormsModule } from '@angular/forms';
+import { CoreModule } from '@abp/ng.core';
+import { ThemeSharedModule, ToasterService } from '@abp/ng.theme.shared';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+import { DishService } from '../proxy/controllers/dish.service';
+import { DishCategoryService } from '../proxy/dishes/dish-category.service';
+import { DishDto, DishCategoryDto } from '../proxy/dishes/models';
+import { RecipeService } from '../proxy/recipes/recipe.service';
+import { RecipeDto } from '../proxy/recipes/models';
+import { RecipeModalComponent } from './recipe-modal/recipe-modal.component';
 import {
-  CoreModule,
-  ListService,
-  PagedAndSortedResultRequestDto,
-  PagedResultDto,
-} from '@abp/ng.core';
-import { ConfirmationService, Confirmation, ThemeSharedModule } from '@abp/ng.theme.shared';
-import { DatatableComponent, NgxDatatableModule } from '@swimlane/ngx-datatable';
-import { Subscription } from 'rxjs';
-import { RecipeService } from '../proxy/dishes/recipe.service';
-import { RecipeDto } from '../proxy/dishes/models';
-import { DishService } from '../proxy/dishes/dish.service';
-import { DishDto } from '../proxy/dishes/models';
-import { IngredientService } from '../proxy/ingredients/ingredient.service';
-import { IngredientDto } from '../proxy/ingredients/models';
-import { CustomSelectComponent, CustomSelectOption } from '../shared/components/custom-select/custom-select.component';
+  CustomSelectComponent,
+  CustomSelectOption,
+} from '../shared/components/custom-select/custom-select.component';
+
+interface DishRecipeViewModel extends DishDto {
+  recipe?: RecipeDto;
+  isLoadingRecipe?: boolean;
+}
 
 @Component({
   selector: 'app-recipe',
   standalone: true,
-  imports: [CommonModule, CoreModule, ThemeSharedModule, NgxDatatableModule, ReactiveFormsModule, FormsModule, CustomSelectComponent],
+  imports: [
+    CommonModule,
+    CoreModule,
+    ThemeSharedModule,
+    FormsModule,
+    RecipeModalComponent,
+    CustomSelectComponent,
+  ],
   templateUrl: './recipe.component.html',
   styleUrl: './recipe.component.scss',
-  providers: [ListService],
 })
-export class RecipeComponent implements OnInit, AfterViewInit, OnDestroy {
-  public readonly list = inject(ListService);
-  private readonly recipeService = inject(RecipeService);
+export class RecipeComponent implements OnInit {
   private readonly dishService = inject(DishService);
-  private readonly ingredientService = inject(IngredientService);
-  private readonly fb = inject(FormBuilder);
-  private readonly confirmation = inject(ConfirmationService);
+  private readonly dishCategoryService = inject(DishCategoryService);
+  private readonly recipeService = inject(RecipeService);
+  private readonly toaster = inject(ToasterService);
   private readonly cdr = inject(ChangeDetectorRef);
 
-  @ViewChild('table') table?: DatatableComponent;
-  @ViewChild('tableWrapper') tableWrapper?: ElementRef;
-
-  data: PagedResultDto<RecipeDto> = { items: [], totalCount: 0 };
-  dishes: DishDto[] = [];
-  ingredients: IngredientDto[] = [];
-  dishOptions: CustomSelectOption[] = [];
-  ingredientOptions: CustomSelectOption[] = [];
-
+  dishes: DishRecipeViewModel[] = [];
+  filteredDishes: DishRecipeViewModel[] = [];
+  categoriesList: DishCategoryDto[] = [];
+  selectedCategoryId = '';
   searchTerm = '';
-  sortBy = 'name asc';
+  filterStatus: 'all' | 'has_recipe' | 'no_recipe' = 'all';
+  isLoading = false;
 
-  readonly sortOptions: CustomSelectOption[] = [
-    { value: 'name asc', label: '::SortNameAsc', icon: 'fa-sort-alpha-down' },
-    { value: 'name desc', label: '::SortNameDesc', icon: 'fa-sort-alpha-down-alt' },
-  ];
+  get categoryOptions(): CustomSelectOption[] {
+    const defaultOpt: CustomSelectOption = {
+      value: '',
+      label: '::AllCategories',
+      icon: 'fa-layer-group',
+    };
+    const catOpts: CustomSelectOption[] = this.categoriesList.map(c => ({
+      value: c.id || '',
+      label: c.name || '',
+      icon: 'fa-tag',
+    }));
+    return [defaultOpt, ...catOpts];
+  }
 
   readonly pageSizeOptions: CustomSelectOption[] = [
     { value: 5, label: '5 ::RowsPerPage' },
     { value: 10, label: '10 ::RowsPerPage' },
     { value: 20, label: '20 ::RowsPerPage' },
+    { value: 50, label: '50 ::RowsPerPage' },
   ];
 
-  isModalOpen = false;
-  form!: FormGroup;
-  selectedItem = {} as RecipeDto;
+  currentPage = 1;
+  pageSize = 10;
 
-  private resizeObserver?: ResizeObserver;
-  private listSubscription?: Subscription;
+  get baseCategoryDishes(): DishRecipeViewModel[] {
+    let list = this.dishes;
+    if (this.selectedCategoryId) {
+      list = list.filter(d => d.dishCategoryId === this.selectedCategoryId);
+    }
+    return list;
+  }
 
-  get currentPage(): number {
-    return this.list.page + 1;
+  get totalCount(): number {
+    return this.baseCategoryDishes.length;
+  }
+
+  get hasRecipeCount(): number {
+    return this.baseCategoryDishes.filter(d => !!d.recipe && d.recipe.isActive).length;
+  }
+
+  get noRecipeCount(): number {
+    return this.baseCategoryDishes.filter(d => !d.recipe || !d.recipe.isActive).length;
   }
 
   get totalPages(): number {
-    const total = this.data?.totalCount || 0;
-    return Math.ceil(total / (this.list.maxResultCount || 10)) || 1;
+    return Math.ceil(this.filteredDishes.length / this.pageSize) || 1;
+  }
+
+  get pagedDishes(): DishRecipeViewModel[] {
+    const start = (this.currentPage - 1) * this.pageSize;
+    return this.filteredDishes.slice(start, start + this.pageSize);
   }
 
   get fromRecord(): number {
-    const total = this.data?.totalCount || 0;
-    if (total === 0) return 0;
-    return this.list.page * this.list.maxResultCount + 1;
+    if (this.filteredDishes.length === 0) return 0;
+    return (this.currentPage - 1) * this.pageSize + 1;
   }
 
   get toRecord(): number {
-    const total = this.data?.totalCount || 0;
-    return Math.min((this.list.page + 1) * this.list.maxResultCount, total);
+    return Math.min(this.currentPage * this.pageSize, this.filteredDishes.length);
   }
 
-  get recipeIngredientsArray(): FormArray {
-    return this.form.get('recipeIngredients') as FormArray;
+  changePageSize(size: number): void {
+    this.pageSize = Number(size);
+    this.currentPage = 1;
   }
 
-  ngOnInit() {
-    this.list.maxResultCount = 10;
-
-    // Load dishes and ingredients for dropdowns
-    this.dishService.getList({ maxResultCount: 200, skipCount: 0 }).subscribe(res => {
-      this.dishes = res.items || [];
-      this.dishOptions = this.dishes.map(dish => ({
-        value: dish.id,
-        label: dish.name || '',
-        icon: 'fa-utensils',
-      }));
-      this.cdr.markForCheck();
-    });
-
-    this.ingredientService.getList({ maxResultCount: 200, skipCount: 0 }).subscribe(res => {
-      this.ingredients = res.items || [];
-      this.ingredientOptions = this.ingredients.map(ing => ({
-        value: ing.id,
-        label: `${ing.name}${ing.unitName ? ' (' + ing.unitName + ')' : ''}`,
-        icon: 'fa-seedling',
-        desc: ing.ingredientCategoryName || undefined,
-      }));
-      this.cdr.markForCheck();
-    });
-
-    const streamCreator = (query: PagedAndSortedResultRequestDto) =>
-      this.recipeService.getList({
-        ...query,
-        sorting: this.sortBy,
-      });
-
-    this.listSubscription = this.list.hookToQuery(streamCreator).subscribe(res => {
-      if (this.searchTerm && this.searchTerm.trim() !== '') {
-        const term = this.searchTerm.trim().toLowerCase();
-        const filtered = (res.items || []).filter(
-          item =>
-            item.name?.toLowerCase().includes(term) ||
-            item.dishName?.toLowerCase().includes(term) ||
-            item.description?.toLowerCase().includes(term)
-        );
-        this.data = { items: filtered, totalCount: filtered.length };
-      } else {
-        this.data = res;
-      }
-      this.cdr.markForCheck();
-      this.recalculateTable();
-    });
+  prevPage(): void {
+    if (this.currentPage > 1) this.currentPage--;
   }
 
-  onSearchChange() {
-    this.list.page = 0;
-    this.list.get();
+  nextPage(): void {
+    if (this.currentPage < this.totalPages) this.currentPage++;
   }
 
-  onSortChange(sortBy: string) {
-    this.sortBy = sortBy;
-    this.list.page = 0;
-    this.list.get();
+  firstPage(): void {
+    this.currentPage = 1;
   }
 
-  changePageSize(newSize: number) {
-    this.list.page = 0;
-    this.list.maxResultCount = Number(newSize);
+  lastPage(): void {
+    this.currentPage = this.totalPages;
   }
 
-  goToPage(page: number) {
-    if (page >= 1 && page <= this.totalPages && page !== this.currentPage) {
-      this.list.page = page - 1;
-    }
+  // Modal
+  isModalOpen = false;
+  selectedDish?: DishRecipeViewModel;
+
+  ngOnInit(): void {
+    this.loadDishes();
   }
 
-  prevPage() {
-    if (this.currentPage > 1) {
-      this.list.page = this.list.page - 1;
-    }
-  }
+  loadDishes(): void {
+    this.isLoading = true;
+    this.cdr.markForCheck();
 
-  nextPage() {
-    if (this.currentPage < this.totalPages) {
-      this.list.page = this.list.page + 1;
-    }
-  }
+    forkJoin({
+      dishesRes: this.dishService.getList({
+        filter: '',
+        skipCount: 0,
+        maxResultCount: 1000,
+        isActive: true,
+      }),
+      recipesRes: this.recipeService
+        .getList({
+          maxResultCount: 1000,
+        })
+        .pipe(catchError(() => of({ totalCount: 0, items: [] as RecipeDto[] }))),
+      categoriesRes: this.dishCategoryService
+        .getList({
+          maxResultCount: 100,
+          skipCount: 0,
+        })
+        .pipe(catchError(() => of({ totalCount: 0, items: [] as DishCategoryDto[] }))),
+    }).subscribe({
+      next: ({ dishesRes, recipesRes, categoriesRes }) => {
+        this.categoriesList = categoriesRes?.items || [];
+        const recipeMap = new Map<string, RecipeDto>();
+        (recipesRes?.items || []).forEach(r => {
+          if (r.dishId && r.isActive) {
+            recipeMap.set(r.dishId, r);
+          }
+        });
 
-  firstPage() {
-    if (this.currentPage !== 1) {
-      this.list.page = 0;
-    }
-  }
+        this.dishes = (dishesRes?.items || []).map(d => ({
+          ...d,
+          recipe: d.id ? recipeMap.get(d.id) : undefined,
+          isLoadingRecipe: false,
+        }));
 
-  lastPage() {
-    if (this.currentPage !== this.totalPages) {
-      this.list.page = this.totalPages - 1;
-    }
-  }
-
-  ngAfterViewInit() {
-    if (typeof ResizeObserver !== 'undefined' && this.tableWrapper?.nativeElement) {
-      this.resizeObserver = new ResizeObserver(() => {
-        this.table?.recalculate();
+        this.applyFilter();
+        this.isLoading = false;
         this.cdr.markForCheck();
-      });
-      this.resizeObserver.observe(this.tableWrapper.nativeElement);
-    }
-    this.recalculateTable();
-  }
-
-  ngOnDestroy() {
-    this.resizeObserver?.disconnect();
-    this.listSubscription?.unsubscribe();
-  }
-
-  private recalculateTable() {
-    requestAnimationFrame(() => {
-      this.table?.recalculate();
-      window.dispatchEvent(new Event('resize'));
-      this.cdr.markForCheck();
+      },
+      error: err => {
+        console.error('Lỗi khi tải danh sách món ăn/công thức:', err);
+        this.dishes = [];
+        this.filteredDishes = [];
+        this.isLoading = false;
+        this.cdr.markForCheck();
+      },
     });
-    setTimeout(() => {
-      this.table?.recalculate();
-      window.dispatchEvent(new Event('resize'));
-      this.cdr.markForCheck();
-    }, 50);
-    setTimeout(() => {
-      this.table?.recalculate();
-      this.cdr.markForCheck();
-    }, 200);
   }
 
-  createRecipe() {
-    this.selectedItem = {} as RecipeDto;
-    this.buildForm();
+  applyFilter(): void {
+    let list = this.dishes;
+
+    if (this.selectedCategoryId) {
+      list = list.filter(d => d.dishCategoryId === this.selectedCategoryId);
+    }
+
+    if (this.searchTerm.trim()) {
+      const term = this.searchTerm.toLowerCase().trim();
+      list = list.filter(d => d.name && d.name.toLowerCase().includes(term));
+    }
+
+    if (this.filterStatus === 'has_recipe') {
+      list = list.filter(d => !!d.recipe && d.recipe.isActive);
+    } else if (this.filterStatus === 'no_recipe') {
+      list = list.filter(d => !d.recipe || !d.recipe.isActive);
+    }
+
+    this.filteredDishes = list;
+    this.currentPage = 1;
+    this.cdr.markForCheck();
+  }
+
+  onCategoryChange(categoryId: string): void {
+    this.selectedCategoryId = categoryId || '';
+    this.applyFilter();
+  }
+
+  openRecipeModal(dish: DishRecipeViewModel): void {
+    this.selectedDish = dish;
     this.isModalOpen = true;
-    this.cdr.markForCheck();
   }
 
-  editRecipe(id: string) {
-    this.recipeService.get(id).subscribe(recipe => {
-      this.selectedItem = recipe;
-      this.buildForm();
-      this.isModalOpen = true;
-      this.cdr.markForCheck();
-    });
+  onRecipeSaved(): void {
+    this.loadDishes();
   }
 
-  buildForm() {
-    this.form = this.fb.group({
-      dishId: [this.selectedItem.dishId || '', Validators.required],
-      name: [this.selectedItem.name || '', Validators.required],
-      description: [this.selectedItem.description || ''],
-      instructions: [this.selectedItem.instructions || ''],
-      recipeIngredients: this.fb.array([]),
-    });
+  // Quản lý Tạm ngưng và Kích hoạt lại
+  isDeactivateModalOpen = false;
+  deactivatingDish?: DishRecipeViewModel;
+  deactivationReason = '';
+  isDeactivating = false;
 
-    if (this.selectedItem.recipeIngredients && this.selectedItem.recipeIngredients.length > 0) {
-      this.selectedItem.recipeIngredients.forEach(item => {
-        this.recipeIngredientsArray.push(
-          this.fb.group({
-            ingredientId: [item.ingredientId || '', Validators.required],
-            quantity: [item.quantity || 1, [Validators.required, Validators.min(0.01)]],
-            note: [item.note || ''],
-          })
-        );
-      });
-    }
+  openDeactivateModal(dish: DishRecipeViewModel): void {
+    this.deactivatingDish = dish;
+    this.deactivationReason = '';
+    this.isDeactivateModalOpen = true;
   }
 
-  addIngredientRow() {
-    this.recipeIngredientsArray.push(
-      this.fb.group({
-        ingredientId: ['', Validators.required],
-        quantity: [1, [Validators.required, Validators.min(0.01)]],
-        note: [''],
-      })
-    );
-    this.cdr.markForCheck();
-  }
-
-  removeIngredientRow(index: number) {
-    this.recipeIngredientsArray.removeAt(index);
-    this.cdr.markForCheck();
-  }
-
-  getIngredientUnit(ingredientId: string | null | undefined): string {
-    if (!ingredientId) return '-';
-    const ing = this.ingredients.find(i => i.id === ingredientId);
-    return ing?.unitName || '-';
-  }
-
-  onDishSelected(dishId: string) {
-    const currentName = this.form.get('name')?.value;
-    if (!currentName || currentName.trim() === '') {
-      const dish = this.dishes.find(d => d.id === dishId);
-      if (dish) {
-        this.form.patchValue({ name: `${dish.name} Recipe` });
-      }
-    }
-  }
-
-  save() {
-    if (this.form.invalid) {
+  confirmDeactivate(): void {
+    if (!this.deactivatingDish?.recipe?.id || !this.deactivationReason.trim()) {
+      this.toaster.error('::DeactivationReasonRequired');
       return;
     }
 
-    const request = this.selectedItem.id
-      ? this.recipeService.update(this.selectedItem.id, this.form.value)
-      : this.recipeService.create(this.form.value);
-
-    request.subscribe(() => {
-      this.isModalOpen = false;
-      this.form.reset();
-      this.list.get();
-      this.cdr.markForCheck();
+    this.isDeactivating = true;
+    this.recipeService.deactivate(this.deactivatingDish.recipe.id, this.deactivationReason.trim()).subscribe({
+      next: () => {
+        this.isDeactivating = false;
+        this.isDeactivateModalOpen = false;
+        this.toaster.success('::RecipeDeactivatedSuccess');
+        this.loadDishes();
+      },
+      error: (err) => {
+        this.isDeactivating = false;
+        this.toaster.error(err?.error?.message || err?.message || 'Có lỗi xảy ra');
+      },
     });
   }
 
-  delete(id: string) {
-    this.confirmation
-      .warn('::AreYouSureToDelete', '::AreYouSure')
-      .subscribe((status: Confirmation.Status) => {
-        if (status === Confirmation.Status.confirm) {
-          this.recipeService.delete(id).subscribe(() => {
-            this.list.get();
-            this.cdr.markForCheck();
-          });
-        }
-      });
+  reactivateRecipe(dish: DishRecipeViewModel): void {
+    if (!dish.recipe?.id) return;
+
+    this.recipeService.reactivate(dish.recipe.id).subscribe({
+      next: () => {
+        this.toaster.success('::RecipeReactivatedSuccess');
+        this.loadDishes();
+      },
+      error: (err) => {
+        this.toaster.error(err?.error?.message || err?.message || 'Có lỗi xảy ra khi kích hoạt lại');
+      },
+    });
   }
 }

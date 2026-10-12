@@ -1,17 +1,20 @@
 using Riok.Mapperly.Abstractions;
 using Volo.Abp.Mapperly;
 using Acme.TooHungry.Dishes;
-using Acme.TooHungry.Ingredients;
-using Acme.TooHungry.Inventories;
+using Acme.TooHungry.Units;
 using Acme.TooHungry.Orders;
 using Acme.TooHungry.Forecasts;
 using Acme.TooHungry.DailyMenus;
 using Acme.TooHungry.Tables;
 using Acme.TooHungry.DiningAreas;
+using Acme.TooHungry.Recipes;
+using Acme.TooHungry.Ingredients;
+using Acme.TooHungry.Inventories;
+using Acme.TooHungry.Reservations;
 
 namespace Acme.TooHungry;
 
-#region Dishes & Recipes
+#region Dishes
 [Mapper(RequiredMappingStrategy = RequiredMappingStrategy.Target)]
 public partial class TooHungryDishToDishDtoMapper : MapperBase<Dish, DishDto>
 {
@@ -42,43 +45,9 @@ public partial class TooHungryCreateUpdateDishCategoryDtoToDishCategoryMapper : 
     public override partial DishCategory Map(CreateUpdateDishCategoryDto source);
     public override partial void Map(CreateUpdateDishCategoryDto source, DishCategory destination);
 }
-
-[Mapper(RequiredMappingStrategy = RequiredMappingStrategy.Target)]
-public partial class TooHungryRecipeToRecipeDtoMapper : MapperBase<Recipe, RecipeDto>
-{
-    [MapProperty(nameof(Recipe.Dish.Name), nameof(RecipeDto.DishName))]
-    public override partial RecipeDto Map(Recipe source);
-
-    [MapProperty(nameof(Recipe.Dish.Name), nameof(RecipeDto.DishName))]
-    public override partial void Map(Recipe source, RecipeDto destination);
-}
-
-[Mapper(RequiredMappingStrategy = RequiredMappingStrategy.Target)]
-public partial class TooHungryCreateUpdateRecipeDtoToRecipeMapper : MapperBase<CreateUpdateRecipeDto, Recipe>
-{
-    public override partial Recipe Map(CreateUpdateRecipeDto source);
-    public override partial void Map(CreateUpdateRecipeDto source, Recipe destination);
-}
-
-[Mapper(RequiredMappingStrategy = RequiredMappingStrategy.Target)]
-public partial class TooHungryRecipeIngredientToRecipeIngredientDtoMapper : MapperBase<RecipeIngredient, RecipeIngredientDto>
-{
-    [MapProperty(nameof(RecipeIngredient.Ingredient.Name), nameof(RecipeIngredientDto.IngredientName))]
-    public override partial RecipeIngredientDto Map(RecipeIngredient source);
-
-    [MapProperty(nameof(RecipeIngredient.Ingredient.Name), nameof(RecipeIngredientDto.IngredientName))]
-    public override partial void Map(RecipeIngredient source, RecipeIngredientDto destination);
-}
-
-[Mapper(RequiredMappingStrategy = RequiredMappingStrategy.Target)]
-public partial class TooHungryCreateUpdateRecipeIngredientDtoToRecipeIngredientMapper : MapperBase<CreateUpdateRecipeIngredientDto, RecipeIngredient>
-{
-    public override partial RecipeIngredient Map(CreateUpdateRecipeIngredientDto source);
-    public override partial void Map(CreateUpdateRecipeIngredientDto source, RecipeIngredient destination);
-}
 #endregion
 
-#region Ingredients & Units
+#region Units
 [Mapper(RequiredMappingStrategy = RequiredMappingStrategy.Target)]
 public partial class TooHungryUnitToUnitDtoMapper : MapperBase<Unit, UnitDto>
 {
@@ -91,86 +60,6 @@ public partial class TooHungryCreateUpdateUnitDtoToUnitMapper : MapperBase<Creat
 {
     public override partial Unit Map(CreateUpdateUnitDto source);
     public override partial void Map(CreateUpdateUnitDto source, Unit destination);
-}
-
-[Mapper(RequiredMappingStrategy = RequiredMappingStrategy.Target)]
-public partial class TooHungryIngredientCategoryToIngredientCategoryDtoMapper : MapperBase<IngredientCategory, IngredientCategoryDto>
-{
-    public override partial IngredientCategoryDto Map(IngredientCategory source);
-    public override partial void Map(IngredientCategory source, IngredientCategoryDto destination);
-}
-
-[Mapper(RequiredMappingStrategy = RequiredMappingStrategy.Target)]
-public partial class TooHungryCreateUpdateIngredientCategoryDtoToIngredientCategoryMapper : MapperBase<CreateUpdateIngredientCategoryDto, IngredientCategory>
-{
-    public override partial IngredientCategory Map(CreateUpdateIngredientCategoryDto source);
-    public override partial void Map(CreateUpdateIngredientCategoryDto source, IngredientCategory destination);
-}
-
-[Mapper(RequiredMappingStrategy = RequiredMappingStrategy.Target)]
-public partial class TooHungryIngredientToIngredientDtoMapper : MapperBase<Ingredient, IngredientDto>
-{
-    [MapProperty(nameof(Ingredient.Unit.Name), nameof(IngredientDto.UnitName))]
-    [MapProperty(nameof(Ingredient.IngredientCategory.Name), nameof(IngredientDto.IngredientCategoryName))]
-    public override partial IngredientDto Map(Ingredient source);
-
-    [MapProperty(nameof(Ingredient.Unit.Name), nameof(IngredientDto.UnitName))]
-    [MapProperty(nameof(Ingredient.IngredientCategory.Name), nameof(IngredientDto.IngredientCategoryName))]
-    public override partial void Map(Ingredient source, IngredientDto destination);
-}
-
-[Mapper(RequiredMappingStrategy = RequiredMappingStrategy.Target)]
-public partial class TooHungryCreateUpdateIngredientDtoToIngredientMapper : MapperBase<CreateUpdateIngredientDto, Ingredient>
-{
-    public override partial Ingredient Map(CreateUpdateIngredientDto source);
-    public override partial void Map(CreateUpdateIngredientDto source, Ingredient destination);
-}
-#endregion
-
-#region Inventories
-[Mapper(RequiredMappingStrategy = RequiredMappingStrategy.Target)]
-public partial class TooHungryInventoryToInventoryDtoMapper : MapperBase<Inventory, InventoryDto>
-{
-    [MapProperty(nameof(Inventory.Ingredient.Name), nameof(InventoryDto.IngredientName))]
-    public override partial InventoryDto Map(Inventory source);
-
-    [MapProperty(nameof(Inventory.Ingredient.Name), nameof(InventoryDto.IngredientName))]
-    public override partial void Map(Inventory source, InventoryDto destination);
-}
-
-[Mapper(RequiredMappingStrategy = RequiredMappingStrategy.Target)]
-public partial class TooHungryCreateUpdateInventoryDtoToInventoryMapper : MapperBase<CreateUpdateInventoryDto, Inventory>
-{
-    public override partial Inventory Map(CreateUpdateInventoryDto source);
-    public override partial void Map(CreateUpdateInventoryDto source, Inventory destination);
-}
-
-[Mapper(RequiredMappingStrategy = RequiredMappingStrategy.Target)]
-public partial class TooHungryInventoryBatchToInventoryBatchDtoMapper : MapperBase<InventoryBatch, InventoryBatchDto>
-{
-    public override partial InventoryBatchDto Map(InventoryBatch source);
-    public override partial void Map(InventoryBatch source, InventoryBatchDto destination);
-}
-
-[Mapper(RequiredMappingStrategy = RequiredMappingStrategy.Target)]
-public partial class TooHungryCreateUpdateInventoryBatchDtoToInventoryBatchMapper : MapperBase<CreateUpdateInventoryBatchDto, InventoryBatch>
-{
-    public override partial InventoryBatch Map(CreateUpdateInventoryBatchDto source);
-    public override partial void Map(CreateUpdateInventoryBatchDto source, InventoryBatch destination);
-}
-
-[Mapper(RequiredMappingStrategy = RequiredMappingStrategy.Target)]
-public partial class TooHungryInventoryTransactionToInventoryTransactionDtoMapper : MapperBase<InventoryTransaction, InventoryTransactionDto>
-{
-    public override partial InventoryTransactionDto Map(InventoryTransaction source);
-    public override partial void Map(InventoryTransaction source, InventoryTransactionDto destination);
-}
-
-[Mapper(RequiredMappingStrategy = RequiredMappingStrategy.Target)]
-public partial class TooHungryCreateInventoryTransactionDtoToInventoryTransactionMapper : MapperBase<CreateInventoryTransactionDto, InventoryTransaction>
-{
-    public override partial InventoryTransaction Map(CreateInventoryTransactionDto source);
-    public override partial void Map(CreateInventoryTransactionDto source, InventoryTransaction destination);
 }
 #endregion
 
@@ -196,9 +85,11 @@ public partial class TooHungryCreateUpdateOrderDtoToOrderMapper : MapperBase<Cre
 public partial class TooHungryOrderItemToOrderItemDtoMapper : MapperBase<OrderItem, OrderItemDto>
 {
     [MapProperty(nameof(OrderItem.Dish.Name), nameof(OrderItemDto.DishName))]
+    [MapProperty(nameof(OrderItem.Dish.ImageUrl), nameof(OrderItemDto.DishPhotoUrl))]
     public override partial OrderItemDto Map(OrderItem source);
 
     [MapProperty(nameof(OrderItem.Dish.Name), nameof(OrderItemDto.DishName))]
+    [MapProperty(nameof(OrderItem.Dish.ImageUrl), nameof(OrderItemDto.DishPhotoUrl))]
     public override partial void Map(OrderItem source, OrderItemDto destination);
 }
 
@@ -240,37 +131,6 @@ public partial class TooHungryCreateUpdateDemandForecastItemDtoToDemandForecastI
 {
     public override partial DemandForecastItem Map(CreateUpdateDemandForecastItemDto source);
     public override partial void Map(CreateUpdateDemandForecastItemDto source, DemandForecastItem destination);
-}
-
-[Mapper(RequiredMappingStrategy = RequiredMappingStrategy.Target)]
-public partial class TooHungryIngredientPlanToIngredientPlanDtoMapper : MapperBase<IngredientPlan, IngredientPlanDto>
-{
-    public override partial IngredientPlanDto Map(IngredientPlan source);
-    public override partial void Map(IngredientPlan source, IngredientPlanDto destination);
-}
-
-[Mapper(RequiredMappingStrategy = RequiredMappingStrategy.Target)]
-public partial class TooHungryCreateUpdateIngredientPlanDtoToIngredientPlanMapper : MapperBase<CreateUpdateIngredientPlanDto, IngredientPlan>
-{
-    public override partial IngredientPlan Map(CreateUpdateIngredientPlanDto source);
-    public override partial void Map(CreateUpdateIngredientPlanDto source, IngredientPlan destination);
-}
-
-[Mapper(RequiredMappingStrategy = RequiredMappingStrategy.Target)]
-public partial class TooHungryIngredientPlanItemToIngredientPlanItemDtoMapper : MapperBase<IngredientPlanItem, IngredientPlanItemDto>
-{
-    [MapProperty(nameof(IngredientPlanItem.Ingredient.Name), nameof(IngredientPlanItemDto.IngredientName))]
-    public override partial IngredientPlanItemDto Map(IngredientPlanItem source);
-
-    [MapProperty(nameof(IngredientPlanItem.Ingredient.Name), nameof(IngredientPlanItemDto.IngredientName))]
-    public override partial void Map(IngredientPlanItem source, IngredientPlanItemDto destination);
-}
-
-[Mapper(RequiredMappingStrategy = RequiredMappingStrategy.Target)]
-public partial class TooHungryCreateUpdateIngredientPlanItemDtoToIngredientPlanItemMapper : MapperBase<CreateUpdateIngredientPlanItemDto, IngredientPlanItem>
-{
-    public override partial IngredientPlanItem Map(CreateUpdateIngredientPlanItemDto source);
-    public override partial void Map(CreateUpdateIngredientPlanItemDto source, IngredientPlanItem destination);
 }
 #endregion
 
@@ -344,6 +204,105 @@ public partial class TooHungryCreateUpdateDiningAreaDtoToDiningAreaMapper : Mapp
 {
     public override partial DiningArea Map(CreateUpdateDiningAreaDto source);
     public override partial void Map(CreateUpdateDiningAreaDto source, DiningArea destination);
+}
+#endregion
+
+#region Recipes
+[Mapper(RequiredMappingStrategy = RequiredMappingStrategy.Target)]
+public partial class TooHungryRecipeToRecipeDtoMapper : MapperBase<Recipe, RecipeDto>
+{
+    [MapProperty(nameof(Recipe.Dish) + "." + nameof(Dish.Name), nameof(RecipeDto.DishName))]
+    [MapProperty(nameof(Recipe.Dish) + "." + nameof(Dish.Price), nameof(RecipeDto.DishPrice))]
+    [MapperIgnoreTarget(nameof(RecipeDto.TotalEstimatedCost))]
+    [MapperIgnoreTarget(nameof(RecipeDto.FoodCostPercentage))]
+    [MapperIgnoreTarget(nameof(RecipeDto.HasDeactivatedIngredients))]
+    public override partial RecipeDto Map(Recipe source);
+
+    [MapProperty(nameof(Recipe.Dish) + "." + nameof(Dish.Name), nameof(RecipeDto.DishName))]
+    [MapProperty(nameof(Recipe.Dish) + "." + nameof(Dish.Price), nameof(RecipeDto.DishPrice))]
+    [MapperIgnoreTarget(nameof(RecipeDto.TotalEstimatedCost))]
+    [MapperIgnoreTarget(nameof(RecipeDto.FoodCostPercentage))]
+    [MapperIgnoreTarget(nameof(RecipeDto.HasDeactivatedIngredients))]
+    public override partial void Map(Recipe source, RecipeDto destination);
+}
+
+[Mapper(RequiredMappingStrategy = RequiredMappingStrategy.Target)]
+public partial class TooHungryRecipeIngredientToRecipeIngredientDtoMapper : MapperBase<RecipeIngredient, RecipeIngredientDto>
+{
+    [MapProperty(nameof(RecipeIngredient.Ingredient) + "." + nameof(Ingredient.Name), nameof(RecipeIngredientDto.IngredientName))]
+    [MapProperty(nameof(RecipeIngredient.Ingredient) + "." + nameof(Ingredient.BaseUnit), nameof(RecipeIngredientDto.BaseUnit))]
+    [MapProperty(nameof(RecipeIngredient.Ingredient) + "." + nameof(Ingredient.EstimatedPrice), nameof(RecipeIngredientDto.EstimatedPrice))]
+    [MapProperty(nameof(RecipeIngredient.Ingredient) + "." + nameof(Ingredient.IsActive), nameof(RecipeIngredientDto.IsIngredientActive))]
+    [MapperIgnoreTarget(nameof(RecipeIngredientDto.BaseQuantity))]
+    [MapperIgnoreTarget(nameof(RecipeIngredientDto.ItemEstimatedCost))]
+    public override partial RecipeIngredientDto Map(RecipeIngredient source);
+
+    [MapProperty(nameof(RecipeIngredient.Ingredient) + "." + nameof(Ingredient.Name), nameof(RecipeIngredientDto.IngredientName))]
+    [MapProperty(nameof(RecipeIngredient.Ingredient) + "." + nameof(Ingredient.BaseUnit), nameof(RecipeIngredientDto.BaseUnit))]
+    [MapProperty(nameof(RecipeIngredient.Ingredient) + "." + nameof(Ingredient.EstimatedPrice), nameof(RecipeIngredientDto.EstimatedPrice))]
+    [MapProperty(nameof(RecipeIngredient.Ingredient) + "." + nameof(Ingredient.IsActive), nameof(RecipeIngredientDto.IsIngredientActive))]
+    [MapperIgnoreTarget(nameof(RecipeIngredientDto.BaseQuantity))]
+    [MapperIgnoreTarget(nameof(RecipeIngredientDto.ItemEstimatedCost))]
+    public override partial void Map(RecipeIngredient source, RecipeIngredientDto destination);
+}
+#endregion
+
+#region Inventories
+[Mapper(RequiredMappingStrategy = RequiredMappingStrategy.Target)]
+public partial class TooHungryInventoryBatchToInventoryBatchDtoMapper : MapperBase<InventoryBatch, InventoryBatchDto>
+{
+    [MapProperty(nameof(InventoryBatch.Ingredient) + "." + nameof(Ingredient.Name), nameof(InventoryBatchDto.IngredientName))]
+    public override partial InventoryBatchDto Map(InventoryBatch source);
+
+    [MapProperty(nameof(InventoryBatch.Ingredient) + "." + nameof(Ingredient.Name), nameof(InventoryBatchDto.IngredientName))]
+    public override partial void Map(InventoryBatch source, InventoryBatchDto destination);
+}
+
+[Mapper(RequiredMappingStrategy = RequiredMappingStrategy.Target)]
+public partial class TooHungryInventoryTransactionToInventoryTransactionDtoMapper : MapperBase<InventoryTransaction, InventoryTransactionDto>
+{
+    [MapProperty(nameof(InventoryTransaction.Ingredient) + "." + nameof(Ingredient.Name), nameof(InventoryTransactionDto.IngredientName))]
+    [MapProperty(nameof(InventoryTransaction.Batch) + "." + nameof(InventoryBatch.BatchCode), nameof(InventoryTransactionDto.BatchCode))]
+    public override partial InventoryTransactionDto Map(InventoryTransaction source);
+
+    [MapProperty(nameof(InventoryTransaction.Ingredient) + "." + nameof(Ingredient.Name), nameof(InventoryTransactionDto.IngredientName))]
+    [MapProperty(nameof(InventoryTransaction.Batch) + "." + nameof(InventoryBatch.BatchCode), nameof(InventoryTransactionDto.BatchCode))]
+    public override partial void Map(InventoryTransaction source, InventoryTransactionDto destination);
+}
+#endregion
+
+#region Ingredients
+[Mapper(RequiredMappingStrategy = RequiredMappingStrategy.Target)]
+public partial class TooHungryIngredientToIngredientDtoMapper : MapperBase<Ingredient, IngredientDto>
+{
+    public override partial IngredientDto Map(Ingredient source);
+    public override partial void Map(Ingredient source, IngredientDto destination);
+}
+#endregion
+
+#region Reservations
+[Mapper(RequiredMappingStrategy = RequiredMappingStrategy.None)]
+public partial class TooHungryTableReservationToTableReservationDtoMapper : MapperBase<TableReservation, TableReservationDto>
+{
+    [MapperIgnoreTarget(nameof(TableReservationDto.TableName))]
+    public override partial TableReservationDto Map(TableReservation source);
+
+    [MapperIgnoreTarget(nameof(TableReservationDto.TableName))]
+    public override partial void Map(TableReservation source, TableReservationDto destination);
+}
+
+[Mapper(RequiredMappingStrategy = RequiredMappingStrategy.None)]
+public partial class TooHungryCreateTableReservationDtoToTableReservationMapper : MapperBase<CreateTableReservationDto, TableReservation>
+{
+    public override partial TableReservation Map(CreateTableReservationDto source);
+    public override partial void Map(CreateTableReservationDto source, TableReservation destination);
+}
+
+[Mapper(RequiredMappingStrategy = RequiredMappingStrategy.None)]
+public partial class TooHungryUpdateTableReservationDtoToTableReservationMapper : MapperBase<UpdateTableReservationDto, TableReservation>
+{
+    public override partial TableReservation Map(UpdateTableReservationDto source);
+    public override partial void Map(UpdateTableReservationDto source, TableReservation destination);
 }
 #endregion
 

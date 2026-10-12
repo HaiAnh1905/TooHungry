@@ -286,3 +286,6 @@ src/Acme.TooHungry.Blazor.Server.Tiered/Logs/*
 # IdentityServer temp files
 tempkey.rsa
 tempkey.jwk
+
+# Gemini CLI / Agent
+.gemini/

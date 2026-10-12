@@ -10,26 +10,39 @@ import {
   HostListener,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormArray, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
   CoreModule,
   ListService,
   PagedAndSortedResultRequestDto,
   PagedResultDto,
+  PermissionService,
 } from '@abp/ng.core';
-import { ConfirmationService, Confirmation, ThemeSharedModule, NGX_DATATABLE_MESSAGES } from '@abp/ng.theme.shared';
+import { ConfirmationService, Confirmation, ThemeSharedModule, ToasterService } from '@abp/ng.theme.shared';
 import { DatatableComponent, NgxDatatableModule } from '@swimlane/ngx-datatable';
-import { Observable, Subscription, map, shareReplay } from 'rxjs';
-import { DishService } from '../proxy/dishes/dish.service';
+import { Observable, Subscription, map, shareReplay, of } from 'rxjs';
+import { DishService } from '../proxy/controllers/dish.service';
 import { DishCategoryService } from '../proxy/dishes/dish-category.service';
 import { DishDto, DishCategoryDto } from '../proxy/dishes/models';
-import { MediaService } from '../proxy/media/media.service';
+import { MediaService } from '../proxy/controllers/media.service';
 import { CustomSelectComponent, CustomSelectOption } from '../shared/components/custom-select/custom-select.component';
+import { ImgFallbackDirective } from '../shared/directives/img-fallback.directive';
+import { RecipeModalComponent } from '../recipe/recipe-modal/recipe-modal.component';
 
 @Component({
   selector: 'app-dish',
   standalone: true,
-  imports: [CommonModule, CoreModule, ThemeSharedModule, NgxDatatableModule, ReactiveFormsModule, FormsModule, CustomSelectComponent],
+  imports: [
+    CommonModule,
+    CoreModule,
+    ThemeSharedModule,
+    NgxDatatableModule,
+    ReactiveFormsModule,
+    FormsModule,
+    CustomSelectComponent,
+    ImgFallbackDirective,
+    RecipeModalComponent,
+  ],
   templateUrl: './dish.component.html',
   styleUrl: './dish.component.scss',
   providers: [ListService],
@@ -38,14 +51,26 @@ export class DishComponent implements OnInit, AfterViewInit, OnDestroy {
   public readonly list = inject(ListService);
   private readonly dishService = inject(DishService);
   private readonly dishCategoryService = inject(DishCategoryService);
+  private readonly permissionService = inject(PermissionService);
   private readonly mediaService = inject(MediaService);
   private readonly fb = inject(FormBuilder);
   private readonly confirmation = inject(ConfirmationService);
+  private readonly toaster = inject(ToasterService);
   private readonly cdr = inject(ChangeDetectorRef);
 
   @ViewChild('table') table?: DatatableComponent;
   @ViewChild('tableWrapper') tableWrapper?: ElementRef;
   @ViewChild('fileInput') fileInput?: ElementRef<HTMLInputElement>;
+
+  // Selection & Bulk Actions
+  selectedDishIds = new Set<string>();
+  isBulkOperating = false;
+
+  // Tab Filtering & Badge Counts
+  activeTab: 'all' | 'active' | 'inactive' = 'all';
+  allCount = 0;
+  activeCount = 0;
+  inactiveCount = 0;
 
   // Image Upload & Preview states
   imagePreviewUrl: string | null = null;
@@ -63,6 +88,19 @@ export class DishComponent implements OnInit, AfterViewInit, OnDestroy {
   selectedCategoryId = '';
   sortBy = 'name asc';
 
+  // Recipe Modal
+  isRecipeModalOpen = false;
+  selectedDishForRecipe?: DishDto;
+
+  openRecipeModal(dish: DishDto): void {
+    this.selectedDishForRecipe = dish;
+    this.isRecipeModalOpen = true;
+  }
+
+  onRecipeSaved(): void {
+    this.list.get();
+  }
+
   get categoryOptions(): CustomSelectOption[] {
     const defaultOpt: CustomSelectOption = {
       value: '',
@@ -75,6 +113,20 @@ export class DishComponent implements OnInit, AfterViewInit, OnDestroy {
       icon: 'fa-tag',
     }));
     return [defaultOpt, ...catOpts];
+  }
+
+  get modalCategoryOptions(): CustomSelectOption[] {
+    const unassignedOpt: CustomSelectOption = {
+      value: null,
+      label: '::UnassignedCategory',
+      icon: 'fa-times-circle',
+    };
+    const catOpts: CustomSelectOption[] = this.categoriesList.map(c => ({
+      value: c.id,
+      label: c.name || '',
+      icon: 'fa-tag',
+    }));
+    return [unassignedOpt, ...catOpts];
   }
 
   readonly sortOptions: CustomSelectOption[] = [
@@ -96,10 +148,15 @@ export class DishComponent implements OnInit, AfterViewInit, OnDestroy {
   form!: FormGroup;
   selectedDish = {} as DishDto;
 
+  // Delete Dialog With Reason (Kiểm toán)
+  isDeleteModalOpen = false;
+  deletingDish: DishDto | null = null;
+  deletionReason = '';
+  isDeletingDish = false;
+
   private resizeObserver?: ResizeObserver;
   private listSubscription?: Subscription;
 
-  // Pagination getters
   get currentPage(): number {
     return this.list.page + 1;
   }
@@ -129,7 +186,9 @@ export class DishComponent implements OnInit, AfterViewInit, OnDestroy {
         sorting: this.sortBy,
         filter: this.searchTerm ? this.searchTerm.trim() : undefined,
         dishCategoryId: this.selectedCategoryId ? this.selectedCategoryId : undefined,
+        isActive: this.activeTab === 'all' ? undefined : (this.activeTab === 'active' ? true : false),
       });
+
     this.listSubscription = this.list.hookToQuery(dishStreamCreator).subscribe(res => {
       this.dish = res;
       this.cdr.markForCheck();
@@ -137,9 +196,107 @@ export class DishComponent implements OnInit, AfterViewInit, OnDestroy {
     });
 
     this.loadCategories();
+    this.loadCounts();
+  }
+
+  loadCounts() {
+    this.dishService.getList({ maxResultCount: 1, skipCount: 0 }).subscribe(res => {
+      this.allCount = res.totalCount ?? 0;
+      this.cdr.markForCheck();
+    });
+    this.dishService.getList({ maxResultCount: 1, skipCount: 0, isActive: true }).subscribe(res => {
+      this.activeCount = res.totalCount ?? 0;
+      this.cdr.markForCheck();
+    });
+    this.dishService.getList({ maxResultCount: 1, skipCount: 0, isActive: false }).subscribe(res => {
+      this.inactiveCount = res.totalCount ?? 0;
+      this.cdr.markForCheck();
+    });
+  }
+
+  setTab(tab: 'all' | 'active' | 'inactive') {
+    if (this.activeTab === tab) return;
+    this.activeTab = tab;
+    this.clearSelection();
+    this.list.page = 0;
+    this.list.get();
+  }
+
+  // Selection & Bulk Action helpers
+  isSelected(id?: string): boolean {
+    return !!id && this.selectedDishIds.has(id);
+  }
+
+  toggleSelect(id?: string, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    if (!id) return;
+    if (this.selectedDishIds.has(id)) {
+      this.selectedDishIds.delete(id);
+    } else {
+      this.selectedDishIds.add(id);
+    }
+    this.cdr.markForCheck();
+  }
+
+  isAllSelected(): boolean {
+    const items = this.dish?.items || [];
+    if (items.length === 0) return false;
+    return items.every(item => item.id && this.selectedDishIds.has(item.id));
+  }
+
+  toggleSelectAll(event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    const items = this.dish?.items || [];
+    if (this.isAllSelected()) {
+      items.forEach(item => {
+        if (item.id) this.selectedDishIds.delete(item.id);
+      });
+    } else {
+      items.forEach(item => {
+        if (item.id) this.selectedDishIds.add(item.id);
+      });
+    }
+    this.cdr.markForCheck();
+  }
+
+  clearSelection(): void {
+    this.selectedDishIds.clear();
+    this.cdr.markForCheck();
+  }
+
+  bulkToggleActive(isActive: boolean): void {
+    const ids = Array.from(this.selectedDishIds);
+    if (ids.length === 0) return;
+
+    this.isBulkOperating = true;
+    this.dishService.bulkToggleActive({ dishIds: ids, isActive }).subscribe({
+      next: res => {
+        this.isBulkOperating = false;
+        this.toaster.success(res.message || 'Cập nhật trạng thái thành công!');
+        this.clearSelection();
+        this.list.get();
+        this.loadCounts();
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.isBulkOperating = false;
+        this.cdr.markForCheck();
+      }
+    });
   }
 
   loadCategories() {
+    const hasCategoryPermission = this.permissionService.getGrantedPolicy('TooHungry.DishCategories');
+    if (!hasCategoryPermission) {
+      this.categoriesList = [];
+      this.categories$ = of([]);
+      return;
+    }
+
     this.categories$ = this.dishCategoryService
       .getList({ maxResultCount: 100, skipCount: 0 })
       .pipe(
@@ -157,12 +314,14 @@ export class DishComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onSearchChange() {
+    this.clearSelection();
     this.list.page = 0;
     this.list.get();
   }
 
   onCategoryFilterChange(categoryId: string) {
     this.selectedCategoryId = categoryId;
+    this.clearSelection();
     this.list.page = 0;
     this.list.get();
   }
@@ -238,8 +397,26 @@ export class DishComponent implements OnInit, AfterViewInit, OnDestroy {
     }, 50);
     setTimeout(() => {
       this.table?.recalculate();
+      window.dispatchEvent(new Event('resize'));
       this.cdr.markForCheck();
     }, 200);
+  }
+
+  // Toggle IsActive
+  toggleActive(dish: DishDto, event: Event) {
+    event.stopPropagation();
+    const previous = dish.isActive;
+    this.dishService.toggleActive(dish.id!).subscribe({
+      next: (updated) => {
+        dish.isActive = updated.isActive;
+        this.loadCounts();
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        dish.isActive = previous;
+        this.cdr.markForCheck();
+      },
+    });
   }
 
   createDish() {
@@ -276,6 +453,7 @@ export class DishComponent implements OnInit, AfterViewInit, OnDestroy {
       dishCategoryId: [this.selectedDish.dishCategoryId || null],
       imageUrl: [this.selectedDish.imageUrl || ''],
       description: [this.selectedDish.description || ''],
+      isActive: [this.selectedDish.isActive ?? true],
     });
     this.updateSelectedCategoryName();
   }
@@ -307,7 +485,6 @@ export class DishComponent implements OnInit, AfterViewInit, OnDestroy {
     this.uploadError = null;
     this.isUploadingImage = true;
 
-    // Xem trước ảnh tạm thời ngay lập tức
     const reader = new FileReader();
     reader.onload = e => {
       this.imagePreviewUrl = e.target?.result as string;
@@ -315,12 +492,14 @@ export class DishComponent implements OnInit, AfterViewInit, OnDestroy {
     };
     reader.readAsDataURL(file);
 
-    // Tải ảnh lên Cloudinary qua Backend API
-    this.mediaService.uploadDishImage(file).subscribe({
+    const formData = new FormData();
+    formData.append('file', file);
+
+    this.mediaService.uploadDishImage(formData).subscribe({
       next: res => {
         this.isUploadingImage = false;
-        this.form.get('imageUrl')?.setValue(res.url);
-        this.imagePreviewUrl = res.url;
+        this.form.get('imageUrl')?.setValue((res as any).url);
+        this.imagePreviewUrl = (res as any).url;
         this.cdr.markForCheck();
       },
       error: err => {
@@ -406,21 +585,44 @@ export class DishComponent implements OnInit, AfterViewInit, OnDestroy {
     request.subscribe(() => {
       this.isModalOpen = false;
       this.form.reset();
-      this.list.get(); // Refresh lại danh sách datatable
+      this.list.get();
+      this.loadCounts();
       this.cdr.markForCheck();
     });
   }
 
-  delete(id: string) {
-    this.confirmation
-      .warn('::AreYouSureToDelete', '::AreYouSure')
-      .subscribe((status: Confirmation.Status) => {
-        if (status === Confirmation.Status.confirm) {
-          this.dishService.delete(id).subscribe(() => {
-            this.list.get();
-            this.cdr.markForCheck();
-          });
-        }
-      });
+  // Delete With Reason (Kiểm toán)
+  openDeleteModal(dish: DishDto) {
+    this.deletingDish = dish;
+    this.deletionReason = '';
+    this.isDeleteModalOpen = true;
+    this.cdr.markForCheck();
+  }
+
+  closeDeleteModal() {
+    this.isDeleteModalOpen = false;
+    this.deletingDish = null;
+    this.deletionReason = '';
+    this.cdr.markForCheck();
+  }
+
+  confirmDeleteWithReason() {
+    if (!this.deletingDish || !this.deletionReason.trim()) return;
+    this.isDeletingDish = true;
+    this.dishService.deleteWithReason(this.deletingDish.id!, { deletionReason: this.deletionReason.trim() }).subscribe({
+      next: () => {
+        this.isDeletingDish = false;
+        this.isDeleteModalOpen = false;
+        this.deletingDish = null;
+        this.deletionReason = '';
+        this.list.get();
+        this.loadCounts();
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.isDeletingDish = false;
+        this.cdr.markForCheck();
+      }
+    });
   }
 }

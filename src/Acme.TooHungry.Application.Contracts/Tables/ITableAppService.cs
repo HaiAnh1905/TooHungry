@@ -15,6 +15,8 @@ public interface ITableAppService : IApplicationService
 
     Task<TableDto> UpdateAsync(Guid id, CreateUpdateTableDto input);
 
+    Task<TableDto> ChangeStatusAsync(Guid id, TableStatus status);
+
     Task DeleteAsync(Guid id);
 
     Task SetAreaTablesStatusAsync(Guid diningAreaId, TableStatus status);

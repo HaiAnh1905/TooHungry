@@ -4,62 +4,92 @@ using Volo.Abp.Application.Dtos;
 
 namespace Acme.TooHungry.Ingredients;
 
-#region Unit
-public class UnitDto : AuditedEntityDto<Guid>
+public class IngredientDto : FullAuditedEntityDto<Guid>
 {
     public string Name { get; set; } = string.Empty;
-    public string? Abbreviation { get; set; }
+
+    public string BaseUnit { get; set; } = string.Empty;
+
+    public string UnitName => BaseUnit;
+
+    public Guid? UnitId { get; set; }
+
+    public decimal MinStock { get; set; }
+
+    public decimal EstimatedPrice { get; set; }
+
+    public StorageType StorageType { get; set; }
+
+    public ConsumptionMethod ConsumptionMethod { get; set; }
+
+    public decimal CurrentStock { get; set; }
+
+    public decimal ExpiredStock { get; set; }
+
+    public bool CanEditUnit { get; set; } = true;
+
+    public bool IsActive { get; set; }
+
+    public string? DeactivationReason { get; set; }
 }
 
-public class CreateUpdateUnitDto
-{
-    [Required]
-    [StringLength(64)]
-    public string Name { get; set; } = string.Empty;
-
-    [StringLength(16)]
-    public string? Abbreviation { get; set; }
-}
-#endregion
-
-#region IngredientCategory
-public class IngredientCategoryDto : AuditedEntityDto<Guid>
-{
-    public string Name { get; set; } = string.Empty;
-    public string? Description { get; set; }
-}
-
-public class CreateUpdateIngredientCategoryDto
-{
-    [Required]
-    [StringLength(128)]
-    public string Name { get; set; } = string.Empty;
-
-    [StringLength(512)]
-    public string? Description { get; set; }
-}
-#endregion
-
-#region Ingredient
-public class IngredientDto : AuditedEntityDto<Guid>
-{
-    public string Name { get; set; } = string.Empty;
-    public Guid UnitId { get; set; }
-    public string? UnitName { get; set; }
-    public Guid IngredientCategoryId { get; set; }
-    public string? IngredientCategoryName { get; set; }
-}
-
-public class CreateUpdateIngredientDto
+public class CreateIngredientDto
 {
     [Required]
-    [StringLength(128)]
+    [MaxLength(128)]
     public string Name { get; set; } = string.Empty;
 
-    [Required]
-    public Guid UnitId { get; set; }
+    [MaxLength(32)]
+    public string BaseUnit { get; set; } = string.Empty;
 
-    [Required]
-    public Guid IngredientCategoryId { get; set; }
+    public Guid? UnitId { get; set; }
+
+    [Range(0, double.MaxValue)]
+    public decimal MinStock { get; set; } = 0;
+
+    [Range(0, double.MaxValue)]
+    public decimal EstimatedPrice { get; set; } = 0;
+
+    public StorageType StorageType { get; set; } = StorageType.SHORT_TERM;
+
+    public ConsumptionMethod ConsumptionMethod { get; set; } = ConsumptionMethod.RECIPE;
 }
-#endregion
+
+public class UpdateIngredientDto
+{
+    [Required]
+    [MaxLength(128)]
+    public string Name { get; set; } = string.Empty;
+
+    [MaxLength(32)]
+    public string BaseUnit { get; set; } = string.Empty;
+
+    public Guid? UnitId { get; set; }
+
+    [Range(0, double.MaxValue)]
+    public decimal MinStock { get; set; }
+
+    [Range(0, double.MaxValue)]
+    public decimal EstimatedPrice { get; set; }
+
+    public StorageType StorageType { get; set; }
+
+    public ConsumptionMethod ConsumptionMethod { get; set; }
+}
+
+public class GetIngredientsInput : PagedAndSortedResultRequestDto
+{
+    public string? Filter { get; set; }
+
+    public StorageType? StorageType { get; set; }
+
+    public ConsumptionMethod? ConsumptionMethod { get; set; }
+
+    public bool? IsActive { get; set; }
+}
+
+public class SmartRestoreDto
+{
+    [Range(0, double.MaxValue)]
+    public decimal NewMinStock { get; set; }
+}

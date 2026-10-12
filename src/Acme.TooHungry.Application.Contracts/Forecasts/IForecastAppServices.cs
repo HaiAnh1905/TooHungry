@@ -13,12 +13,3 @@ public interface IDemandForecastAppService : IApplicationService
     Task<DemandForecastDto> UpdateAsync(Guid id, CreateUpdateDemandForecastDto input);
     Task DeleteAsync(Guid id);
 }
-
-public interface IIngredientPlanAppService : IApplicationService
-{
-    Task<IngredientPlanDto> GetAsync(Guid id);
-    Task<PagedResultDto<IngredientPlanDto>> GetListAsync(PagedAndSortedResultRequestDto input);
-    Task<IngredientPlanDto> CreateAsync(CreateUpdateIngredientPlanDto input);
-    Task<IngredientPlanDto> UpdateAsync(Guid id, CreateUpdateIngredientPlanDto input);
-    Task DeleteAsync(Guid id);
-}

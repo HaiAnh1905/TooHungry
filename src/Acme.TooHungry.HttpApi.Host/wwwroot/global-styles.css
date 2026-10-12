@@ -501,3 +501,12 @@ body.abp-account-layout {
     padding: 1.75rem 1.35rem !important;
   }
 }
+
+/* RM-001: Hide Remember Me and Forgot Password */
+.abp-account-layout input[name*="RememberMe"],
+.abp-account-layout input[name*="RememberMe"] ~ label,
+.abp-account-layout .form-check:has(input[name*="RememberMe"]),
+.abp-account-layout a[href*="ForgotPassword"],
+.abp-account-layout a[href*="Register"] {
+  display: none !important;
+}

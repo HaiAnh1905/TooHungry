@@ -19,14 +19,19 @@ import {
 } from '@abp/ng.core';
 import { ConfirmationService, Confirmation, ThemeSharedModule, ToasterService } from '@abp/ng.theme.shared';
 import { DatatableComponent, NgxDatatableModule } from '@swimlane/ngx-datatable';
-import { Subscription } from 'rxjs';
+import { forkJoin, of, Subscription } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { OrderService } from '../proxy/orders/order.service';
 import { OrderDto } from '../proxy/orders/models';
 import { OrderStatus, orderStatusOptions } from '../proxy/orders/order-status.enum';
-import { DishService } from '../proxy/dishes/dish.service';
+import { DishService } from '../proxy/controllers/dish.service';
 import { DishDto } from '../proxy/dishes/models';
 import { TableService } from '../proxy/tables/table.service';
 import { TableDto } from '../proxy/tables/models';
+import { RecipeService } from '../proxy/recipes/recipe.service';
+import { RecipeDto } from '../proxy/recipes/models';
+import { IngredientService } from '../proxy/ingredients/ingredient.service';
+import { IngredientDto } from '../proxy/ingredients/models';
 import { Router } from '@angular/router';
 import { CustomSelectComponent, CustomSelectOption } from '../shared/components/custom-select/custom-select.component';
 
@@ -43,6 +48,8 @@ export class OrderComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly orderService = inject(OrderService);
   private readonly dishService = inject(DishService);
   private readonly tableService = inject(TableService);
+  private readonly recipeService = inject(RecipeService);
+  private readonly ingredientService = inject(IngredientService);
   private readonly fb = inject(FormBuilder);
   private readonly confirmation = inject(ConfirmationService);
   private readonly toaster = inject(ToasterService);
@@ -57,6 +64,10 @@ export class OrderComponent implements OnInit, AfterViewInit, OnDestroy {
   dishes: DishDto[] = [];
   tables: TableDto[] = [];
   tableSelectOptions: CustomSelectOption[] = [];
+  recipes: RecipeDto[] = [];
+  ingredients: IngredientDto[] = [];
+  recipeByDishId = new Map<string, RecipeDto>();
+  ingredientById = new Map<string, IngredientDto>();
 
   readonly orderStatuses = orderStatusOptions;
   readonly OrderStatus = OrderStatus;
@@ -130,6 +141,7 @@ export class OrderComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit() {
     this.list.maxResultCount = 10;
+    this.loadRecipesAndIngredients();
 
     this.dishService.getList({ maxResultCount: 200, skipCount: 0 }).subscribe(res => {
       this.dishes = res.items || [];
@@ -173,6 +185,141 @@ export class OrderComponent implements OnInit, AfterViewInit, OnDestroy {
       this.cdr.markForCheck();
       this.recalculateTable();
     });
+  }
+
+  loadRecipesAndIngredients() {
+    forkJoin({
+      recipesRes: this.recipeService.getList({ maxResultCount: 1000 } as any).pipe(catchError(() => of({ items: [] }))),
+      ingredientsRes: this.ingredientService.getList({ maxResultCount: 1000 } as any).pipe(catchError(() => of({ items: [] }))),
+    }).subscribe({
+      next: ({ recipesRes, ingredientsRes }) => {
+        this.recipes = (recipesRes as any)?.items || [];
+        this.ingredients = (ingredientsRes as any)?.items || [];
+
+        this.recipeByDishId.clear();
+        for (const r of this.recipes) {
+          if (r.dishId && r.isActive) {
+            this.recipeByDishId.set(r.dishId, r);
+          }
+        }
+
+        this.ingredientById.clear();
+        for (const ing of this.ingredients) {
+          if (ing.id) {
+            this.ingredientById.set(ing.id, ing);
+          }
+        }
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  getDishStockInfo(
+    dishId?: string,
+    quantity: number = 1
+  ): {
+    isOutOfStock: boolean;
+    isShortage: boolean;
+    warningMessage?: string;
+    ingredientName?: string;
+    unitStr?: string;
+    currentStock?: number;
+    missingAmount?: number;
+  } {
+    if (!dishId) return { isOutOfStock: false, isShortage: false };
+    const recipe = this.recipeByDishId.get(dishId);
+    if (!recipe || !recipe.ingredients || recipe.ingredients.length === 0) {
+      return { isOutOfStock: false, isShortage: false };
+    }
+
+    for (const item of recipe.ingredients) {
+      if (!item.ingredientId) continue;
+      const ing = this.ingredientById.get(item.ingredientId);
+      if (!ing) continue;
+
+      const currentStock = Number(ing.currentStock || 0);
+      const conversion = Number(item.conversionFactor || 1);
+      const neededPerDish = Number(item.quantity || 0) * conversion;
+      const totalNeeded = neededPerDish * quantity;
+      const unitStr = ing.baseUnit || item.warehouseUnitName || item.unit || '';
+
+      if (currentStock <= 0) {
+        return {
+          isOutOfStock: true,
+          isShortage: true,
+          ingredientName: ing.name,
+          unitStr,
+          currentStock: 0,
+          missingAmount: totalNeeded,
+          warningMessage: this.localizationService.instant(
+            '::StockShortageOutOfStock',
+            ing.name,
+            unitStr
+          ),
+        };
+      }
+
+      if (currentStock < totalNeeded) {
+        const missing = Number((totalNeeded - currentStock).toFixed(1));
+        return {
+          isOutOfStock: false,
+          isShortage: true,
+          ingredientName: ing.name,
+          unitStr,
+          currentStock,
+          missingAmount: missing,
+          warningMessage: this.localizationService.instant(
+            '::StockShortageDeficit',
+            missing.toString(),
+            unitStr,
+            ing.name,
+            currentStock.toString()
+          ),
+        };
+      }
+    }
+
+    return { isOutOfStock: false, isShortage: false };
+  }
+
+  initialDishQuantities = new Map<string, number>();
+  initialOrderSnapshot = '';
+
+  private getOrderSnapshot(): string {
+    if (!this.form) return '';
+    const items = (this.orderItemsArray?.controls || [])
+      .map(c => ({
+        dishId: c.get('dishId')?.value,
+        quantity: Number(c.get('quantity')?.value || 0),
+        unitPrice: Number(c.get('unitPrice')?.value || 0),
+      }))
+      .sort((a, b) => (a.dishId || '').localeCompare(b.dishId || ''));
+
+    const note = (this.form.get('note')?.value || '').trim();
+    const tableId = this.form.get('tableId')?.value || '';
+    const status = this.form.get('status')?.value;
+    const orderDate = this.form.get('orderDate')?.value || '';
+    return JSON.stringify({ items, note, tableId, status, orderDate });
+  }
+
+  get hasOrderChanged(): boolean {
+    if (!this.selectedItem?.id) return true;
+    return this.getOrderSnapshot() !== this.initialOrderSnapshot;
+  }
+
+  isDishOutOfStock(dishId?: string): boolean {
+    return this.getDishStockInfo(dishId, 1).isOutOfStock;
+  }
+
+  getDishStockWarning(dishId?: string, quantity: number = 1): string | null {
+    if (!dishId) return null;
+    const initialQty = this.initialDishQuantities.get(dishId) || 0;
+    if (initialQty > 0 && quantity <= initialQty) {
+      return null;
+    }
+
+    const info = this.getDishStockInfo(dishId, quantity);
+    return info.warningMessage || null;
   }
 
   onSearchChange() {
@@ -261,6 +408,7 @@ export class OrderComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   createOrder() {
+    this.loadRecipesAndIngredients();
     this.selectedItem = {
       orderNumber: 'ORD-' + Math.floor(100000 + Math.random() * 900000),
       orderDate: new Date().toISOString().substring(0, 10),
@@ -277,6 +425,7 @@ export class OrderComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   editOrder(id: string) {
+    this.loadRecipesAndIngredients();
     this.orderService.get(id).subscribe(order => {
       this.selectedItem = order;
       this.buildForm();
@@ -322,6 +471,16 @@ export class OrderComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     this.calculateTotal();
+
+    this.initialDishQuantities.clear();
+    if (this.selectedItem?.id && this.selectedItem.items && this.selectedItem.items.length > 0) {
+      this.selectedItem.items.forEach(item => {
+        if (item.dishId) {
+          this.initialDishQuantities.set(item.dishId, item.quantity || 0);
+        }
+      });
+    }
+    this.initialOrderSnapshot = this.selectedItem?.id ? this.getOrderSnapshot() : '';
   }
 
   get isOrderCompleted(): boolean {
@@ -419,30 +578,63 @@ export class OrderComponent implements OnInit, AfterViewInit, OnDestroy {
     return item ? Number(item.get('quantity')?.value || 0) : 0;
   }
 
+  private lastWarningMsg = '';
+  private lastWarningTime = 0;
+
+  private showStockWarningToast(message?: string, title?: string) {
+    if (!message) return;
+    const now = Date.now();
+    if (this.lastWarningMsg === message && now - this.lastWarningTime < 1500) {
+      return;
+    }
+    this.lastWarningMsg = message;
+    this.lastWarningTime = now;
+    this.toaster.warn(message, title);
+  }
+
   addDishToOrder(dish: DishDto) {
     if (this.isOrderCompleted || !dish || !dish.id) return;
+
     const existingIndex = this.orderItemsArray.controls.findIndex(
       c => c.get('dishId')?.value === dish.id
     );
+
     if (existingIndex >= 0) {
       this.increaseQuantity(existingIndex);
-    } else {
-      this.orderItemsArray.push(
-        this.fb.group({
-          dishId: [dish.id, Validators.required],
-          quantity: [1, [Validators.required, Validators.min(1)]],
-          unitPrice: [dish.price || 0, [Validators.required, Validators.min(0)]],
-        })
-      );
-      this.calculateTotal();
+      return;
     }
+
+    const stockInfo = this.getDishStockInfo(dish.id, 1);
+    if (stockInfo.isShortage && stockInfo.warningMessage) {
+      this.showStockWarningToast(stockInfo.warningMessage, `Cảnh báo: ${dish.name}`);
+    }
+
+    this.orderItemsArray.push(
+      this.fb.group({
+        dishId: [dish.id, Validators.required],
+        quantity: [1, [Validators.required, Validators.min(1)]],
+        unitPrice: [dish.price || 0, [Validators.required, Validators.min(0)]],
+      })
+    );
+    this.calculateTotal();
   }
 
   increaseQuantity(index: number) {
     if (this.isOrderCompleted) return;
     const row = this.orderItemsArray.at(index);
     const current = Number(row.get('quantity')?.value || 1);
-    row.patchValue({ quantity: current + 1 });
+    const dishId = row.get('dishId')?.value;
+    const newQty = current + 1;
+
+    const initialQty = this.initialDishQuantities.get(dishId) || 0;
+    if (newQty > initialQty) {
+      const stockInfo = this.getDishStockInfo(dishId, newQty);
+      if (stockInfo.isShortage && stockInfo.warningMessage) {
+        this.showStockWarningToast(stockInfo.warningMessage, `Cảnh báo: ${this.getDishName(dishId)}`);
+      }
+    }
+
+    row.patchValue({ quantity: newQty });
     this.calculateTotal();
   }
 
@@ -532,21 +724,67 @@ export class OrderComponent implements OnInit, AfterViewInit, OnDestroy {
     formVal.status = Number(formVal.status);
 
     const isEdit = !!this.selectedItem.id;
-    const request = isEdit
-      ? this.orderService.update(this.selectedItem.id!, formVal)
-      : this.orderService.create(formVal);
 
-    request.subscribe({
-      next: () => {
-        const msgKey = isEdit ? '::OrderUpdatedSuccessfully' : '::OrderCreatedSuccessfully';
-        this.toaster.success(this.localizationService.instant(msgKey, formVal.orderNumber));
-        this.isModalOpen = false;
-        this.form.reset();
-        this.list.get();
-        this.cdr.markForCheck();
-      },
-      error: () => {},
-    });
+    const shortages: string[] = [];
+    for (const item of this.orderItemsArray.controls) {
+      const dId = item.get('dishId')?.value;
+      const q = Number(item.get('quantity')?.value || 1);
+      const initialQty = this.initialDishQuantities.get(dId) || 0;
+
+      if (initialQty > 0 && q <= initialQty) {
+        continue;
+      }
+
+      const s = this.getDishStockInfo(dId, q);
+      if (s.isShortage && s.warningMessage) {
+        const line = this.localizationService.instant(
+          '::StockShortageDishLine',
+          this.getDishName(dId),
+          q.toString(),
+          s.warningMessage
+        );
+        shortages.push(line);
+      }
+    }
+
+    const executeSave = () => {
+      const request = isEdit
+        ? this.orderService.update(this.selectedItem.id!, formVal)
+        : this.orderService.create(formVal);
+
+      request.subscribe({
+        next: () => {
+          const msgKey = isEdit ? '::OrderUpdatedSuccessfully' : '::OrderCreatedSuccessfully';
+          this.toaster.success(this.localizationService.instant(msgKey, formVal.orderNumber));
+          if (formVal.status === OrderStatus.Completed) {
+            this.toaster.info('Đã tự động tính tiêu hao và khấu trừ nguyên liệu theo FEFO.', 'Tiêu hao kho');
+          }
+          this.isModalOpen = false;
+          this.form.reset();
+          this.list.get();
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          this.toaster.error(err?.error?.message || 'Có lỗi xảy ra khi lưu đơn hàng!');
+        },
+      });
+    };
+
+    if (shortages.length > 0) {
+      const alertList = shortages.join('<br>');
+      const alertMsg = this.localizationService.instant('::OrderHasStockShortageAlert', alertList);
+      this.confirmation.warn(
+        alertMsg,
+        this.localizationService.instant('::StockShortageWarningTitle'),
+        {
+          hideCancelBtn: true,
+          yesText: '::Close',
+        }
+      );
+      return;
+    }
+
+    executeSave();
   }
 
   delete(id: string) {

@@ -110,6 +110,25 @@
         </ng-template>
       </ngx-datatable-column>
 
+      <!-- Cột Thứ tự hiển thị (DisplayOrder) -->
+      <ngx-datatable-column
+        [name]="'::DisplayOrder' | abpLocalization"
+        prop="displayOrder"
+        [width]="130"
+        [minWidth]="110"
+        [maxWidth]="150"
+        [canAutoResize]="false"
+        [sortable]="true"
+      >
+        <ng-template let-row="row" ngx-datatable-cell-template>
+          <div class="text-center w-100">
+            <span class="badge bg-light text-dark border px-2 py-1">
+              #{{ row.displayOrder ?? 0 }}
+            </span>
+          </div>
+        </ng-template>
+      </ngx-datatable-column>
+
       <!-- Cột 3: Mô tả (Description) - Rộng hơn Tên một chút -->
       <ngx-datatable-column
         [name]="'::Description' | abpLocalization"
@@ -281,7 +300,25 @@
         }
       </div>
 
-      <!-- 2. Mô tả -->
+      <!-- 2. Thứ tự hiển thị -->
+      <div class="form-field-group mb-3">
+        <label for="category-display-order" class="field-label">
+          <span>{{ '::DisplayOrder' | abpLocalization }}</span>
+        </label>
+        <div class="input-with-icon">
+          <i class="fa fa-sort-numeric-down input-icon"></i>
+          <input
+            type="number"
+            id="category-display-order"
+            class="form-control custom-form-input"
+            formControlName="displayOrder"
+            [placeholder]="'::EnterDisplayOrder' | abpLocalization"
+            min="0"
+          />
+        </div>
+      </div>
+
+      <!-- 3. Mô tả -->
       <div class="form-field-group mb-2">
         <label for="category-description" class="field-label">
           <span>{{ '::Description' | abpLocalization }}</span>

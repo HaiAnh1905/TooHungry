@@ -1,0 +1,24 @@
+.expiration-badge-container {
+  font-size: 0.82rem;
+
+  .badge {
+    font-weight: 600;
+    font-size: 0.8rem;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .btn-discard {
+    font-size: 0.75rem;
+    font-weight: 600;
+    height: 24px;
+    line-height: 22px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: #dc2626;
+      color: #ffffff;
+    }
+  }
+}

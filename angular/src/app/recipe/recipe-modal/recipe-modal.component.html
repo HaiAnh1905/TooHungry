@@ -1,0 +1,260 @@
+<abp-modal
+  [(visible)]="visible"
+  (visibleChange)="visibleChange.emit($event)"
+  [options]="{ size: 'xl', centered: true }"
+>
+  <ng-template #abpHeader>
+    <div class="d-flex align-items-center justify-content-between w-100 pe-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="modal-header-icon">
+          <i class="fa fa-book-open"></i>
+        </div>
+        <div>
+          <h5 class="m-0 modal-title-text">
+            {{ { key: '::RecipeForDish', defaultValue: 'Công thức cho món: {0}' } | abpLocalization: (dishName || '') }}
+          </h5>
+          <div class="modal-subtitle-wrapper mt-1">
+            @if (currentRecipe) {
+              <span class="badge status-badge-active me-2">
+                <i class="fa fa-check-circle me-1"></i>{{ { key: '::RecipeVersion', defaultValue: 'Phiên bản {0}' } | abpLocalization: currentRecipeVersionStr }}
+              </span>
+            } @else {
+              <span class="badge status-badge-warning me-2">
+                <i class="fa fa-info-circle me-1"></i>{{ '::NoRecipeYet' | abpLocalization }}
+              </span>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #abpBody>
+    @if (isLoading) {
+      <div class="text-center py-5">
+        <div class="spinner-border text-orange" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    } @else {
+      <form [formGroup]="form" (ngSubmit)="save()" class="recipe-form recipe-modal-form">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="fw-bold mb-0 text-dark">
+            <i class="fa fa-carrot text-orange me-2"></i>{{ '::RecipeIngredients' | abpLocalization }}
+          </h6>
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-orange"
+            (click)="addIngredientRow()"
+          >
+            <i class="fa fa-plus me-1"></i>{{ '::AddIngredient' | abpLocalization }}
+          </button>
+        </div>
+
+        <div class="recipe-table-wrapper mb-4">
+          <table class="table table-bordered align-middle recipe-table">
+            <thead class="table-light">
+              <tr class="text-nowrap">
+                <th style="min-width: 260px;">{{ '::Ingredient' | abpLocalization }}</th>
+                <th style="width: 105px; min-width: 100px;">{{ '::Quantity' | abpLocalization }}</th>
+                <th style="width: 170px; min-width: 150px;">{{ '::RecipeUnit' | abpLocalization }}</th>
+                <th style="width: 165px; min-width: 155px;">
+                  <span class="d-inline-flex align-items-center gap-1">
+                    {{ '::ConversionFactor' | abpLocalization }}
+                    <i class="fa fa-circle-info text-muted" [title]="'::ConversionFactorHelp' | abpLocalization"></i>
+                  </span>
+                </th>
+                <th style="width: 175px; min-width: 165px;" class="text-center">
+                  <span class="d-inline-flex align-items-center justify-content-center gap-1">
+                    {{ '::WarehouseDeduction' | abpLocalization }}
+                    <i class="fa fa-circle-info text-muted" [title]="'::WarehouseDeductionTooltip' | abpLocalization"></i>
+                  </span>
+                </th>
+                <th style="width: 50px;" class="text-center">#</th>
+              </tr>
+            </thead>
+            <tbody formArrayName="ingredients">
+              @for (row of ingredientsArray.controls; track $index) {
+                <tr [formGroupName]="$index">
+                  <!-- Chọn Nguyên liệu -->
+                  <td style="min-width: 260px;">
+                    <app-custom-select
+                      class="w-100 d-block"
+                      [options]="ingredientOptions"
+                      formControlName="ingredientId"
+                      [placeholder]="'::SelectIngredientPlaceholder' | abpLocalization"
+                      leadIcon="fa-box"
+                      minWidth="100%"
+                      maxHeight="220px"
+                      placement="auto"
+                      [searchable]="true"
+                      [searchPlaceholder]="'::SearchIngredientPlaceholder' | abpLocalization"
+                      (selectionChange)="onIngredientSelected($index)"
+                    ></app-custom-select>
+                  </td>
+
+                  <!-- Số lượng công thức -->
+                  <td style="width: 105px;">
+                    <input
+                      type="number"
+                      class="form-control form-control-sm text-start font-monospace fw-bold"
+                      formControlName="quantity"
+                      min="0.0001"
+                      step="any"
+                    />
+                  </td>
+
+                  <!-- Đơn vị công thức -->
+                  <td style="width: 170px;">
+                    <app-custom-select
+                      class="w-100 d-block"
+                      [options]="unitOptions"
+                      formControlName="recipeUnitId"
+                      [placeholder]="'::SelectUnitPlaceholder' | abpLocalization"
+                      leadIcon="fa-scale-balanced"
+                      minWidth="100%"
+                      maxHeight="220px"
+                      placement="auto"
+                      [searchable]="true"
+                      [searchPlaceholder]="'::SearchUnitPlaceholder' | abpLocalization"
+                    ></app-custom-select>
+                  </td>
+
+                  <!-- Hệ số quy đổi -->
+                  <td style="width: 165px;">
+                    <input
+                      type="number"
+                      class="form-control form-control-sm text-start font-monospace fw-bold"
+                      formControlName="conversionFactor"
+                      min="0.000001"
+                      step="any"
+                    />
+                  </td>
+
+                  <!-- Lượng trừ kho tính toán -->
+                  <td class="text-center" style="width: 175px;">
+                    @if (row.get('ingredientId')?.value) {
+                      <span class="badge bg-light text-dark border px-2 py-1 font-monospace fs-6">
+                        {{ calculateWarehouseDeduction($index) }}
+                        {{ getWarehouseUnitName(row.get('ingredientId')?.value) }}
+                      </span>
+                    } @else {
+                      <span class="text-muted small">-</span>
+                    }
+                  </td>
+
+                  <!-- Nút xóa -->
+                  <td class="text-center">
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-danger p-1"
+                      (click)="removeIngredientRow($index)"
+                      [disabled]="ingredientsArray.length === 1"
+                    >
+                      <i class="fa fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Thẻ phân tích Chi phí Giá vốn (Food Cost) -->
+        <div class="food-cost-card p-3 rounded-3 mb-3 border bg-white shadow-sm">
+          <div class="row g-3 align-items-center">
+            <div class="col-12 col-md-4">
+              <div class="d-flex align-items-center gap-2">
+                <i class="fa fa-tag text-orange fs-5"></i>
+                <div>
+                  <div class="text-muted small">{{ '::DishPrice' | abpLocalization }}</div>
+                  <div class="fw-bold font-monospace fs-6">
+                    @if (effectiveDishPrice > 0) {
+                      {{ effectiveDishPrice | number:'1.0-0' }} đ
+                    } @else {
+                      <span class="text-muted">{{ '::Unpriced' | abpLocalization }}</span>
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12 col-md-4">
+              <div class="d-flex align-items-center gap-2">
+                <i class="fa fa-calculator text-primary fs-5"></i>
+                <div>
+                  <div class="text-muted small">{{ '::EstimatedFoodCost' | abpLocalization }}</div>
+                  <div class="fw-bold font-monospace fs-6 text-primary">
+                    {{ totalEstimatedCost | number:'1.0-0' }} đ
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12 col-md-4">
+              <div class="d-flex align-items-center gap-2">
+                <i class="fa fa-percent text-success fs-5"></i>
+                <div>
+                  <div class="text-muted small">{{ '::FoodCostPercentage' | abpLocalization }}</div>
+                  <div class="fw-bold font-monospace fs-6">
+                    @if (effectiveDishPrice > 0) {
+                      <span
+                        class="badge"
+                        [ngClass]="foodCostPercentage <= 35 ? 'bg-success-subtle text-success' : (foodCostPercentage <= 50 ? 'bg-warning-subtle text-warning' : 'bg-danger-subtle text-danger')"
+                      >
+                        {{ foodCostPercentage }}%
+                      </span>
+                    } @else {
+                      <span class="text-muted">-</span>
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          @if (hasDeactivatedIngredients) {
+            <div class="alert alert-warning d-flex align-items-center gap-2 mt-3 mb-0 py-2 px-3 small">
+              <i class="fa fa-triangle-exclamation text-warning fs-6"></i>
+              <span>{{ '::RecipeContainsDeactivatedIngredients' | abpLocalization }}</span>
+            </div>
+          }
+        </div>
+
+        <!-- Lịch sử các phiên bản công thức -->
+        @if (recipeHistory && recipeHistory.length > 1) {
+          <div class="recipe-history-card p-3 rounded-3 mb-3 bg-light border">
+            <h6 class="fw-bold mb-2 small text-muted text-uppercase">
+              <i class="fa fa-history me-1 text-orange"></i>{{ '::RecipeHistory' | abpLocalization }}
+            </h6>
+            <div class="d-flex flex-wrap gap-2">
+              @for (h of recipeHistory; track h.id) {
+                <span
+                  class="badge"
+                  [ngClass]="h.isActive ? 'bg-orange text-white' : 'bg-secondary text-white'"
+                >
+                  Version {{ h.version }} @if (h.isActive) { (Active) }
+                </span>
+              }
+            </div>
+          </div>
+        }
+      </form>
+    }
+  </ng-template>
+
+  <ng-template #abpFooter>
+    <button type="button" class="btn btn-outline-secondary" (click)="close()">
+      {{ '::Close' | abpLocalization }}
+    </button>
+    <button
+      type="button"
+      class="btn btn-orange"
+      (click)="save()"
+      [disabled]="form.invalid || isSaving"
+    >
+      <i class="fa fa-check me-1" [class.fa-spin]="isSaving"></i>
+      {{ '::SaveRecipe' | abpLocalization }}
+    </button>
+  </ng-template>
+</abp-modal>

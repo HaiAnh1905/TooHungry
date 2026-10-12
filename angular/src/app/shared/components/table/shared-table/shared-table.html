@@ -1,0 +1,30 @@
+<nz-table
+  #basicTable
+  [nzData]="data"
+  [nzFrontPagination]="false"
+  [nzLoading]="loading"
+  [nzTotal]="totalCount"
+  [nzPageIndex]="pageIndex"
+  [nzPageSize]="pageSize"
+  (nzQueryParams)="onQueryParamsChange($event)"
+  nzShowSizeChanger>
+  <thead>
+    <tr>
+      <th *ngFor="let col of columns" [nzColumnKey]="col.key" [nzSortFn]="col.sortFn">
+        {{ col.name | titlecase }}
+      </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let row of basicTable.data">
+      <td *ngFor="let col of columns">
+        <ng-container *ngIf="col.customTemplate; else textData">
+          <ng-container *ngTemplateOutlet="col.customTemplate; context: { $implicit: row, column: col }"></ng-container>
+        </ng-container>
+        <ng-template #textData>
+          {{ row[col.key] }}
+        </ng-template>
+      </td>
+    </tr>
+  </tbody>
+</nz-table>

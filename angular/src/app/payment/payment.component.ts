@@ -8,7 +8,7 @@ import { OrderService } from '../proxy/orders/order.service';
 import { OrderDto, CreateUpdateOrderDto } from '../proxy/orders/models';
 import { OrderStatus } from '../proxy/orders/order-status.enum';
 import { TableService } from '../proxy/tables/table.service';
-import { TableStatus } from '../proxy/tables/models';
+import { TableStatus } from '../proxy/tables/table-status.enum';
 
 @Component({
   selector: 'app-payment',
@@ -190,8 +190,8 @@ export class PaymentComponent implements OnInit {
         this.order.set(updatedOrder);
         this.isProcessingPayment.set(false);
         this.toaster.success(
-          'Thanh toán thành công! Đơn hàng đã hoàn tất và bàn đã được chuyển sang trạng thái Trống.',
-          'Thành công'
+          'Thanh toán thành công! Đơn hàng đã hoàn tất, đã tự động tính tiêu hao và khấu trừ nguyên liệu theo FEFO.',
+          'Hoàn tất đơn hàng'
         );
         this.cdr.markForCheck();
       },
