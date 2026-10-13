@@ -104,6 +104,40 @@ export class WaiterTablesComponent implements OnInit, AfterViewInit, OnDestroy {
     this.diningAreas().filter(a => a.isActive)
   );
 
+  // Tổng số lượng bàn thỏa mãn filter status đang chọn (cho badge All Areas)
+  readonly statusFilteredTotalCount = computed(() => {
+    const status = this.selectedStatus();
+    if (status !== null && status !== -1) {
+      return this.tables().filter(t => t.status === status).length;
+    }
+    return this.tables().length;
+  });
+
+  // Danh sách Dining Areas đang hoạt động và có số lượng bàn > 0 theo trạng thái đang lọc
+  readonly filteredDiningAreas = computed(() => {
+    const status = this.selectedStatus();
+    const allTables = this.tables();
+    const matchingTables =
+      status !== null && status !== -1
+        ? allTables.filter(t => t.status === status)
+        : allTables;
+
+    const countMap = new Map<string, number>();
+    for (const t of matchingTables) {
+      if (t.diningAreaId) {
+        countMap.set(t.diningAreaId, (countMap.get(t.diningAreaId) || 0) + 1);
+      }
+    }
+
+    return this.diningAreas()
+      .filter(area => area.isActive)
+      .map(area => ({
+        ...area,
+        tableCount: countMap.get(area.id || '') || 0,
+      }))
+      .filter(area => (area.tableCount || 0) > 0);
+  });
+
   // Computed summary counts
   readonly totalCount = computed(() => this.tables().length);
   readonly availableCount = computed(
@@ -277,6 +311,16 @@ export class WaiterTablesComponent implements OnInit, AfterViewInit, OnDestroy {
   onStatusChange(status: any) {
     const val = Number(status);
     this.selectedStatus.set(val === -1 ? null : val);
+
+    // Nếu khu vực đang chọn không còn nằm trong danh sách các khu vực có bàn theo trạng thái mới, reset về All Areas
+    const currentAreaId = this.selectedAreaId();
+    if (currentAreaId) {
+      const validAreaIds = new Set(this.filteredDiningAreas().map(a => a.id));
+      if (!validAreaIds.has(currentAreaId)) {
+        this.selectedAreaId.set(null);
+      }
+    }
+
     this.sidebarService.setActiveFilterCount(this.activeFilterCount());
   }
 
@@ -315,7 +359,7 @@ export class WaiterTablesComponent implements OnInit, AfterViewInit, OnDestroy {
   openReservationModal(table: TableDto) {
     this.reservingTable = table;
     this.isReservationModalOpen = true;
-    this.cdr.markForCheck();
+    this.cdr.detectChanges();
   }
 
   onReservationCreated(res: TableReservationDto) {
@@ -334,14 +378,14 @@ export class WaiterTablesComponent implements OnInit, AfterViewInit, OnDestroy {
           : t
       )
     );
-    this.cdr.markForCheck();
+    this.cdr.detectChanges();
   }
 
   // 3. Mở dialog Xem/Sửa Đặt bàn (RESERVED)
   openReservationDetailModal(table: TableDto) {
     this.selectedReservedTable = table;
     this.isReservationDetailModalOpen = true;
-    this.cdr.markForCheck();
+    this.cdr.detectChanges();
   }
 
   onReservationUpdated(res: TableReservationDto) {

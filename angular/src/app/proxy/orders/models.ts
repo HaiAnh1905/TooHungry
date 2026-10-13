@@ -75,3 +75,14 @@ export interface StockValidationResultDto {
   isValid: boolean;
   shortages: StockShortageItemDto[];
 }
+
+export enum PaymentMethod {
+  Cash = 1,
+  VietQr = 2,
+}
+
+export interface CompletePaymentInputDto {
+  paymentMethod: PaymentMethod;
+  cashGiven?: number;
+  paymentNote?: string | null;
+}

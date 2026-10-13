@@ -58,7 +58,7 @@
       <div class="filter-section">
         <label class="filter-section-title">
           <i class="fas fa-search me-2 text-primary-orange"></i>
-          {{ '::SearchTablesPlaceholder' | abpLocalization }}
+          {{ '::SearchTables' | abpLocalization }}
         </label>
         <div class="search-input-box">
           <i class="fas fa-search search-icon"></i>
@@ -74,6 +74,7 @@
               type="button"
               class="btn-clear-search"
               (click)="searchQuery.set(''); selectArea(selectedAreaId())"
+              aria-label="Clear Search"
             >
               <i class="fas fa-times"></i>
             </button>
@@ -85,7 +86,7 @@
       <div class="filter-section">
         <label class="filter-section-title">
           <i class="fas fa-layer-group me-2 text-primary-orange"></i>
-          {{ '::AllAreas' | abpLocalization }}
+          {{ '::FilterByArea' | abpLocalization }}
         </label>
         <div class="area-vertical-list">
           <button
@@ -98,10 +99,10 @@
               <i class="fas fa-border-all"></i>
               <span>{{ '::AllAreas' | abpLocalization }}</span>
             </span>
-            <span class="tab-badge">{{ totalCount() }}</span>
+            <span class="tab-badge">{{ statusFilteredTotalCount() }}</span>
           </button>
 
-          @for (area of activeDiningAreas(); track area.id) {
+          @for (area of filteredDiningAreas(); track area.id) {
             <button
               type="button"
               class="area-vertical-btn"
@@ -126,6 +127,7 @@
         </label>
         <div class="status-select-wrapper">
           <app-custom-select
+            class="w-100 d-block"
             [options]="statusOptions"
             [ngModel]="selectedStatus() ?? -1"
             (selectionChange)="onStatusChange($event)"
@@ -194,27 +196,28 @@
           [ngClass]="'status-' + getStatusClass(table.status)"
         >
           <!-- Card Header -->
-          <div class="card-head d-flex align-items-start justify-content-between">
-            <div class="table-identity">
+          <div class="card-head">
+            <div class="d-flex align-items-center justify-content-between">
               <h3 class="table-name m-0">{{ table.name }}</h3>
-              <div class="d-flex align-items-center gap-2 mt-1">
-                @if (table.diningAreaName || table.location) {
-                  <span class="area-pill" [title]="table.location || table.diningAreaName">
-                    <i class="fas fa-map-pin me-1"></i>
-                    {{ table.diningAreaName || table.location }}
-                  </span>
-                }
-                <span class="capacity-pill">
-                  <i class="fas fa-user-group me-1"></i>
-                  {{ table.capacity }} {{ '::Seats' | abpLocalization }}
-                </span>
+              <!-- Status Badge -->
+              <div class="status-badge" [ngClass]="getStatusBadgeClass(table.status)">
+                <i class="fas me-1" [ngClass]="getStatusIcon(table.status)"></i>
+                <span>{{ getStatusLabel(table.status) | abpLocalization }}</span>
               </div>
             </div>
 
-            <!-- Status Badge -->
-            <div class="status-badge" [ngClass]="getStatusBadgeClass(table.status)">
-              <i class="fas me-1" [ngClass]="getStatusIcon(table.status)"></i>
-              <span>{{ getStatusLabel(table.status) | abpLocalization }}</span>
+            <!-- Meta Pills: Location & Capacity (Full-width row) -->
+            <div class="table-meta-pills d-flex align-items-center flex-wrap gap-2 mt-2">
+              @if (table.diningAreaName || table.location) {
+                <span class="area-pill" [title]="table.location || table.diningAreaName">
+                  <i class="fas fa-map-pin me-1"></i>
+                  <span class="area-name-text">{{ table.diningAreaName || table.location }}</span>
+                </span>
+              }
+              <span class="capacity-pill">
+                <i class="fas fa-user-group me-1"></i>
+                <span>{{ table.capacity }} {{ '::Seats' | abpLocalization }}</span>
+              </span>
             </div>
           </div>
 
@@ -411,6 +414,7 @@
 
 <!-- 4. DIALOG: TẠO ĐẶT BÀN MỚI (RM-009) -->
 <app-table-reservation-modal
+  *ngIf="isReservationModalOpen"
   [(visible)]="isReservationModalOpen"
   [table]="reservingTable"
   (reservationCreated)="onReservationCreated($event)"
@@ -418,6 +422,7 @@
 
 <!-- 5. DIALOG: XEM & SỬA THÔNG TIN ĐẶT BÀN (RM-009) -->
 <app-table-reservation-detail-modal
+  *ngIf="isReservationDetailModalOpen"
   [(visible)]="isReservationDetailModalOpen"
   [table]="selectedReservedTable"
   (updated)="onReservationUpdated($event)"

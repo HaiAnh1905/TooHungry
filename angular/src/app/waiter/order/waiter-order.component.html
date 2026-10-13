@@ -233,7 +233,8 @@
 <!-- ============================================== -->
 @if (selectedDishForModal) {
   <div class="modal-backdrop-custom" (click)="closeFoodModal()"></div>
-  <div class="food-modal card shadow-lg" role="dialog" aria-modal="true">
+  <div class="food-modal card shadow-xl" role="dialog" aria-modal="true">
+    <!-- Modal Header Image with Gradient & Category Pill -->
     <div class="modal-header-image position-relative">
       @if (selectedDishForModal.imageUrl) {
         <img
@@ -246,69 +247,131 @@
           <i class="fas fa-bowl-food fa-4x text-light"></i>
         </div>
       }
+      <div class="modal-image-gradient-overlay"></div>
+
+      <!-- Category badge over image -->
+      @if (selectedDishForModal.dishCategoryName) {
+        <div class="modal-image-category-pill">
+          <i class="fas fa-utensils me-1"></i>
+          <span>{{ selectedDishForModal.dishCategoryName }}</span>
+        </div>
+      }
+
+      <!-- Glassmorphic close button -->
       <button
         type="button"
         class="btn-modal-close"
         (click)="closeFoodModal()"
+        [title]="'::Close' | abpLocalization"
         aria-label="Close"
       >
         <i class="fas fa-times"></i>
       </button>
     </div>
 
+    <!-- Modal Content Body -->
     <div class="modal-body p-4">
-      <div class="d-flex align-items-start justify-content-between mb-2">
-        <h2 class="h5 font-weight-bold text-dark mb-0">
+      <!-- Dish Name & Unit Price -->
+      <div class="d-flex align-items-start justify-content-between gap-3 mb-2">
+        <h2 class="food-modal-title mb-0">
           {{ selectedDishForModal.name }}
         </h2>
-        <div class="food-modal-price font-weight-bold text-primary-orange h5 mb-0">
-          {{ selectedDishForModal.price | number:'1.0-0' }} đ
+        <div class="food-modal-price-tag">
+          <span class="price-val">{{ selectedDishForModal.price | number:'1.0-0' }}</span>
+          <span class="price-curr">đ</span>
         </div>
       </div>
 
-      @if (selectedDishForModal.dishCategoryName) {
-        <span class="badge badge-category-subtle mb-3">
-          {{ selectedDishForModal.dishCategoryName }}
-        </span>
-      }
-
+      <!-- Description -->
       @if (selectedDishForModal.description) {
-        <p class="text-muted small mb-3">
+        <p class="food-modal-desc mb-3">
           {{ selectedDishForModal.description }}
         </p>
       }
 
-      <!-- Item Note Input -->
-      <div class="form-group mb-4">
-        <label class="form-label font-weight-bold small text-dark mb-1">
-          <i class="fas fa-pencil-alt text-primary-orange me-1"></i>
-          {{ '::ItemNote' | abpLocalization }}
-        </label>
+      <!-- Quantity Stepper Box -->
+      <div class="quantity-select-box mb-3">
+        <div class="d-flex align-items-center justify-content-between">
+          <div class="quantity-label-group">
+            <span class="quantity-label">{{ '::Quantity' | abpLocalization }}</span>
+            <span class="quantity-subtext">{{ '::SelectQuantityForDish' | abpLocalization }}</span>
+          </div>
+
+          <div class="modal-stepper d-flex align-items-center">
+            <button
+              type="button"
+              class="btn-stepper-action"
+              [disabled]="modalQuantity <= 1"
+              (click)="decreaseModalQuantity()"
+              aria-label="Decrease quantity"
+            >
+              <i class="fas fa-minus"></i>
+            </button>
+            <span class="stepper-value">{{ modalQuantity }}</span>
+            <button
+              type="button"
+              class="btn-stepper-action"
+              (click)="increaseModalQuantity()"
+              aria-label="Increase quantity"
+            >
+              <i class="fas fa-plus"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Item Note Input & Quick Tags -->
+      <div class="cooking-note-section mb-1">
+        <div class="d-flex align-items-center justify-content-between mb-1">
+          <label class="form-label font-weight-bold small text-dark mb-0 d-flex align-items-center gap-1">
+            <i class="fas fa-pen-to-square text-primary-orange"></i>
+            <span>{{ '::ItemNote' | abpLocalization }}</span>
+          </label>
+          <span class="text-muted note-hint-small">{{ '::Optional' | abpLocalization }}</span>
+        </div>
+
+        <!-- Quick Tags -->
+        <div class="quick-notes-container mb-2">
+          @for (tag of quickCookingNotes; track tag.key) {
+            <button
+              type="button"
+              class="quick-note-chip"
+              (click)="addQuickNote(tag.key)"
+            >
+              + {{ tag.key | abpLocalization }}
+            </button>
+          }
+        </div>
+
         <textarea
-          class="form-control"
+          class="form-control cooking-note-textarea"
           rows="2"
           [placeholder]="'::ItemNotePlaceholder' | abpLocalization"
           [(ngModel)]="modalItemNote"
         ></textarea>
       </div>
+    </div>
 
-      <div class="d-flex align-items-center justify-content-end gap-2">
-        <button
-          type="button"
-          class="btn btn-light"
-          (click)="closeFoodModal()"
-        >
-          {{ '::Close' | abpLocalization }}
-        </button>
-        <button
-          type="button"
-          class="btn btn-primary-orange d-flex align-items-center gap-2"
-          (click)="confirmAddFromModal()"
-        >
-          <i class="fas fa-cart-plus"></i>
-          <span>{{ '::AddToCart' | abpLocalization }}</span>
-        </button>
-      </div>
+    <!-- Modal Footer Actions -->
+    <div class="modal-footer-custom px-4 py-3 border-top bg-light d-flex align-items-center justify-content-between gap-3">
+      <button
+        type="button"
+        class="btn btn-outline-cancel"
+        (click)="closeFoodModal()"
+      >
+        {{ '::Close' | abpLocalization }}
+      </button>
+
+      <button
+        type="button"
+        class="btn btn-add-cart-primary flex-grow-1 d-flex align-items-center justify-content-center gap-2"
+        (click)="confirmAddFromModal()"
+      >
+        <i class="fas fa-cart-plus fa-lg"></i>
+        <span class="btn-text">{{ '::AddToCart' | abpLocalization }}</span>
+        <span class="total-dot">•</span>
+        <span class="total-badge">{{ modalTotalPrice | number:'1.0-0' }} đ</span>
+      </button>
     </div>
   </div>
 }
@@ -326,16 +389,37 @@
   aria-label="Order Cart Drawer"
 >
   <!-- Drawer Header -->
-  <div class="drawer-header px-4 py-3 d-flex align-items-center justify-content-between border-bottom">
-    <div class="d-flex align-items-center gap-2">
-      <i class="fas fa-clipboard-list text-primary-orange fa-lg"></i>
-      <h2 class="h5 mb-0 font-weight-bold text-dark">
-        {{ '::CurrentOrderDrawerTitle' | abpLocalization }}
-      </h2>
+  <div class="drawer-header px-4 py-3 d-flex align-items-center justify-content-between">
+    <div class="d-flex align-items-center gap-3 min-w-0">
+      <div class="drawer-header-badge flex-shrink-0">
+        <i class="fas fa-receipt"></i>
+      </div>
+      <div class="min-w-0">
+        <div class="d-flex align-items-center gap-2">
+          <h2 class="h6 mb-0 font-weight-bold text-dark drawer-title text-nowrap">
+            {{ '::CurrentOrderDrawerTitle' | abpLocalization }}
+          </h2>
+          @if (cartItems().length > 0) {
+            <span class="badge-item-count flex-shrink-0">
+              {{ totalCartItemsCount() }}
+            </span>
+          }
+        </div>
+        @if (currentTable()?.name) {
+          <div class="drawer-table-info text-muted small text-nowrap text-truncate">
+            <i class="fas fa-chair me-1 opacity-75"></i>
+            <span>{{ currentTable()?.name }}</span>
+            @if (currentTable()?.diningAreaName) {
+              <span class="ms-1 opacity-75">({{ currentTable()?.diningAreaName }})</span>
+            }
+          </div>
+        }
+      </div>
     </div>
+
     <button
       type="button"
-      class="btn-drawer-close"
+      class="btn-drawer-close flex-shrink-0"
       (click)="closeDrawer()"
       aria-label="Close drawer"
     >
@@ -344,133 +428,211 @@
   </div>
 
   <!-- Drawer Body: Cart Items -->
-  <div class="drawer-body p-4 flex-grow-1 overflow-auto">
+  <div class="drawer-body p-3 flex-grow-1 overflow-auto">
     @if (cartItems().length === 0) {
-      <div class="empty-cart text-center py-5">
-        <i class="fas fa-cart-shopping fa-3x text-muted mb-3 opacity-40"></i>
-        <h6 class="text-dark font-weight-bold">{{ '::NoItemsInCart' | abpLocalization }}</h6>
+      <div class="empty-cart-state text-center py-5 px-3">
+        <div class="empty-cart-icon-wrapper mb-3">
+          <i class="fas fa-utensils"></i>
+        </div>
+        <h6 class="text-dark font-weight-bold mb-1">{{ '::NoItemsInCart' | abpLocalization }}</h6>
+        <p class="text-muted small mb-0">{{ '::ContinueOrder' | abpLocalization }}</p>
       </div>
     } @else {
-      <div class="cart-items-list d-flex flex-column gap-3">
+      <!-- Cart Section Sub-header: Items count & Clear All action -->
+      <div class="cart-section-header d-flex align-items-center justify-content-between mb-2 px-1">
+        <span class="cart-section-title text-muted small font-weight-bold d-flex align-items-center gap-1.5">
+          <i class="fas fa-layer-group text-primary-orange"></i>
+          <span>{{ '::SelectedDishes' | abpLocalization }} ({{ totalCartItemsCount() }})</span>
+        </span>
+        <button
+          type="button"
+          class="btn-clear-cart"
+          (click)="clearCart()"
+          title="{{ '::ClearCart' | abpLocalization }}"
+        >
+          <i class="fas fa-trash-can me-1"></i>
+          <span>{{ '::ClearAll' | abpLocalization }}</span>
+        </button>
+      </div>
+
+      <div class="cart-items-list d-flex flex-column gap-2.5">
         @for (item of cartItems(); track item.dishId) {
-          <div class="cart-item-card card border p-3">
-            <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
-              <div class="flex-grow-1">
-                <div class="font-weight-bold text-dark cart-item-name">
+          <div class="cart-item-card" [class.has-note]="!!item.note">
+            <!-- Top Section: Image, Info & Delete Button -->
+            <div class="d-flex gap-3 align-items-center mb-2.5">
+              <!-- Dish Thumbnail -->
+              <div class="cart-item-thumb-wrapper flex-shrink-0">
+                @if (getCartItemImage(item)) {
+                  <img
+                    [src]="getCartItemImage(item)!"
+                    [alt]="item.dishName"
+                    class="cart-item-thumb"
+                  />
+                } @else {
+                  <div class="cart-item-thumb-placeholder">
+                    <i class="fas fa-bowl-food"></i>
+                  </div>
+                }
+              </div>
+
+              <!-- Dish Name & Unit Price -->
+              <div class="flex-grow-1 min-w-0">
+                <div class="cart-item-name font-weight-bold text-dark text-truncate" [title]="item.dishName">
                   {{ item.dishName }}
                 </div>
-                <div class="text-muted small">
+                <div class="cart-item-unit-price text-muted small mt-0.5">
                   {{ item.unitPrice | number:'1.0-0' }} đ / phần
                 </div>
               </div>
 
-              <!-- Delete item button -->
+              <!-- Delete Button -->
               <button
                 type="button"
-                class="btn-item-delete"
+                class="btn-item-delete flex-shrink-0"
                 (click)="removeItem(item)"
                 title="{{ '::Delete' | abpLocalization }}"
+                aria-label="Remove item"
               >
                 <i class="fas fa-trash-alt"></i>
               </button>
             </div>
 
-            <!-- Stepper Controls & Line Total -->
-            <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
-              <div class="quantity-stepper d-flex align-items-center border rounded">
+            <!-- Middle Section: Stepper & Line Total -->
+            <div class="cart-item-actions-row d-flex align-items-center justify-content-between pt-2">
+              <div class="quantity-stepper d-inline-flex align-items-center">
                 <button
                   type="button"
-                  class="btn-stepper"
+                  class="btn-stepper btn-stepper-minus"
                   (click)="decreaseQuantity(item)"
+                  aria-label="Decrease quantity"
                 >
                   <i class="fas fa-minus"></i>
                 </button>
-                <span class="stepper-count px-3 font-weight-bold text-dark">
+                <span class="stepper-count">
                   {{ item.quantity }}
                 </span>
                 <button
                   type="button"
-                  class="btn-stepper"
+                  class="btn-stepper btn-stepper-plus"
                   (click)="increaseQuantity(item)"
+                  aria-label="Increase quantity"
                 >
                   <i class="fas fa-plus"></i>
                 </button>
               </div>
 
-              <div class="cart-line-total font-weight-bold text-dark">
-                {{ (item.quantity * item.unitPrice) | number:'1.0-0' }} đ
+              <div class="cart-line-total">
+                <span class="amount-number">{{ (item.quantity * item.unitPrice) | number:'1.0-0' }}</span>
+                <span class="amount-unit">đ</span>
               </div>
             </div>
 
-            <!-- Cooking Note Input -->
-            <div class="item-note-wrapper">
-              <input
-                type="text"
-                class="form-control form-control-sm item-note-input"
-                [placeholder]="'::ItemNotePlaceholder' | abpLocalization"
-                [value]="item.note || ''"
-                (input)="updateItemNote(item, $event)"
-              />
+            <!-- Bottom Section: Sleek Note Box -->
+            <div class="item-note-wrapper mt-2">
+              <div class="cart-item-note-box" [class.has-content]="!!item.note">
+                <i class="fas fa-pen-to-square note-icon"></i>
+                <input
+                  type="text"
+                  class="note-inline-input flex-grow-1"
+                  [placeholder]="'::ItemNotePlaceholder' | abpLocalization"
+                  [value]="item.note || ''"
+                  (input)="updateItemNote(item, $event)"
+                />
+                @if (item.note) {
+                  <button
+                    type="button"
+                    class="btn-clear-note"
+                    (click)="clearItemNote(item)"
+                    title="Xóa ghi chú"
+                    aria-label="Clear note"
+                  >
+                    <i class="fas fa-times"></i>
+                  </button>
+                }
+              </div>
             </div>
           </div>
         }
       </div>
 
       <!-- General Order Note -->
-      <div class="order-general-note mt-3">
-        <label class="form-label small font-weight-bold text-muted mb-1">
-          <i class="fas fa-note-sticky text-primary-orange me-1"></i>
-          {{ '::EnterNotePlaceholder' | abpLocalization }}
+      <div class="order-general-note mt-3 p-3">
+        <label class="form-label small font-weight-bold text-dark mb-1.5 d-flex align-items-center gap-1.5">
+          <i class="fas fa-comment-dots text-primary-orange"></i>
+          <span>{{ '::GeneralOrderNote' | abpLocalization }}</span>
         </label>
         <textarea
-          class="form-control form-control-sm"
+          class="form-control form-control-sm general-note-textarea"
           rows="2"
           [(ngModel)]="orderNote"
-          [placeholder]="'::EnterNotePlaceholder' | abpLocalization"
+          [placeholder]="'::GeneralOrderNotePlaceholder' | abpLocalization"
         ></textarea>
       </div>
     }
   </div>
 
   <!-- Drawer Footer: Summary & Actions -->
-  <div class="drawer-footer p-4 border-top bg-light">
-    <div class="d-flex align-items-center justify-content-between mb-2 small text-muted">
-      <span>{{ '::TotalItems' | abpLocalization }}:</span>
-      <span class="font-weight-bold text-dark">{{ totalCartItemsCount() }}</span>
-    </div>
+  <div class="drawer-footer p-3.5">
+    <div class="drawer-summary-card p-3 mb-3">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <span class="text-muted small d-flex align-items-center gap-1">
+          <i class="fas fa-layer-group text-muted opacity-75"></i>
+          <span>{{ '::TotalItems' | abpLocalization }}</span>
+        </span>
+        <span class="summary-items-count fw-bold text-dark">
+          {{ totalCartItemsCount() }} {{ '::DishesUnit' | abpLocalization }}
+        </span>
+      </div>
 
-    <div class="d-flex align-items-center justify-content-between mb-4">
-      <span class="h6 mb-0 font-weight-bold text-dark">{{ '::TotalAmount' | abpLocalization }}:</span>
-      <span class="h4 mb-0 font-weight-bold text-primary-orange">
-        {{ totalCartAmount() | number:'1.0-0' }} đ
-      </span>
+      <div class="summary-divider mb-2"></div>
+
+      <div class="d-flex align-items-baseline justify-content-between">
+        <span class="summary-total-label fw-bold text-dark">
+          {{ '::TotalAmount' | abpLocalization }}
+        </span>
+        <div class="summary-total-price-box">
+          <span class="summary-total-price fw-extrabold text-primary-orange">
+            {{ totalCartAmount() | number:'1.0-0' }}
+          </span>
+          <span class="summary-currency text-primary-orange fw-bold ms-1">đ</span>
+        </div>
+      </div>
     </div>
 
     <div class="d-flex flex-column gap-2">
       <!-- Submit / Update Button -->
       <button
         type="button"
-        class="btn btn-primary-orange btn-lg w-100 font-weight-bold py-3 shadow"
+        class="btn btn-submit-order w-100"
         [disabled]="cartItems().length === 0 || isSubmitting"
         (click)="submitOrder()"
       >
         @if (isSubmitting) {
           <i class="fas fa-spinner fa-spin me-2"></i>
-          <span>{{ '::SubmittingOrder' | abpLocalization }}</span>
+          <span>{{ (activeOrderId ? '::UpdatingOrder' : '::SubmittingOrder') | abpLocalization }}</span>
         } @else {
-          <i class="fas fa-check-circle me-2"></i>
-          <span>{{ '::SubmitOrder' | abpLocalization }}</span>
+          <div class="submit-btn-content d-flex align-items-center justify-content-between w-100">
+            <span class="d-flex align-items-center gap-2">
+              <i class="fas fa-check-circle submit-icon"></i>
+              <span class="submit-btn-text">{{ (activeOrderId ? '::UpdateOrder' : '::SubmitOrder') | abpLocalization }}</span>
+            </span>
+            @if (cartItems().length > 0) {
+              <span class="submit-btn-price-pill">
+                {{ totalCartAmount() | number:'1.0-0' }} đ
+              </span>
+            }
+          </div>
         }
       </button>
 
-      <!-- Cancel Active Order Button (Only visible if order exists in DB) -->
+      <!-- Cancel Active Order Button -->
       @if (activeOrderId) {
         <button
           type="button"
-          class="btn btn-outline-danger w-100 font-weight-bold py-2 mt-1"
+          class="btn btn-cancel-order w-100"
           (click)="openCancelModal()"
         >
-          <i class="fas fa-ban me-2"></i>
+          <i class="fas fa-ban me-1.5"></i>
           <span>{{ '::CancelOrder' | abpLocalization }}</span>
         </button>
       }

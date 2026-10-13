@@ -1,4 +1,8 @@
-<abp-modal [(visible)]="visible" [busy]="isSaving() || isLoading()">
+<abp-modal
+  [(visible)]="visible"
+  (visibleChange)="visibleChange.emit($event)"
+  [busy]="isSaving() || isLoading()"
+>
   <ng-template #abpHeader>
     <div class="reservation-modal-header d-flex align-items-center gap-2">
       <div class="header-icon-wrapper">
@@ -122,6 +126,9 @@
           />
           <div class="invalid-feedback" *ngIf="form.get('reservationTime')?.errors?.['outsideOpeningHours']">
             {{ '::OutsideOpeningHoursError' | abpLocalization }}
+          </div>
+          <div class="invalid-feedback" *ngIf="form.get('reservationTime')?.errors?.['timeInPast']">
+            {{ '::TooHungry:Reservation:TimeInPast' | abpLocalization }}
           </div>
         </div>
       </div>

@@ -6,6 +6,7 @@ import {
   forwardRef,
   ElementRef,
   HostListener,
+  HostBinding,
   ChangeDetectorRef,
   inject,
 } from '@angular/core';
@@ -47,6 +48,17 @@ export class CustomSelectComponent implements ControlValueAccessor {
   @Input() maxHeight: string = '360px';
 
   @Output() selectionChange = new EventEmitter<any>();
+
+  @HostBinding('class.w-100')
+  @HostBinding('style.width')
+  get hostWidth(): string {
+    return this.minWidth === '100%' ? '100%' : 'auto';
+  }
+
+  @HostBinding('style.display')
+  get hostDisplay(): string {
+    return this.minWidth === '100%' ? 'block' : 'inline-block';
+  }
 
   isOpen = false;
   searchQuery = '';

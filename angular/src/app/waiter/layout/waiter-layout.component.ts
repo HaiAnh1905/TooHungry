@@ -2,14 +2,16 @@ import {
   Component,
   OnInit,
   OnDestroy,
+  HostListener,
   inject,
   signal,
   computed,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
-import { AuthService, ConfigStateService, CoreModule } from '@abp/ng.core';
+import { AuthService, ConfigStateService, CoreModule, SessionStateService } from '@abp/ng.core';
 import { ConfirmationService, Confirmation, ThemeSharedModule } from '@abp/ng.theme.shared';
+import { Subscription } from 'rxjs';
 import { WaiterSidebarService } from '../services/waiter-sidebar.service';
 import { WaiterShiftType, WaiterUserInfo } from '../models/waiter-layout.models';
 import { TableSignalrService } from '../../shared/services/table-signalr.service';
@@ -29,10 +31,26 @@ import { TableSignalrService } from '../../shared/services/table-signalr.service
 export class WaiterLayoutComponent implements OnInit, OnDestroy {
   readonly authService = inject(AuthService);
   readonly configState = inject(ConfigStateService);
+  readonly sessionState = inject(SessionStateService);
   readonly router = inject(Router);
   readonly sidebarService = inject(WaiterSidebarService);
   readonly confirmationService = inject(ConfirmationService);
   readonly tableSignalr = inject(TableSignalrService);
+
+  readonly currentLanguage = signal<string>('vi');
+  readonly isLanguageDropdownOpen = signal<boolean>(false);
+
+  readonly supportedLanguages = [
+    { code: 'vi', displayName: '::LanguageVietnamese', shortName: 'VI' },
+    { code: 'en', displayName: '::LanguageEnglish', shortName: 'EN' },
+  ];
+
+  readonly currentLangItem = computed(() => {
+    const code = this.currentLanguage();
+    return this.supportedLanguages.find(l => l.code === code) || this.supportedLanguages[0];
+  });
+
+  private langSub?: Subscription;
 
   readonly userInfo = signal<WaiterUserInfo>({
     userId: '',
@@ -62,6 +80,7 @@ export class WaiterLayoutComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.initUserInfo();
     this.initNetworkListeners();
+    this.initLanguage();
 
     // Cập nhật ca trực định kỳ mỗi phút
     this.shiftIntervalId = setInterval(() => {
@@ -72,6 +91,9 @@ export class WaiterLayoutComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     if (this.shiftIntervalId) {
       clearInterval(this.shiftIntervalId);
+    }
+    if (this.langSub) {
+      this.langSub.unsubscribe();
     }
     if (typeof window !== 'undefined') {
       if (this.onlineListener) window.removeEventListener('online', this.onlineListener);
@@ -131,6 +153,45 @@ export class WaiterLayoutComponent implements OnInit, OnDestroy {
       };
       window.addEventListener('online', this.onlineListener);
       window.addEventListener('offline', this.offlineListener);
+    }
+  }
+
+  private initLanguage(): void {
+    const lang = this.sessionState.getLanguage() || 'vi';
+    this.currentLanguage.set(lang.toLowerCase().startsWith('en') ? 'en' : 'vi');
+
+    this.langSub = this.sessionState.getLanguage$().subscribe(l => {
+      if (l) {
+        this.currentLanguage.set(l.toLowerCase().startsWith('en') ? 'en' : 'vi');
+      }
+    });
+  }
+
+  toggleLanguageDropdown(event: MouseEvent): void {
+    event.stopPropagation();
+    this.isLanguageDropdownOpen.update(v => !v);
+  }
+
+  switchLanguage(langCode: string): void {
+    if (this.currentLanguage() === langCode) {
+      this.isLanguageDropdownOpen.set(false);
+      return;
+    }
+    this.sessionState.setLanguage(langCode);
+    this.currentLanguage.set(langCode);
+    this.isLanguageDropdownOpen.set(false);
+    setTimeout(() => {
+      window.location.reload();
+    }, 150);
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    if (this.isLanguageDropdownOpen()) {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.language-dropdown-wrapper')) {
+        this.isLanguageDropdownOpen.set(false);
+      }
     }
   }
 

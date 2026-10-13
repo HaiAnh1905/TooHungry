@@ -17,4 +17,5 @@ public interface IOrderAppService : IApplicationService
     Task<StockValidationResultDto> ValidateStockAsync(ValidateOrderStockInputDto input);
     Task<OrderDto> SubmitOrderAsync(SubmitOrderInputDto input);
     Task CancelOrderAsync(Guid id, CancelOrderInputDto? input = null);
+    Task<OrderDto> CompletePaymentAsync(Guid id, CompletePaymentInputDto input);
 }

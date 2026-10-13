@@ -70,7 +70,7 @@
 | RM-013 | Tồn kho - Khóa/Khôi phục | operations | 3 | RM-011 | [013-rm-013-inventory-deactivate-restore](../specs/013-rm-013-inventory-deactivate-restore/spec.md) | chưa |
 | RM-014 | Dự báo (Forecasts) | operations | 4 | RM-010, RM-011, RM-016 | — | chưa |
 | RM-015 | Điều hướng & Bố cục Waiter (Waiter Routing & Layout) | waiter | 2 | RM-001, RM-002, RM-003 | [015-rm-015-waiter-routing-and-layout](../specs/015-rm-015-waiter-routing-and-layout/spec.md) | chưa |
-| RM-016 | Thanh toán đơn hàng (Payment Page) | operations | 3 | RM-010 | — | chưa |
+| RM-016 | Thanh toán đơn hàng (Payment Page) | operations | 3 | RM-010 | [016-rm-016-payment-page](../specs/016-rm-016-payment-page/spec.md) | xong |
 
 ## Chi tiết
 
@@ -351,8 +351,8 @@
 - **Thực thể/CRUD**: Order, Payment — cập nhật trạng thái đơn hàng sang Completed, kích hoạt chuyển trạng thái bàn sang Cleaning.
 - **Backend**: Cần API xác nhận thanh toán và cập nhật đồng thời trạng thái Order và Table (`CompletePaymentAsync`).
 - **Phụ thuộc**: RM-010
-- **Spec**: — (kế thừa hợp đồng thanh toán từ `specs/010-rm-010-pos-ordering-and-billing/`)
-- **Trạng thái**: chưa
+- **Spec**: [016-rm-016-payment-page](../specs/016-rm-016-payment-page/spec.md)
+- **Trạng thái**: xong
 - **Nợ phát sinh**:
   - (trống)
 

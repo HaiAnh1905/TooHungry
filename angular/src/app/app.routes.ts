@@ -1,5 +1,6 @@
 import { authGuard, eLayoutType } from '@abp/ng.core';
 import { smartPermissionGuard } from './shared/guards/smart-permission.guard';
+import { dashboardGuard, adminTableGuard } from './shared/guards/dashboard.guard';
 import { waiterAuthGuard } from './waiter/guards/waiter-auth.guard';
 import { Routes } from '@angular/router';
 
@@ -8,6 +9,7 @@ export const APP_ROUTES: Routes = [
     path: '',
     pathMatch: 'full',
     loadComponent: () => import('./home/home.component').then(c => c.HomeComponent),
+    canActivate: [dashboardGuard],
   },
   {
     path: 'account/register',
@@ -76,7 +78,7 @@ export const APP_ROUTES: Routes = [
   {
     path: 'tables',
     loadComponent: () => import('./table/table.component').then(c => c.TableComponent),
-    canActivate: [authGuard, smartPermissionGuard],
+    canActivate: [authGuard, adminTableGuard, smartPermissionGuard],
     data: { requiredPolicy: 'TooHungry.Tables' },
   },
   {
@@ -96,14 +98,14 @@ export const APP_ROUTES: Routes = [
         loadComponent: () =>
           import('./waiter/tables/waiter-tables.component').then(c => c.WaiterTablesComponent),
         canActivate: [smartPermissionGuard],
-        data: { requiredPolicy: 'TooHungry.Tables' },
+        data: { requiredPolicy: 'TooHungry.Tables', layout: eLayoutType.empty },
       },
       {
         path: 'order/:tableId',
         loadComponent: () =>
           import('./waiter/order/waiter-order.component').then(c => c.WaiterOrderComponent),
         canActivate: [smartPermissionGuard],
-        data: { requiredPolicy: 'TooHungry.Orders' },
+        data: { requiredPolicy: 'TooHungry.Orders', layout: eLayoutType.empty },
       },
       {
         path: 'payment/:orderId',

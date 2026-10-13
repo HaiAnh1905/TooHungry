@@ -94,6 +94,18 @@ export class WaiterOrderComponent implements OnInit, AfterViewInit, OnDestroy {
   isDrawerOpen = false;
   selectedDishForModal: DishDto | null = null;
   modalItemNote: string = '';
+  modalQuantity: number = 1;
+
+  get modalTotalPrice(): number {
+    return (this.selectedDishForModal?.price ?? 0) * (this.modalQuantity || 1);
+  }
+
+  readonly quickCookingNotes = [
+    { key: '::NoteLessSpicy', defaultLabel: 'Ít cay' },
+    { key: '::NoteNoSpicy', defaultLabel: 'Không cay' },
+    { key: '::NoteNoOnion', defaultLabel: 'Không hành' },
+    { key: '::NoteServeLater', defaultLabel: 'Ra món sau' },
+  ];
 
   // Cancel Order Modal State
   isCancelModalOpen = false;
@@ -283,18 +295,46 @@ export class WaiterOrderComponent implements OnInit, AfterViewInit, OnDestroy {
   openFoodModal(dish: DishDto) {
     this.selectedDishForModal = dish;
     this.modalItemNote = '';
+    this.modalQuantity = 1;
     this.cdr.markForCheck();
   }
 
   closeFoodModal() {
     this.selectedDishForModal = null;
     this.modalItemNote = '';
+    this.modalQuantity = 1;
+    this.cdr.markForCheck();
+  }
+
+  increaseModalQuantity() {
+    this.modalQuantity++;
+    this.cdr.markForCheck();
+  }
+
+  decreaseModalQuantity() {
+    if (this.modalQuantity > 1) {
+      this.modalQuantity--;
+      this.cdr.markForCheck();
+    }
+  }
+
+  addQuickNote(tagKey: string) {
+    const text = this.localizationService.instant(tagKey);
+    if (!this.modalItemNote) {
+      this.modalItemNote = text;
+    } else if (!this.modalItemNote.includes(text)) {
+      this.modalItemNote = `${this.modalItemNote}, ${text}`;
+    }
     this.cdr.markForCheck();
   }
 
   confirmAddFromModal() {
     if (!this.selectedDishForModal) return;
-    this.addDishToCart(this.selectedDishForModal, 1, this.modalItemNote.trim());
+    this.addDishToCart(
+      this.selectedDishForModal,
+      this.modalQuantity || 1,
+      this.modalItemNote.trim()
+    );
     this.closeFoodModal();
   }
 
@@ -366,6 +406,20 @@ export class WaiterOrderComponent implements OnInit, AfterViewInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
+  // Xóa toàn bộ giỏ hàng
+  clearCart() {
+    if (this.cartItems().length === 0) return;
+    this.cartItems.set([]);
+    this.cdr.markForCheck();
+  }
+
+  // Lấy ảnh thumbnail cho item trong giỏ
+  getCartItemImage(item: CartItem): string | null {
+    if (item.dishPhotoUrl) return item.dishPhotoUrl;
+    const found = this.dishes().find(d => d.id === item.dishId);
+    return found?.imageUrl || null;
+  }
+
   // Cập nhật ghi chú trực tiếp trong Order Drawer
   updateItemNote(item: CartItem, event: Event) {
     const input = event.target as HTMLInputElement;
@@ -373,6 +427,14 @@ export class WaiterOrderComponent implements OnInit, AfterViewInit, OnDestroy {
     this.cartItems.update(list =>
       list.map(x => (x.dishId === item.dishId ? { ...x, note: noteVal } : x))
     );
+  }
+
+  // Xóa nhanh ghi chú của món
+  clearItemNote(item: CartItem) {
+    this.cartItems.update(list =>
+      list.map(x => (x.dishId === item.dishId ? { ...x, note: '' } : x))
+    );
+    this.cdr.markForCheck();
   }
 
   // --- INSTANT STOCK VALIDATION ---
