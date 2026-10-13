@@ -43,6 +43,42 @@
         <span>{{ userInfo().shiftLocalizationKey | abpLocalization }}</span>
       </span>
 
+      <!-- Nút đổi ngôn ngữ (Language Switcher) -->
+      <div class="language-dropdown-wrapper">
+        <button
+          type="button"
+          class="btn-lang-switcher"
+          (click)="toggleLanguageDropdown($event)"
+          [title]="'::ChangeLanguage' | abpLocalization"
+          aria-label="Change Language"
+          [attr.aria-expanded]="isLanguageDropdownOpen()"
+        >
+          <i class="fas fa-globe lang-icon text-primary-orange"></i>
+          <span class="lang-text">{{ currentLangItem().shortName }}</span>
+          <i class="fas fa-chevron-down lang-chevron ms-1" [class.rotated]="isLanguageDropdownOpen()"></i>
+        </button>
+
+        @if (isLanguageDropdownOpen()) {
+          <div class="language-dropdown-menu shadow-lg">
+            @for (lang of supportedLanguages; track lang.code) {
+              <button
+                type="button"
+                class="dropdown-item-lang"
+                [class.active]="currentLanguage() === lang.code"
+                (click)="switchLanguage(lang.code)"
+              >
+                <i class="fas fa-globe dropdown-lang-icon" [class.text-primary-orange]="currentLanguage() === lang.code"></i>
+                <span class="dropdown-lang-name">{{ lang.displayName | abpLocalization }}</span>
+                <span class="dropdown-lang-badge">{{ lang.shortName }}</span>
+                @if (currentLanguage() === lang.code) {
+                  <i class="fas fa-check text-primary-orange ms-2"></i>
+                }
+              </button>
+            }
+          </div>
+        }
+      </div>
+
       <!-- Thông tin nhân viên phục vụ -->
       <div class="user-profile">
         <div class="avatar-circle">{{ userInitials() }}</div>

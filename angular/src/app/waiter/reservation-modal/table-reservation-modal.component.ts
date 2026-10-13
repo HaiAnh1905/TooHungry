@@ -3,10 +3,12 @@ import {
   Input,
   Output,
   EventEmitter,
+  OnInit,
   OnChanges,
   SimpleChanges,
   inject,
   signal,
+  ChangeDetectorRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, AbstractControl } from '@angular/forms';
@@ -23,11 +25,12 @@ import { TableReservationDto, CreateTableReservationDto } from '../../proxy/rese
   templateUrl: './table-reservation-modal.component.html',
   styleUrl: './table-reservation-modal.component.scss',
 })
-export class TableReservationModalComponent implements OnChanges {
+export class TableReservationModalComponent implements OnInit, OnChanges {
   private readonly fb = inject(FormBuilder);
   private readonly reservationService = inject(TableReservationService);
   private readonly toaster = inject(ToasterService);
   private readonly localizationService = inject(LocalizationService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   @Input() table: TableDto | null = null;
   @Input() visible = false;
@@ -58,10 +61,19 @@ export class TableReservationModalComponent implements OnChanges {
       guestCount: [2, [Validators.required, Validators.min(1)]],
       note: ['', [Validators.maxLength(512)]],
     });
+    this.form.get('reservationDate')?.valueChanges.subscribe(() => {
+      this.form.get('reservationTime')?.updateValueAndValidity();
+    });
+  }
+
+  ngOnInit(): void {
+    if (this.table) {
+      this.resetForm();
+    }
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['visible'] && this.visible && this.table) {
+    if ((changes['visible'] || changes['table']) && this.visible && this.table) {
       this.resetForm();
     }
   }
@@ -73,7 +85,7 @@ export class TableReservationModalComponent implements OnChanges {
     return `${year}-${month}-${day}`;
   }
 
-  private timeRangeValidator(control: AbstractControl): { [key: string]: any } | null {
+  private timeRangeValidator = (control: AbstractControl): { [key: string]: any } | null => {
     if (!control.value) return null;
     const [hours, minutes] = control.value.split(':').map(Number);
     if (isNaN(hours) || isNaN(minutes)) return null;
@@ -82,8 +94,23 @@ export class TableReservationModalComponent implements OnChanges {
     if (hours < 9 || hours > 22) {
       return { outsideOpeningHours: true };
     }
+
+    const dateControl = control.parent?.get('reservationDate');
+    if (dateControl?.value) {
+      const today = new Date();
+      const todayStr = this.formatDate(today);
+      if (dateControl.value === todayStr) {
+        const currentTotalMinutes = today.getHours() * 60 + today.getMinutes();
+        const selectedTotalMinutes = hours * 60 + minutes;
+        // Cho phép dung sai 5 phút
+        if (selectedTotalMinutes < currentTotalMinutes - 5) {
+          return { timeInPast: true };
+        }
+      }
+    }
+
     return null;
-  }
+  };
 
   resetForm(): void {
     const today = new Date();
@@ -125,16 +152,14 @@ export class TableReservationModalComponent implements OnChanges {
     this.isSaving.set(true);
     const val = this.form.value;
 
-    // Combine date and time to ISO string
-    const [year, month, day] = val.reservationDate.split('-').map(Number);
-    const [hours, minutes] = val.reservationTime.split(':').map(Number);
-    const resDate = new Date(year, month - 1, day, hours, minutes, 0);
+    // Gửi định dạng local ISO (YYYY-MM-DDTHH:mm:ss) thay vì UTC để tránh bị trừ lệch múi giờ (UTC+7)
+    const localDateTimeStr = `${val.reservationDate}T${val.reservationTime}:00`;
 
     const input: CreateTableReservationDto = {
       tableId: this.table.id,
       customerName: val.customerName.trim(),
       customerPhone: val.customerPhone.trim(),
-      reservationTime: resDate.toISOString(),
+      reservationTime: localDateTimeStr,
       guestCount: val.guestCount,
       note: val.note?.trim() || null,
     };

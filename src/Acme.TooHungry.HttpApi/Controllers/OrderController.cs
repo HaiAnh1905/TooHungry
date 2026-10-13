@@ -1,6 +1,8 @@
 using System;
 using System.Threading.Tasks;
 using Acme.TooHungry.Orders;
+using Acme.TooHungry.Permissions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
@@ -77,5 +79,12 @@ public class OrderController : TooHungryController, IOrderAppService
     public virtual Task CancelOrderAsync(Guid id, [FromBody] CancelOrderInputDto? input = null)
     {
         return _orderAppService.CancelOrderAsync(id, input);
+    }
+
+    [HttpPost("{id:guid}/complete-payment")]
+    [Authorize(TooHungryPermissions.Orders.Default)]
+    public virtual Task<OrderDto> CompletePaymentAsync(Guid id, [FromBody] CompletePaymentInputDto input)
+    {
+        return _orderAppService.CompletePaymentAsync(id, input);
     }
 }

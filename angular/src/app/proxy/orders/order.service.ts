@@ -1,4 +1,4 @@
-import type { CancelOrderInputDto, CreateUpdateOrderDto, OrderDto, StockValidationResultDto, SubmitOrderInputDto, ValidateOrderStockInputDto } from './models';
+import type { CancelOrderInputDto, CompletePaymentInputDto, CreateUpdateOrderDto, OrderDto, StockValidationResultDto, SubmitOrderInputDto, ValidateOrderStockInputDto } from './models';
 import { RestService, Rest } from '@abp/ng.core';
 import type { PagedAndSortedResultRequestDto, PagedResultDto } from '@abp/ng.core';
 import { Injectable, inject } from '@angular/core';
@@ -97,6 +97,15 @@ export class OrderService {
       method: 'POST',
       headers: { Accept: 'application/json' },
       url: `/api/app/order/${id}/cancel`,
+      body: input,
+    },
+    { apiName: this.apiName,...config });
+
+  completePayment = (id: string, input: CompletePaymentInputDto, config?: Partial<Rest.Config>) =>
+    this.restService.request<any, OrderDto>({
+      method: 'POST',
+      headers: { Accept: 'application/json' },
+      url: `/api/app/order/${id}/complete-payment`,
       body: input,
     },
     { apiName: this.apiName,...config });

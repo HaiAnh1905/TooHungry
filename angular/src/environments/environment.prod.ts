@@ -30,6 +30,21 @@ export const environment = {
   },
   remoteEnv: {
     url: '/getEnvConfig',
-    mergeStrategy: 'deepmerge'
-  }
-} as Environment;
+    mergeStrategy: 'deepmerge',
+  },
+  vietQrConfig: {
+    bankId: '970422',
+    bankName: 'MBBank',
+    accountNo: '9999888866',
+    accountName: 'NHA HANG TOOHUNGRY',
+    template: 'compact2',
+  },
+} as Environment & {
+  vietQrConfig: {
+    bankId: string;
+    bankName: string;
+    accountNo: string;
+    accountName: string;
+    template: string;
+  };
+};

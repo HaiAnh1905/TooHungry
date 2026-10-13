@@ -245,13 +245,72 @@
           </div>
         </div>
 
-        <!-- Mật khẩu -->
-        <div class="col-12">
-          <label class="form-label fw-bold">{{ '::Password' | abpLocalization }} <span *ngIf="!selectedId" class="text-danger">*</span></label>
+        <!-- Mật khẩu cũ (Chỉ hiển thị khi Sửa thông tin, chỉ đọc) -->
+        <div class="col-12" *ngIf="selectedId">
+          <label class="form-label fw-bold text-muted">{{ '::OldPassword' | abpLocalization }}</label>
           <div class="input-group">
-            <span class="input-group-text"><i class="fa fa-lock"></i></span>
-            <input *ngIf="selectedId" type="password" class="form-control" formControlName="password" [placeholder]="'::PasswordPlaceholderEdit' | abpLocalization" autocomplete="new-password" />
-            <input *ngIf="!selectedId" type="password" class="form-control" formControlName="password" [placeholder]="'::PasswordPlaceholderNew' | abpLocalization" autocomplete="new-password" />
+            <span class="input-group-text bg-light text-muted"><i class="fa fa-lock"></i></span>
+            <input
+              type="password"
+              class="form-control bg-light text-muted"
+              style="cursor: not-allowed; letter-spacing: 2px;"
+              value="••••••••"
+              readonly
+              disabled
+              [title]="'::OldPasswordReadOnlyNote' | abpLocalization"
+            />
+            <span
+              class="input-group-text bg-light text-muted"
+              style="cursor: not-allowed;"
+              [title]="'::OldPasswordReadOnlyNote' | abpLocalization"
+            >
+              <i class="fa fa-eye-slash"></i>
+            </span>
+          </div>
+          <small class="text-muted d-block mt-1" style="font-size: 0.8rem;">
+            <i class="fa fa-shield-halved me-1 text-secondary"></i>{{ '::OldPasswordReadOnlyNote' | abpLocalization }}
+          </small>
+        </div>
+
+        <!-- Mật khẩu mới (khi Sửa) / Mật khẩu (khi Thêm mới) -->
+        <div class="col-12">
+          <label class="form-label fw-bold">
+            <ng-container *ngIf="selectedId">{{ '::NewPassword' | abpLocalization }}</ng-container>
+            <ng-container *ngIf="!selectedId">{{ '::Password' | abpLocalization }} <span class="text-danger">*</span></ng-container>
+          </label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="fa fa-key"></i></span>
+            <input
+              *ngIf="selectedId"
+              [type]="showPassword ? 'text' : 'password'"
+              class="form-control"
+              formControlName="password"
+              [placeholder]="'::PasswordPlaceholderEdit' | abpLocalization"
+              autocomplete="new-password"
+            />
+            <input
+              *ngIf="!selectedId"
+              [type]="showPassword ? 'text' : 'password'"
+              class="form-control"
+              formControlName="password"
+              [placeholder]="'::PasswordPlaceholderNew' | abpLocalization"
+              autocomplete="new-password"
+            />
+            <button
+              type="button"
+              class="btn btn-outline-secondary eye-toggle-btn d-flex align-items-center justify-content-center"
+              style="user-select: none; width: 44px;"
+              (mousedown)="showPassword = true"
+              (mouseup)="showPassword = false"
+              (mouseleave)="showPassword = false"
+              (touchstart)="onTouchStartEye($event)"
+              (touchend)="onTouchEndEye($event)"
+              (touchcancel)="onTouchEndEye($event)"
+              [title]="'::HoldToShowPassword' | abpLocalization"
+              tabindex="-1"
+            >
+              <i class="fa" [ngClass]="showPassword ? 'fa-eye text-primary' : 'fa-eye-slash text-muted'"></i>
+            </button>
           </div>
         </div>
 

@@ -109,21 +109,12 @@ function configureRoutes() {
       requiredPolicy: 'TooHungry.Tables || TooHungry.DiningAreas',
     },
     {
-      path: '/waiter/tables',
-      name: '::Menu:WaiterTables',
-      parentName: '::Menu:TableGroup',
-      iconClass: 'fas fa-table-cells-large',
-      layout: eLayoutType.application,
-      order: 1,
-      requiredPolicy: 'TooHungry.Tables',
-    },
-    {
       path: '/tables',
       name: '::Menu:Tables',
       parentName: '::Menu:TableGroup',
       iconClass: 'fas fa-chair',
       layout: eLayoutType.application,
-      order: 2,
+      order: 1,
       requiredPolicy: 'TooHungry.Tables',
     },
     {
@@ -132,7 +123,7 @@ function configureRoutes() {
       parentName: '::Menu:TableGroup',
       iconClass: 'fas fa-map-location-dot',
       layout: eLayoutType.application,
-      order: 3,
+      order: 2,
       requiredPolicy: 'TooHungry.DiningAreas',
     },
     {
@@ -159,6 +150,24 @@ function configureRoutes() {
       layout: eLayoutType.application,
       order: 2,
       requiredPolicy: 'AbpIdentity.Roles',
+    },
+    {
+      path: '/waiter',
+      name: '::Menu:WaiterPortal',
+      layout: eLayoutType.empty,
+      invisible: true,
+    },
+    {
+      path: '/waiter/tables',
+      name: '::Menu:WaiterTables',
+      layout: eLayoutType.empty,
+      invisible: true,
+    },
+    {
+      path: '/payment',
+      name: '::Menu:PaymentPortal',
+      layout: eLayoutType.empty,
+      invisible: true,
     },
   ]);
 }

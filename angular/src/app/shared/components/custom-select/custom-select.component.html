@@ -58,16 +58,16 @@
             [class.is-selected]="isSelected(opt)"
             (click)="selectOption(opt, $event)"
           >
-            <div class="option-content d-flex align-items-center flex-grow-1 text-truncate" style="gap: 7px;">
+            <div class="option-content d-flex align-items-center flex-grow-1" style="gap: 8px;">
               @if (opt.icon) {
-                <span class="option-icon-box">
+                <span class="option-icon-box flex-shrink-0">
                   <i class="fa" [ngClass]="opt.icon"></i>
                 </span>
               }
-              <div class="d-flex flex-column text-truncate">
-                <span class="option-label text-truncate">{{ getLocalizedText(opt.label) }}</span>
+              <div class="d-flex flex-column option-text-group">
+                <span class="option-label">{{ getLocalizedText(opt.label) }}</span>
                 @if (opt.desc) {
-                  <span class="option-desc text-truncate">{{ getLocalizedText(opt.desc) }}</span>
+                  <span class="option-desc text-muted">{{ getLocalizedText(opt.desc) }}</span>
                 }
               </div>
             </div>

@@ -1321,8 +1321,8 @@
   background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
   border: 1px solid #fed7aa;
   border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(234, 88, 12, 0.12);
-  animation: slideDownFade 0.25s ease-out;
+  box-shadow: 0 4px 16px rgba(234, 88, 12, 0.1);
+  transition: all 0.25s ease;
 
   .bulk-selected-badge {
     background-color: #ea580c;
@@ -1334,6 +1334,12 @@
     box-shadow: 0 2px 8px rgba(234, 88, 12, 0.3);
     display: inline-flex;
     align-items: center;
+    transition: all 0.2s ease;
+
+    &.empty {
+      background-color: #94a3b8;
+      box-shadow: none;
+    }
   }
 
   .bulk-info-text {
@@ -1357,6 +1363,13 @@
       transform: translateY(-1px);
       box-shadow: 0 4px 10px rgba(16, 185, 129, 0.35);
     }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
   }
 
   .btn-bulk-deactivate {
@@ -1374,6 +1387,13 @@
       transform: translateY(-1px);
       box-shadow: 0 4px 10px rgba(217, 119, 6, 0.35);
     }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
   }
 
   .btn-bulk-clear {
@@ -1386,8 +1406,16 @@
     border-radius: 8px;
     transition: all 0.2s ease;
 
-    &:hover {
+    &:hover:not(:disabled) {
       background-color: #fef3c7;
+    }
+
+    &:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      background-color: #f3f4f6;
+      border-color: #e5e7eb;
+      color: #9ca3af;
     }
   }
 }

@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
-import { AuthService, CoreModule, PermissionService } from '@abp/ng.core';
+import { Router, RouterModule } from '@angular/router';
+import { AuthService, ConfigStateService, CoreModule, PermissionService } from '@abp/ng.core';
 import { DishService } from '../proxy/controllers/dish.service';
 import { DishCategoryService } from '../proxy/dishes/dish-category.service';
 import { OrderService } from '../proxy/orders/order.service';
@@ -21,6 +21,8 @@ import { catchError, map } from 'rxjs/operators';
 export class HomeComponent implements OnInit {
   public authService = inject(AuthService);
   public permissionService = inject(PermissionService);
+  private configState = inject(ConfigStateService);
+  private router = inject(Router);
   private dishService = inject(DishService);
   private dishCategoryService = inject(DishCategoryService);
   private orderService = inject(OrderService);
@@ -56,6 +58,17 @@ export class HomeComponent implements OnInit {
 
   ngOnInit() {
     if (this.hasLoggedIn) {
+      const currentUser = this.configState.getOne('currentUser') as any;
+      const roles: string[] = currentUser?.roles || [];
+      const isManagerOrAdmin = roles.some(r =>
+        ['Manager', 'Administrator', 'admin'].includes(r)
+      );
+
+      if (roles.includes('Waiter') && !isManagerOrAdmin) {
+        this.router.navigate(['/waiter/tables']);
+        return;
+      }
+
       this.loadDashboardData();
     }
   }

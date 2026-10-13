@@ -58,16 +58,23 @@ public class DiningAreaAppService : ApplicationService, IDiningAreaAppService
         var items = await AsyncExecuter.ToListAsync(queryable);
         var dtos = ObjectMapper.Map<List<DiningArea>, List<DiningAreaDto>>(items);
 
-        // Tính toán tổng số lượng bàn ăn thuộc từng khu vực
-        var tableQueryable = await _tableRepository.GetQueryableAsync();
-        var allTables = await AsyncExecuter.ToListAsync(tableQueryable);
-
-        foreach (var dto in dtos)
+        // Tính toán tổng số lượng bàn ăn thuộc từng khu vực bằng GroupBy trực tiếp trên cơ sở dữ liệu
+        if (dtos.Count > 0)
         {
-            dto.TableCount = allTables.Count(t =>
-                t.DiningAreaId == dto.Id ||
-                (!string.IsNullOrEmpty(dto.Name) && !string.IsNullOrEmpty(t.Location) && t.Location.Trim().Equals(dto.Name.Trim(), StringComparison.OrdinalIgnoreCase))
+            var areaIds = dtos.Select(x => (Guid?)x.Id).ToList();
+            var tableQueryable = await _tableRepository.GetQueryableAsync();
+            var counts = await AsyncExecuter.ToListAsync(
+                tableQueryable
+                    .Where(t => t.DiningAreaId != null && areaIds.Contains(t.DiningAreaId))
+                    .GroupBy(t => t.DiningAreaId)
+                    .Select(g => new { DiningAreaId = g.Key!.Value, Count = g.Count() })
             );
+            var countMap = counts.ToDictionary(x => x.DiningAreaId, x => x.Count);
+
+            foreach (var dto in dtos)
+            {
+                dto.TableCount = countMap.GetValueOrDefault(dto.Id, 0);
+            }
         }
 
         return new PagedResultDto<DiningAreaDto>(totalCount, dtos);
@@ -83,7 +90,7 @@ public class DiningAreaAppService : ApplicationService, IDiningAreaAppService
         }
 
         var dto = ObjectMapper.Map<DiningArea, DiningAreaDto>(area);
-        dto.TableCount = await _tableRepository.CountAsync(x => x.DiningAreaId == id || (area.Name != null && x.Location == area.Name));
+        dto.TableCount = await _tableRepository.CountAsync(x => x.DiningAreaId == id);
         return dto;
     }
 
@@ -94,15 +101,22 @@ public class DiningAreaAppService : ApplicationService, IDiningAreaAppService
         var list = await AsyncExecuter.ToListAsync(queryable.Where(x => x.IsActive).OrderBy(x => x.Name));
         var dtos = ObjectMapper.Map<List<DiningArea>, List<DiningAreaDto>>(list);
 
-        var tableQueryable = await _tableRepository.GetQueryableAsync();
-        var allTables = await AsyncExecuter.ToListAsync(tableQueryable);
-
-        foreach (var dto in dtos)
+        if (dtos.Count > 0)
         {
-            dto.TableCount = allTables.Count(t =>
-                t.DiningAreaId == dto.Id ||
-                (!string.IsNullOrEmpty(dto.Name) && !string.IsNullOrEmpty(t.Location) && t.Location.Trim().Equals(dto.Name.Trim(), StringComparison.OrdinalIgnoreCase))
+            var areaIds = dtos.Select(x => (Guid?)x.Id).ToList();
+            var tableQueryable = await _tableRepository.GetQueryableAsync();
+            var counts = await AsyncExecuter.ToListAsync(
+                tableQueryable
+                    .Where(t => t.DiningAreaId != null && areaIds.Contains(t.DiningAreaId))
+                    .GroupBy(t => t.DiningAreaId)
+                    .Select(g => new { DiningAreaId = g.Key!.Value, Count = g.Count() })
             );
+            var countMap = counts.ToDictionary(x => x.DiningAreaId, x => x.Count);
+
+            foreach (var dto in dtos)
+            {
+                dto.TableCount = countMap.GetValueOrDefault(dto.Id, 0);
+            }
         }
 
         return new ListResultDto<DiningAreaDto>(dtos);
@@ -177,23 +191,30 @@ public class DiningAreaAppService : ApplicationService, IDiningAreaAppService
             throw DiningAreaValidationException.NotFound(id);
         }
 
-        // Kiểm tra xem có bàn nào trong khu vực đang có khách hoặc đang mở đơn không
+        // Kiểm tra xem có bàn nào trong khu vực đang có khách hoặc đang được đặt trước không
         var tables = await _tableRepository.GetListAsync(x => x.DiningAreaId == id);
-        var activeOccupiedTables = tables.Where(t => t.Status == TableStatus.Occupied).ToList();
-        if (activeOccupiedTables.Any())
+        var activeTables = tables.Where(t => t.Status == TableStatus.Occupied || t.Status == TableStatus.Reserved).ToList();
+        if (activeTables.Any())
         {
-            throw DiningAreaValidationException.HasActiveOccupiedTables(area.Name, activeOccupiedTables.Count);
+            throw DiningAreaValidationException.HasActiveOccupiedTables(area.Name, activeTables.Count);
         }
 
         area.IsActive = false;
         await _diningAreaRepository.UpdateAsync(area, autoSave: true);
 
         // Chuyển toàn bộ bàn trong khu vực sang trạng thái Disabled
-        foreach (var table in tables)
+        if (tables.Count > 0)
         {
-            table.Status = TableStatus.Disabled;
-            await _tableRepository.UpdateAsync(table, autoSave: true);
-            await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name, area.Id);
+            foreach (var table in tables)
+            {
+                table.Status = TableStatus.Disabled;
+            }
+            await _tableRepository.UpdateManyAsync(tables, autoSave: true);
+
+            foreach (var table in tables)
+            {
+                await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name, area.Id);
+            }
         }
     }
 
@@ -216,12 +237,17 @@ public class DiningAreaAppService : ApplicationService, IDiningAreaAppService
         await _diningAreaRepository.UpdateAsync(area, autoSave: true);
 
         var tables = await _tableRepository.GetListAsync(x => x.DiningAreaId == id);
-        foreach (var table in tables)
+        var disabledTables = tables.Where(t => t.Status == TableStatus.Disabled).ToList();
+        if (disabledTables.Count > 0)
         {
-            if (table.Status == TableStatus.Disabled)
+            foreach (var table in disabledTables)
             {
                 table.Status = TableStatus.Available;
-                await _tableRepository.UpdateAsync(table, autoSave: true);
+            }
+            await _tableRepository.UpdateManyAsync(disabledTables, autoSave: true);
+
+            foreach (var table in disabledTables)
+            {
                 await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name, area.Id);
             }
         }

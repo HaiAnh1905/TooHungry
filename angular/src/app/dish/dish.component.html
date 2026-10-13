@@ -110,50 +110,53 @@
   <!-- 4. DATA TABLE CARD & PAGINATION FOOTER -->
   <div class="data-card-wrapper" #tableWrapper>
     <!-- Bulk Actions Bar -->
-    @if (selectedDishIds.size > 0) {
-      <div
-        class="bulk-actions-bar d-flex align-items-center justify-content-between flex-wrap gap-3 mb-3 p-2 px-3"
-      >
-        <div class="d-flex align-items-center gap-3">
-          <span class="bulk-selected-badge">
-            <i class="fa fa-check-square me-1"></i>
-            {{ '::SelectedCount' | abpLocalization: selectedDishIds.size + '' }}
-          </span>
-          <span class="bulk-info-text">
-            {{ '::BulkActionsPrompt' | abpLocalization }}
-          </span>
-        </div>
-        <div class="d-flex align-items-center gap-2">
-          <button
-            type="button"
-            class="btn btn-sm btn-bulk-activate"
-            [disabled]="isBulkOperating"
-            (click)="bulkToggleActive(true)"
-          >
-            <i class="fa fa-play-circle me-1"></i>
-            <span>{{ '::BulkActivate' | abpLocalization }}</span>
-          </button>
-          <button
-            type="button"
-            class="btn btn-sm btn-bulk-deactivate"
-            [disabled]="isBulkOperating"
-            (click)="bulkToggleActive(false)"
-          >
-            <i class="fa fa-pause-circle me-1"></i>
-            <span>{{ '::BulkDeactivate' | abpLocalization }}</span>
-          </button>
-          <button
-            type="button"
-            class="btn btn-sm btn-bulk-clear"
-            (click)="clearSelection()"
-            [title]="'::ClearSelection' | abpLocalization"
-          >
-            <i class="fa fa-times me-1"></i>
-            <span>{{ '::Cancel' | abpLocalization }}</span>
-          </button>
-        </div>
+    <div
+      class="bulk-actions-bar d-flex align-items-center justify-content-between flex-wrap gap-3 mb-3 p-2 px-3"
+      [class.has-selection]="selectedDishIds.size > 0"
+    >
+      <div class="d-flex align-items-center gap-3">
+        <span
+          class="bulk-selected-badge"
+          [class.empty]="selectedDishIds.size === 0"
+        >
+          <i class="fa fa-check-square me-1"></i>
+          {{ '::SelectedCount' | abpLocalization: selectedDishIds.size + '' }}
+        </span>
+        <span class="bulk-info-text">
+          {{ '::BulkActionsPrompt' | abpLocalization }}
+        </span>
       </div>
-    }
+      <div class="d-flex align-items-center gap-2">
+        <button
+          type="button"
+          class="btn btn-sm btn-bulk-activate"
+          [disabled]="isBulkOperating || selectedDishIds.size === 0"
+          (click)="bulkToggleActive(true)"
+        >
+          <i class="fa fa-play-circle me-1"></i>
+          <span>{{ '::BulkActivate' | abpLocalization }}</span>
+        </button>
+        <button
+          type="button"
+          class="btn btn-sm btn-bulk-deactivate"
+          [disabled]="isBulkOperating || selectedDishIds.size === 0"
+          (click)="bulkToggleActive(false)"
+        >
+          <i class="fa fa-pause-circle me-1"></i>
+          <span>{{ '::BulkDeactivate' | abpLocalization }}</span>
+        </button>
+        <button
+          type="button"
+          class="btn btn-sm btn-bulk-clear"
+          [disabled]="isBulkOperating || selectedDishIds.size === 0"
+          (click)="clearSelection()"
+          [title]="'::ClearSelection' | abpLocalization"
+        >
+          <i class="fa fa-times me-1"></i>
+          <span>{{ '::Cancel' | abpLocalization }}</span>
+        </button>
+      </div>
+    </div>
 
     <ngx-datatable
       #table

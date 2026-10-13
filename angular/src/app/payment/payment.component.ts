@@ -5,10 +5,11 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { CoreModule, LocalizationService } from '@abp/ng.core';
 import { ThemeSharedModule, ToasterService, ConfirmationService, Confirmation } from '@abp/ng.theme.shared';
 import { OrderService } from '../proxy/orders/order.service';
-import { OrderDto, CreateUpdateOrderDto } from '../proxy/orders/models';
+import { OrderDto, CompletePaymentInputDto, PaymentMethod } from '../proxy/orders/models';
 import { OrderStatus } from '../proxy/orders/order-status.enum';
 import { TableService } from '../proxy/tables/table.service';
 import { TableStatus } from '../proxy/tables/table-status.enum';
+import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-payment',
@@ -27,6 +28,8 @@ export class PaymentComponent implements OnInit {
   private readonly confirmation = inject(ConfirmationService);
   private readonly localizationService = inject(LocalizationService);
   private readonly cdr = inject(ChangeDetectorRef);
+
+  readonly vietQrConfig = environment.vietQrConfig;
 
   orderId: string | null = null;
   isLoading = signal<boolean>(true);
@@ -63,12 +66,21 @@ export class PaymentComponent implements OnInit {
     return Math.max(0, given - total);
   });
 
+  isCashShortage = computed(() => {
+    return this.paymentMethod() === 'cash' && (this.cashGiven() || 0) < this.effectiveTotalAmount();
+  });
+
+  cashShortageAmount = computed(() => {
+    return Math.max(0, this.effectiveTotalAmount() - (this.cashGiven() || 0));
+  });
+
   vietQrUrl = computed(() => {
     const ord = this.order();
     if (!ord) return '';
     const amount = this.effectiveTotalAmount();
     const memo = `TOOHUNGRY ${ord.orderNumber || ''}`.trim();
-    return `https://api.vietqr.io/image/970422-9999888866-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(memo)}&accountName=NHA%20HANG%20TOOHUNGRY`;
+    const cfg = this.vietQrConfig;
+    return `https://api.vietqr.io/image/${cfg.bankId}-${cfg.accountNo}-${cfg.template}.jpg?amount=${amount}&addInfo=${encodeURIComponent(memo)}&accountName=${encodeURIComponent(cfg.accountName)}`;
   });
 
   ngOnInit(): void {
@@ -76,8 +88,8 @@ export class PaymentComponent implements OnInit {
     if (this.orderId) {
       this.fetchOrder(this.orderId);
     } else {
-      this.toaster.error('Không tìm thấy mã đơn hàng cần thanh toán!');
-      this.router.navigate(['/tables']);
+      this.toaster.error(this.localizationService.instant('::OrderNotFound') || 'Không tìm thấy mã đơn hàng!');
+      this.router.navigate(['/waiter/tables']);
     }
   }
 
@@ -104,9 +116,9 @@ export class PaymentComponent implements OnInit {
         this.cdr.markForCheck();
       },
       error: () => {
-        this.toaster.error('Không thể tải thông tin đơn hàng!');
+        this.toaster.error(this.localizationService.instant('::CannotLoadOrder') || 'Không thể tải thông tin đơn hàng!');
         this.isLoading.set(false);
-        this.router.navigate(['/tables']);
+        this.router.navigate(['/waiter/tables']);
         this.cdr.markForCheck();
       },
     });
@@ -124,7 +136,7 @@ export class PaymentComponent implements OnInit {
 
   setExactCash(): void {
     if (this.isCompleted()) return;
-    this.cashGiven.set(this.order()?.totalAmount || 0);
+    this.cashGiven.set(this.effectiveTotalAmount());
   }
 
   copyToClipboard(text: string, field: string): void {
@@ -144,7 +156,7 @@ export class PaymentComponent implements OnInit {
     const currentOrder = this.order();
     if (!currentOrder || !currentOrder.id) return;
     if (this.isCompleted()) {
-      this.toaster.warn('Đơn hàng này đã thanh toán hoàn tất!');
+      this.toaster.warn(this.localizationService.instant('::OrderCompletedLocked') || 'Đơn hàng này đã thanh toán hoàn tất!');
       return;
     }
 
@@ -152,14 +164,19 @@ export class PaymentComponent implements OnInit {
       const given = this.cashGiven() || 0;
       const total = this.effectiveTotalAmount();
       if (given < total) {
-        this.toaster.error('Số tiền khách đưa không đủ để thanh toán!');
+        this.toaster.error(this.localizationService.instant('::CashShortage') || 'Số tiền khách đưa không đủ để thanh toán!');
         return;
       }
     }
 
     const title = this.localizationService.instant('::ConfirmPayment');
     const totalAmountVal = this.effectiveTotalAmount();
-    const promptMsg = `Xác nhận thanh toán cho đơn ${currentOrder.orderNumber || ''} với số tiền ${totalAmountVal.toLocaleString('vi-VN')} đ?`;
+    const promptTemplate = this.localizationService.instant('::PaymentConfirmPrompt');
+    const promptMsg = promptTemplate
+      ? promptTemplate
+          .replace('{0}', currentOrder.orderNumber || '')
+          .replace('{1}', totalAmountVal.toLocaleString('vi-VN'))
+      : `Xác nhận thanh toán cho đơn ${currentOrder.orderNumber || ''} với số tiền ${totalAmountVal.toLocaleString('vi-VN')} đ?`;
 
     this.confirmation.info(promptMsg, title).subscribe((status: Confirmation.Status) => {
       if (status === Confirmation.Status.confirm) {
@@ -171,33 +188,27 @@ export class PaymentComponent implements OnInit {
   private executePayment(currentOrder: OrderDto): void {
     this.isProcessingPayment.set(true);
 
-    const updateInput: CreateUpdateOrderDto = {
-      orderNumber: currentOrder.orderNumber,
-      orderDate: currentOrder.orderDate,
-      status: OrderStatus.Completed,
-      totalAmount: this.effectiveTotalAmount(),
-      note: currentOrder.note,
-      tableId: currentOrder.tableId,
-      items: currentOrder.items?.map(i => ({
-        dishId: i.dishId,
-        quantity: i.quantity,
-        unitPrice: i.unitPrice,
-      })) || [],
+    const input: CompletePaymentInputDto = {
+      paymentMethod: this.paymentMethod() === 'cash' ? PaymentMethod.Cash : PaymentMethod.VietQr,
+      cashGiven: this.paymentMethod() === 'cash' ? (this.cashGiven() || 0) : undefined,
+      paymentNote: this.paymentMethod() === 'cash'
+        ? `Tiền mặt: khách đưa ${(this.cashGiven() || 0).toLocaleString('vi-VN')} đ, tiền thừa ${this.changeAmount().toLocaleString('vi-VN')} đ`
+        : `VietQR Napas 247`
     };
 
-    this.orderService.update(currentOrder.id!, updateInput).subscribe({
+    this.orderService.completePayment(currentOrder.id!, input).subscribe({
       next: (updatedOrder) => {
         this.order.set(updatedOrder);
         this.isProcessingPayment.set(false);
-        this.toaster.success(
-          'Thanh toán thành công! Đơn hàng đã hoàn tất, đã tự động tính tiêu hao và khấu trừ nguyên liệu theo FEFO.',
-          'Hoàn tất đơn hàng'
-        );
+        const successMsg = this.localizationService.instant('::PaymentSuccessMsg') ||
+          'Thanh toán thành công! Đơn hàng đã hoàn tất, bàn đã chuyển sang dọn dẹp và kho đã được khấu trừ theo FEFO.';
+        const successTitle = this.localizationService.instant('::PaymentSuccess') || 'Thanh toán thành công!';
+        this.toaster.success(successMsg, successTitle);
         this.cdr.markForCheck();
       },
       error: () => {
         this.isProcessingPayment.set(false);
-        this.toaster.error('Có lỗi xảy ra trong quá trình xử lý thanh toán!');
+        this.toaster.error(this.localizationService.instant('::PaymentError') || 'Có lỗi xảy ra trong quá trình xử lý thanh toán!');
         this.cdr.markForCheck();
       },
     });
@@ -208,6 +219,6 @@ export class PaymentComponent implements OnInit {
   }
 
   onBackToTables(): void {
-    this.router.navigate(['/tables']);
+    this.router.navigate(['/waiter/tables']);
   }
 }

@@ -1,4 +1,4 @@
-﻿.page-header-row {
+.page-header-row {
   .page-title {
     font-size: 1.6rem; font-weight: 800; color: #1e1915; letter-spacing: -0.5px; line-height: 1.2;
   }
@@ -236,3 +236,20 @@
 
 .status-indicator-label { font-weight: 700; font-size: 0.85rem; color: #8c7e73; &.active { color: #16a34a; } }
 .form-check-input:checked { background-color: #16a34a; border-color: #16a34a; }
+
+.eye-toggle-btn {
+  border-color: #dee2e6;
+  background-color: #faf7f4;
+  color: #6c757d;
+  transition: all 0.2s ease;
+  &:hover {
+    background-color: #f3ece4;
+    border-color: #ced4da;
+    color: #ff521b;
+  }
+  &:active {
+    background-color: #ffece2;
+    border-color: #ff8c42;
+    color: #ff521b;
+  }
+}

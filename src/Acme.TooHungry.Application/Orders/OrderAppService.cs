@@ -637,4 +637,62 @@ public class OrderAppService : ApplicationService, IOrderAppService
             await _realtimeNotifier.NotifyTableOrderUpdatedAsync(order.TableId.Value, false, null);
         }
     }
+
+    /// <summary>
+    /// Hoàn tất thanh toán đơn hàng (RM-016):
+    /// Chuyển trạng thái đơn hàng sang Completed, trừ kho FEFO theo công thức món ăn,
+    /// chuyển trạng thái bàn sang Cleaning, phát sóng realtime SignalR và trả về OrderDto.
+    /// </summary>
+    [Authorize(TooHungryPermissions.Orders.Default)]
+    public virtual async Task<OrderDto> CompletePaymentAsync(Guid id, CompletePaymentInputDto input)
+    {
+        var queryable = await _orderRepository.WithDetailsAsync(x => x.Items, x => x.Table!);
+        var order = await AsyncExecuter.FirstOrDefaultAsync(queryable, x => x.Id == id);
+        if (order == null)
+        {
+            throw new EntityNotFoundException(typeof(Order), id);
+        }
+
+        if (order.Status == OrderStatus.Completed)
+        {
+            throw new BusinessException("TooHungry:Order:AlreadyCompleted");
+        }
+
+        if (order.Status == OrderStatus.Cancelled)
+        {
+            throw new BusinessException("TooHungry:Order:AlreadyCancelled");
+        }
+
+        order.Status = OrderStatus.Completed;
+        if (!string.IsNullOrWhiteSpace(input.PaymentNote))
+        {
+            order.Note = string.IsNullOrWhiteSpace(order.Note)
+                ? $"[{input.PaymentMethod}: {input.PaymentNote}]"
+                : $"{order.Note} [{input.PaymentMethod}: {input.PaymentNote}]";
+        }
+
+        await _orderRepository.UpdateAsync(order, autoSave: true);
+
+        // 1. Tự động tính tiêu hao nguyên liệu theo Recipe và trừ kho FEFO
+        await ProcessOrderInventoryConsumptionAsync(order);
+
+        // 2. Chuyển bàn ăn sang trạng thái Dọn dẹp (Cleaning) & phát Realtime SignalR
+        if (order.TableId.HasValue)
+        {
+            var table = await _tableRepository.FindAsync(order.TableId.Value);
+            if (table != null)
+            {
+                table.Status = TableStatus.Cleaning;
+                table.ReservedCustomerName = null;
+                table.ReservedCustomerPhone = null;
+                table.ReservedGuestCount = null;
+                table.ReservedTime = null;
+                table.ReservedNote = null;
+                await _tableRepository.UpdateAsync(table, autoSave: true);
+                await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name);
+            }
+        }
+
+        return await GetAsync(id);
+    }
 }

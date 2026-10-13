@@ -53,6 +53,17 @@ export class Users implements OnInit {
   adminExistsError = false;
   checkingAdmin = false;
   originalRoleName: string | null = null;
+  showPassword = false;
+
+  onTouchStartEye(event: TouchEvent) {
+    event.preventDefault();
+    this.showPassword = true;
+  }
+
+  onTouchEndEye(event: TouchEvent) {
+    event.preventDefault();
+    this.showPassword = false;
+  }
 
   constructor(
     private userService: IdentityUserService,
@@ -171,6 +182,7 @@ export class Users implements OnInit {
   }
 
   openModal(user?: IdentityUserDto) {
+    this.showPassword = false;
     this.selectedId = user?.id || null;
     this.concurrencyStamp = user?.concurrencyStamp || null;
     if (user) {
@@ -182,6 +194,7 @@ export class Users implements OnInit {
           name: user.name,
           email: user.email,
           isActive: user.isActive,
+          password: '',
           roleNames: this.originalRoleName
         });
         this.form.get('password')?.clearValidators();
