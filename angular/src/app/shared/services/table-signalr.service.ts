@@ -9,6 +9,7 @@ export interface TableStatusChangedEvent {
   diningAreaId?: string;
   status: number;
   statusName?: string;
+  occupiedTime?: string | null;
   updatedTime?: string;
 }
 
@@ -55,6 +56,7 @@ export class TableSignalrService {
         diningAreaId: data.diningAreaId || data.DiningAreaId,
         status: data.status !== undefined ? data.status : data.Status,
         statusName: data.statusName || data.StatusName,
+        occupiedTime: data.occupiedTime !== undefined ? data.occupiedTime : data.OccupiedTime,
         updatedTime: data.updatedTime || data.UpdatedTime,
       });
     });

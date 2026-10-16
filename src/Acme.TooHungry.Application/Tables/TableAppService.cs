@@ -65,6 +65,11 @@ public class TableAppService : TooHungryAppService, ITableAppService
             dto.HasActiveOrder = true;
         }
 
+        if (table.Status == TableStatus.Occupied && !dto.OccupiedTime.HasValue)
+        {
+            dto.OccupiedTime = table.LastModificationTime ?? table.CreationTime;
+        }
+
         return dto;
     }
 
@@ -136,6 +141,12 @@ public class TableAppService : TooHungryAppService, ITableAppService
                 dto.ActiveOrderId = orderId;
                 dto.HasActiveOrder = true;
             }
+
+            if (dto.Status == TableStatus.Occupied && !dto.OccupiedTime.HasValue)
+            {
+                var originalItem = items.FirstOrDefault(x => x.Id == dto.Id);
+                dto.OccupiedTime = originalItem?.LastModificationTime ?? originalItem?.CreationTime;
+            }
         }
 
         return new PagedResultDto<TableDto>(totalCount, dtos);
@@ -180,6 +191,10 @@ public class TableAppService : TooHungryAppService, ITableAppService
 
         var table = ObjectMapper.Map<CreateUpdateTableDto, RestaurantTable>(input);
         table.Name = cleanName;
+        if (table.Status == TableStatus.Occupied && !table.OccupiedTime.HasValue)
+        {
+            table.OccupiedTime = DateTime.Now;
+        }
 
         // 4. Tự động đồng bộ trường Location theo Khu vực được chọn
         if (input.DiningAreaId.HasValue)
@@ -286,6 +301,14 @@ public class TableAppService : TooHungryAppService, ITableAppService
 
         ObjectMapper.Map(input, table);
         table.Name = cleanName;
+        if (table.Status == TableStatus.Occupied && !table.OccupiedTime.HasValue)
+        {
+            table.OccupiedTime = DateTime.Now;
+        }
+        else if (table.Status != TableStatus.Occupied)
+        {
+            table.OccupiedTime = null;
+        }
 
         // Đồng bộ trường Location theo DiningArea được chọn
         if (input.DiningAreaId.HasValue)
@@ -390,6 +413,18 @@ public class TableAppService : TooHungryAppService, ITableAppService
 
         table.Status = status;
 
+        if (status == TableStatus.Occupied)
+        {
+            if (!table.OccupiedTime.HasValue)
+            {
+                table.OccupiedTime = DateTime.Now;
+            }
+        }
+        else
+        {
+            table.OccupiedTime = null;
+        }
+
         if (status == TableStatus.Available || status == TableStatus.Disabled || status == TableStatus.Cleaning)
         {
             table.ReservedCustomerName = null;
@@ -400,7 +435,7 @@ public class TableAppService : TooHungryAppService, ITableAppService
         }
 
         await _tableRepository.UpdateAsync(table, autoSave: true);
-        await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name, table.DiningAreaId);
+        await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name, table.DiningAreaId, table.OccupiedTime);
 
         var dto = ObjectMapper.Map<RestaurantTable, TableDto>(table);
         if (string.IsNullOrWhiteSpace(dto.DiningAreaName))
@@ -436,6 +471,17 @@ public class TableAppService : TooHungryAppService, ITableAppService
         foreach (var table in tables)
         {
             table.Status = status;
+            if (status == TableStatus.Occupied)
+            {
+                if (!table.OccupiedTime.HasValue)
+                {
+                    table.OccupiedTime = DateTime.Now;
+                }
+            }
+            else
+            {
+                table.OccupiedTime = null;
+            }
 
             // Nếu vô hiệu hóa hoặc chuyển về có sẵn thì reset lại thông tin đặt bàn cũ
             if (status == TableStatus.Disabled || status == TableStatus.Available)
@@ -452,7 +498,206 @@ public class TableAppService : TooHungryAppService, ITableAppService
 
         foreach (var table in tables)
         {
-            await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name, table.DiningAreaId);
+            await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name, table.DiningAreaId, table.OccupiedTime);
         }
     }
+
+    /// <summary>
+    /// Chuyển bàn ăn: Di chuyển đơn hàng đang mở và thời gian ngồi từ bàn nguồn sang bàn đích
+    /// </summary>
+    public virtual async Task<TableDto> TransferTableAsync(TransferTableInputDto input)
+    {
+        if (!await AuthorizationService.IsGrantedAsync(TooHungryPermissions.Tables.UpdateStatus) &&
+            !await AuthorizationService.IsGrantedAsync(TooHungryPermissions.Tables.Edit) &&
+            !await AuthorizationService.IsGrantedAsync(TooHungryPermissions.Tables.Manage))
+        {
+            throw new AbpAuthorizationException("Bạn không có quyền chuyển bàn ăn!");
+        }
+
+        if (input.SourceTableId == input.TargetTableId)
+        {
+            throw new UserFriendlyException("Bàn đích không được trùng với bàn hiện tại!");
+        }
+
+        var sourceTable = await _tableRepository.GetAsync(input.SourceTableId);
+        var targetTable = await _tableRepository.GetAsync(input.TargetTableId);
+
+        if (sourceTable.Status != TableStatus.Occupied)
+        {
+            throw new UserFriendlyException($"Bàn nguồn '{sourceTable.Name}' không ở trạng thái đang phục vụ khách!");
+        }
+
+        if (targetTable.Status != TableStatus.Available)
+        {
+            throw new UserFriendlyException($"Bàn đích '{targetTable.Name}' không ở trạng thái trống (Đã có khách hoặc đang dọn dẹp)!");
+        }
+
+        // 1. Chuyển active order (nếu có) sang bàn đích
+        var activeOrder = await _orderRepository.FirstOrDefaultAsync(x => x.TableId == sourceTable.Id && x.Status != OrderStatus.Completed && x.Status != OrderStatus.Cancelled);
+        if (activeOrder != null)
+        {
+            activeOrder.TableId = targetTable.Id;
+            if (!string.IsNullOrWhiteSpace(input.Note))
+            {
+                activeOrder.Note = string.IsNullOrWhiteSpace(activeOrder.Note)
+                    ? $"[Chuyển từ {sourceTable.Name}]: {input.Note}"
+                    : $"{activeOrder.Note} | [Chuyển từ {sourceTable.Name}]: {input.Note}";
+            }
+            await _orderRepository.UpdateAsync(activeOrder, autoSave: true);
+        }
+
+        // 2. Cập nhật Bàn đích: Occupied, kế thừa OccupiedTime
+        targetTable.Status = TableStatus.Occupied;
+        targetTable.OccupiedTime = sourceTable.OccupiedTime ?? DateTime.Now;
+        await _tableRepository.UpdateAsync(targetTable, autoSave: true);
+
+        // 3. Phân nhánh Bàn nguồn:
+        // Nếu có activeOrder/dùng món: Chuyển sang Cleaning; nếu không có order: Chuyển thẳng về Available
+        var hasActiveOrder = activeOrder != null;
+        sourceTable.Status = hasActiveOrder ? TableStatus.Cleaning : TableStatus.Available;
+        sourceTable.OccupiedTime = null;
+        sourceTable.ReservedCustomerName = null;
+        sourceTable.ReservedCustomerPhone = null;
+        sourceTable.ReservedTime = null;
+        sourceTable.ReservedGuestCount = null;
+        sourceTable.ReservedNote = null;
+        await _tableRepository.UpdateAsync(sourceTable, autoSave: true);
+
+        // 4. Phát sự kiện SignalR cho cả 2 bàn
+        await _realtimeNotifier.NotifyTableStatusChangedAsync(sourceTable.Id, sourceTable.Status, sourceTable.Name, sourceTable.DiningAreaId, sourceTable.OccupiedTime);
+        await _realtimeNotifier.NotifyTableStatusChangedAsync(targetTable.Id, targetTable.Status, targetTable.Name, targetTable.DiningAreaId, targetTable.OccupiedTime);
+        if (activeOrder != null)
+        {
+            await _realtimeNotifier.NotifyTableOrderUpdatedAsync(sourceTable.Id, false, null);
+            await _realtimeNotifier.NotifyTableOrderUpdatedAsync(targetTable.Id, true, activeOrder.Id);
+        }
+
+        var targetDto = ObjectMapper.Map<RestaurantTable, TableDto>(targetTable);
+        if (string.IsNullOrWhiteSpace(targetDto.DiningAreaName))
+        {
+            targetDto.DiningAreaName = targetTable.Location;
+        }
+        if (activeOrder != null)
+        {
+            targetDto.ActiveOrderId = activeOrder.Id;
+            targetDto.HasActiveOrder = true;
+        }
+
+        return targetDto;
+    }
+
+    /// <summary>
+    /// Gộp bàn ăn: Ghép toàn bộ món ăn từ bàn phụ sang bàn chính để thanh toán 1 hóa đơn duy nhất
+    /// </summary>
+    public virtual async Task<TableDto> MergeTablesAsync(MergeTablesInputDto input)
+    {
+        if (!await AuthorizationService.IsGrantedAsync(TooHungryPermissions.Tables.UpdateStatus) &&
+            !await AuthorizationService.IsGrantedAsync(TooHungryPermissions.Tables.Edit) &&
+            !await AuthorizationService.IsGrantedAsync(TooHungryPermissions.Tables.Manage))
+        {
+            throw new AbpAuthorizationException("Bạn không có quyền gộp bàn ăn!");
+        }
+
+        if (input.PrimaryTableId == input.SecondaryTableId)
+        {
+            throw new UserFriendlyException("Bàn cần gộp không được trùng với bàn chính!");
+        }
+
+        var primaryTable = await _tableRepository.GetAsync(input.PrimaryTableId);
+        var secondaryTable = await _tableRepository.GetAsync(input.SecondaryTableId);
+
+        if (primaryTable.Status != TableStatus.Occupied || secondaryTable.Status != TableStatus.Occupied)
+        {
+            throw new UserFriendlyException("Cả hai bàn cần gộp đều phải ở trạng thái đang phục vụ khách (Occupied)!");
+        }
+
+        // Nạp kèm Items của order
+        var primaryOrder = (await _orderRepository.WithDetailsAsync(x => x.Items))
+            .FirstOrDefault(x => x.TableId == primaryTable.Id && x.Status != OrderStatus.Completed && x.Status != OrderStatus.Cancelled);
+
+        var secondaryOrder = (await _orderRepository.WithDetailsAsync(x => x.Items))
+            .FirstOrDefault(x => x.TableId == secondaryTable.Id && x.Status != OrderStatus.Completed && x.Status != OrderStatus.Cancelled);
+
+        if (secondaryOrder != null)
+        {
+            if (primaryOrder == null)
+            {
+                // Bàn chính chưa có đơn, chuyển thẳng đơn bàn phụ sang bàn chính
+                secondaryOrder.TableId = primaryTable.Id;
+                secondaryOrder.Note = string.IsNullOrWhiteSpace(secondaryOrder.Note)
+                    ? $"[Gộp từ {secondaryTable.Name}]"
+                    : $"{secondaryOrder.Note} | [Gộp từ {secondaryTable.Name}]";
+                await _orderRepository.UpdateAsync(secondaryOrder, autoSave: true);
+                primaryOrder = secondaryOrder;
+            }
+            else
+            {
+                // Cả hai đều có đơn: ghép items từ secondary sang primary
+                foreach (var item in secondaryOrder.Items.ToList())
+                {
+                    var existingItem = primaryOrder.Items.FirstOrDefault(x => x.DishId == item.DishId);
+                    if (existingItem != null)
+                    {
+                        existingItem.Quantity += item.Quantity;
+                        existingItem.TotalPrice = existingItem.Quantity * existingItem.UnitPrice;
+                    }
+                    else
+                    {
+                        primaryOrder.Items.Add(new OrderItem(GuidGenerator.Create())
+                        {
+                            OrderId = primaryOrder.Id,
+                            DishId = item.DishId,
+                            Quantity = item.Quantity,
+                            UnitPrice = item.UnitPrice,
+                            TotalPrice = item.TotalPrice,
+                            Note = item.Note
+                        });
+                    }
+                }
+                primaryOrder.TotalAmount = primaryOrder.Items.Sum(x => x.TotalPrice);
+                primaryOrder.Note = string.IsNullOrWhiteSpace(primaryOrder.Note)
+                    ? $"[Gộp từ {secondaryTable.Name} (#{secondaryOrder.OrderNumber})]"
+                    : $"{primaryOrder.Note} | [Gộp từ {secondaryTable.Name} (#{secondaryOrder.OrderNumber})]";
+                await _orderRepository.UpdateAsync(primaryOrder, autoSave: true);
+
+                // Đóng đơn hàng bàn phụ
+                secondaryOrder.Status = OrderStatus.Cancelled;
+                secondaryOrder.Note = $"[Đã gộp vào {primaryTable.Name} (#{primaryOrder.OrderNumber})]";
+                await _orderRepository.UpdateAsync(secondaryOrder, autoSave: true);
+            }
+        }
+
+        // Giải phóng Bàn phụ về Cleaning
+        secondaryTable.Status = TableStatus.Cleaning;
+        secondaryTable.OccupiedTime = null;
+        secondaryTable.ReservedCustomerName = null;
+        secondaryTable.ReservedCustomerPhone = null;
+        secondaryTable.ReservedTime = null;
+        secondaryTable.ReservedGuestCount = null;
+        secondaryTable.ReservedNote = null;
+        await _tableRepository.UpdateAsync(secondaryTable, autoSave: true);
+
+        // Phát sự kiện SignalR
+        await _realtimeNotifier.NotifyTableStatusChangedAsync(secondaryTable.Id, secondaryTable.Status, secondaryTable.Name, secondaryTable.DiningAreaId, null);
+        await _realtimeNotifier.NotifyTableOrderUpdatedAsync(secondaryTable.Id, false, null);
+
+        if (primaryOrder != null)
+        {
+            await _realtimeNotifier.NotifyTableOrderUpdatedAsync(primaryTable.Id, true, primaryOrder.Id);
+        }
+
+        var primaryDto = ObjectMapper.Map<RestaurantTable, TableDto>(primaryTable);
+        if (string.IsNullOrWhiteSpace(primaryDto.DiningAreaName))
+        {
+            primaryDto.DiningAreaName = primaryTable.Location;
+        }
+        if (primaryOrder != null)
+        {
+            primaryDto.ActiveOrderId = primaryOrder.Id;
+            primaryDto.HasActiveOrder = true;
+        }
+
+        return primaryDto;
+    }
 }
+

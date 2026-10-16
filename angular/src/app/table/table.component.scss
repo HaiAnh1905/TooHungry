@@ -498,6 +498,30 @@
               color: #ea580c;
               margin-right: 0 !important;
             }
+
+            &.badge-meal-warning {
+              background-color: #fef3c7;
+              color: #b45309;
+              border-color: #fde68a;
+
+              i {
+                color: #d97706;
+              }
+            }
+
+            &.badge-meal-long {
+              background-color: #fee2e2;
+              color: #b91c1c;
+              border-color: #fca5a5;
+
+              i {
+                color: #dc2626;
+              }
+            }
+
+            &.pulse-warning {
+              animation: pulseMealBadge 1.8s infinite ease-in-out;
+            }
           }
         }
       }
@@ -847,6 +871,253 @@
                 border-color: #ea580c;
                 transform: translateY(-1px);
                 box-shadow: 0 2px 8px rgba(234, 88, 12, 0.25);
+              }
+            }
+
+            &.btn-transfer {
+              background-color: #eff6ff;
+              color: #2563eb;
+              border-color: #bfdbfe;
+
+              &:hover {
+                background-color: #2563eb;
+                color: #ffffff;
+                border-color: #2563eb;
+                transform: translateY(-1px);
+                box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+              }
+            }
+
+            &.btn-merge {
+              background-color: #f5f3ff;
+              color: #7c3aed;
+              border-color: #ddd6fe;
+
+              &:hover {
+                background-color: #7c3aed;
+                color: #ffffff;
+                border-color: #7c3aed;
+                transform: translateY(-1px);
+                box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);
+              }
+            }
+          }
+
+          /* 2x2 Grid Bố cục cân xứng cho Bàn đang phục vụ (Occupied) */
+          .occupied-actions-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            width: 100%;
+
+            .btn-grid-action {
+              height: 38px;
+              padding: 0 0.5rem;
+              border-radius: 10px;
+              font-size: 0.82rem;
+              font-weight: 700;
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              gap: 6px;
+              border: 1.5px solid transparent;
+              cursor: pointer;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              transition: all 0.2s ease;
+
+              i {
+                font-size: 0.82rem;
+                margin-right: 0 !important;
+                flex-shrink: 0;
+              }
+
+              span {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+              }
+
+              /* 1. Gọi món / Xem đơn: Cam thương hiệu nổi bật */
+              &.btn-grid-order {
+                background: linear-gradient(135deg, #ff8c42 0%, #ff521b 100%);
+                color: #ffffff;
+                border: none;
+                box-shadow: 0 2px 8px rgba(255, 82, 27, 0.22);
+
+                &:hover {
+                  background: linear-gradient(135deg, #ff7a29 0%, #e6410c 100%);
+                  box-shadow: 0 4px 12px rgba(255, 82, 27, 0.32);
+                  transform: translateY(-1px);
+                }
+              }
+
+              /* 2. Kết thúc: Xanh mint thanh lịch */
+              &.btn-grid-end {
+                background-color: #ecfdf5;
+                color: #047857;
+                border-color: #a7f3d0;
+
+                &:hover {
+                  background-color: #10b981;
+                  color: #ffffff;
+                  border-color: #10b981;
+                  transform: translateY(-1px);
+                  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+                }
+              }
+
+              /* 3. Đổi bàn: Xanh dương nhẹ nhàng */
+              &.btn-grid-transfer {
+                background-color: #eff6ff;
+                color: #2563eb;
+                border-color: #bfdbfe;
+
+                &:hover {
+                  background-color: #2563eb;
+                  color: #ffffff;
+                  border-color: #2563eb;
+                  transform: translateY(-1px);
+                  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+                }
+              }
+
+              /* 4. Gộp bàn: Tím pastel nhẹ nhàng */
+              &.btn-grid-merge {
+                background-color: #f5f3ff;
+                color: #7c3aed;
+                border-color: #ddd6fe;
+
+                &:hover {
+                  background-color: #7c3aed;
+                  color: #ffffff;
+                  border-color: #7c3aed;
+                  transform: translateY(-1px);
+                  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);
+                }
+              }
+            }
+          }
+
+          /* Bố cục 2 hàng cho Bàn trống (Available) & Bàn đã đặt (Reserved) */
+          .table-actions-2rows {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            width: 100%;
+
+            .btn-action-main-full {
+              width: 100%;
+              height: 38px;
+              border-radius: 10px;
+              font-weight: 700;
+              font-size: 0.84rem;
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              gap: 6px;
+              border: none;
+              cursor: pointer;
+              transition: all 0.2s ease;
+
+              i {
+                font-size: 0.85rem;
+                margin-right: 0 !important;
+              }
+
+              &.btn-occupy {
+                background: linear-gradient(135deg, #ff8c42 0%, #ff521b 100%);
+                color: #ffffff;
+                box-shadow: 0 2px 8px rgba(255, 82, 27, 0.22);
+
+                &:hover:not(:disabled) {
+                  background: linear-gradient(135deg, #ff7a29 0%, #e6410c 100%);
+                  box-shadow: 0 4px 12px rgba(255, 82, 27, 0.32);
+                  transform: translateY(-1px);
+                }
+              }
+            }
+
+            .sub-actions-row {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 6px;
+              width: 100%;
+
+              .btn-action-sub-pill {
+                height: 38px;
+                padding: 0 0.5rem;
+                border-radius: 10px;
+                font-size: 0.82rem;
+                font-weight: 700;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
+                border: 1.5px solid transparent;
+                cursor: pointer;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                transition: all 0.2s ease;
+
+                i {
+                  font-size: 0.82rem;
+                  margin-right: 0 !important;
+                  flex-shrink: 0;
+                }
+
+                span {
+                  overflow: hidden;
+                  text-overflow: ellipsis;
+                  white-space: nowrap;
+                }
+
+                /* Nút Đặt lịch: Nền vàng hổ phách nhẹ */
+                &.btn-sub-reserve {
+                  background-color: #fffbeb;
+                  color: #b45309;
+                  border-color: #fde68a;
+
+                  &:hover {
+                    background-color: #fef3c7;
+                    border-color: #f59e0b;
+                    color: #92400e;
+                    transform: translateY(-1px);
+                    box-shadow: 0 2px 8px rgba(217, 119, 6, 0.18);
+                  }
+                }
+
+                /* Nút Vô hiệu hóa: Nền đỏ nhẹ */
+                &.btn-sub-disable {
+                  background-color: #fef2f2;
+                  color: #dc2626;
+                  border-color: #fecaca;
+
+                  &:hover {
+                    background-color: #fee2e2;
+                    border-color: #f87171;
+                    color: #b91c1c;
+                    transform: translateY(-1px);
+                    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.18);
+                  }
+                }
+
+                /* Nút Chi tiết đặt bàn: Nền xanh dương nhẹ */
+                &.btn-sub-detail {
+                  background-color: #eff6ff;
+                  color: #2563eb;
+                  border-color: #bfdbfe;
+
+                  &:hover {
+                    background-color: #dbeafe;
+                    border-color: #60a5fa;
+                    color: #1d4ed8;
+                    transform: translateY(-1px);
+                    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.18);
+                  }
+                }
               }
             }
           }
@@ -1521,6 +1792,44 @@
       border-color: #ea580c !important;
       color: #ffffff !important;
       box-shadow: 0 3px 10px rgba(234, 88, 12, 0.35) !important;
+      transform: translateY(-1px);
+    }
+  }
+
+  &.btn-transfer-inline {
+    background-color: #eff6ff !important;
+    border: 1.5px solid #bfdbfe !important;
+    color: #2563eb !important;
+    box-shadow: 0 1px 4px rgba(37, 99, 235, 0.1) !important;
+
+    i {
+      font-size: 12px;
+    }
+
+    &:hover {
+      background-color: #2563eb !important;
+      border-color: #2563eb !important;
+      color: #ffffff !important;
+      box-shadow: 0 3px 10px rgba(37, 99, 235, 0.35) !important;
+      transform: translateY(-1px);
+    }
+  }
+
+  &.btn-merge-inline {
+    background-color: #f5f3ff !important;
+    border: 1.5px solid #ddd6fe !important;
+    color: #7c3aed !important;
+    box-shadow: 0 1px 4px rgba(124, 58, 237, 0.1) !important;
+
+    i {
+      font-size: 12px;
+    }
+
+    &:hover {
+      background-color: #7c3aed !important;
+      border-color: #7c3aed !important;
+      color: #ffffff !important;
+      box-shadow: 0 3px 10px rgba(124, 58, 237, 0.35) !important;
       transform: translateY(-1px);
     }
   }
@@ -3755,6 +4064,19 @@
     color: #ffffff !important;
   }
 }
+
+@keyframes pulseMealBadge {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.05);
+    box-shadow: 0 0 10px rgba(220, 38, 38, 0.35);
+  }
+}
+
 
 
 

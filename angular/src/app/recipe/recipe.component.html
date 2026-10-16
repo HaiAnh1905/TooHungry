@@ -146,7 +146,14 @@
                   {{ (currentPage - 1) * pageSize + idx + 1 }}
                 </td>
                 <td>
-                  <span class="fw-bold text-dark">{{ dish.name }}</span>
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="fw-bold text-dark">{{ dish.name }}</span>
+                    @if (!dish.isActive) {
+                      <span class="badge bg-secondary-subtle text-secondary border small" [title]="'::InactiveDishes' | abpLocalization">
+                        {{ '::Inactive' | abpLocalization }}
+                      </span>
+                    }
+                  </div>
                 </td>
                 <td>
                   <span class="badge bg-light text-secondary border">
@@ -343,6 +350,7 @@
     [dishId]="selectedDish?.id"
     [dishName]="selectedDish?.name"
     [dishPrice]="selectedDish?.price"
+    [dishCategoryName]="selectedDish?.dishCategoryName"
     (recipeSaved)="onRecipeSaved()"
   ></app-recipe-modal>
 

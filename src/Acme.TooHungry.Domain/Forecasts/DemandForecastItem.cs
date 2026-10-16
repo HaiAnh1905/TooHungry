@@ -6,6 +6,14 @@ namespace Acme.TooHungry.Forecasts;
 
 public class DemandForecastItem : FullAuditedEntity<Guid>
 {
+    public DemandForecastItem()
+    {
+    }
+
+    public DemandForecastItem(Guid id) : base(id)
+    {
+    }
+
     public Guid DemandForecastId { get; set; }
 
     public DemandForecast? DemandForecast { get; set; }

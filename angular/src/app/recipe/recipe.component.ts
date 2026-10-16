@@ -150,7 +150,6 @@ export class RecipeComponent implements OnInit {
         filter: '',
         skipCount: 0,
         maxResultCount: 1000,
-        isActive: true,
       }),
       recipesRes: this.recipeService
         .getList({
@@ -168,8 +167,11 @@ export class RecipeComponent implements OnInit {
         this.categoriesList = categoriesRes?.items || [];
         const recipeMap = new Map<string, RecipeDto>();
         (recipesRes?.items || []).forEach(r => {
-          if (r.dishId && r.isActive) {
-            recipeMap.set(r.dishId, r);
+          if (r.dishId) {
+            const existing = recipeMap.get(r.dishId);
+            if (!existing || (!existing.isActive && r.isActive)) {
+              recipeMap.set(r.dishId, r);
+            }
           }
         });
 

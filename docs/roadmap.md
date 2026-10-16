@@ -1,12 +1,12 @@
 # Roadmap Build — Acme.TooHungry (Restaurant Management)
 
 **Mục tiêu**: thứ tự build/hoàn thiện từng màn/chức năng.
-**Cập nhật**: 2026-10-09
+**Cập nhật**: 2026-10-16
 **Trạng thái item**: `chưa` (mặc định) / `đang` / `xong`.
 
 > **Nguồn liệt-kê-được**: File Entities trong thư mục `src/Acme.TooHungry.Domain` kết hợp với thư mục `specs`.
 > Đơn vị "màn/chức năng" = Quản lý (CRUD) một Entity hoặc một chức năng dùng chung.
-> Tổng 16 item sau khi gộp và ánh xạ với các đặc tả hiện có (từ RM-001 đến RM-016; đã đôn số lấp chỗ trống sau khi loại bỏ RM-010 Thực đơn trong ngày).
+> Tổng 18 item sau khi gộp và ánh xạ với các đặc tả hiện có (từ RM-001 đến RM-018; bổ sung RM-017 Làm lại trang quản lý bàn, RM-018 Làm mới trang Dashboard).
 >
 > **Chiến lược đã chốt (interview 2026-10-06 & cập nhật 2026-10-08)**:
 > 1. **Granularity**: 1 màn cho 1 Entity hoặc cụm tính năng liên quan chặt chẽ.
@@ -49,7 +49,7 @@
 > - Settings, Data, OpenIddict — phụ trợ hệ thống, không làm màn hình riêng hoặc gộp vào Identity.
 > - DailyMenus — thực đơn theo ngày (loại khỏi roadmap do gọi món POS lấy trực tiếp từ Master Data món ăn RM-006).
 >
-> **Cột `Spec`** = thư mục đặc tả SỞ HỮU item trong `specs/`, `—` = chưa có. Hiện **11/16 item có spec**.
+> **Cột `Spec`** = thư mục đặc tả SỞ HỮU item trong `specs/`, `—` = chưa có. Hiện **18/18 item có spec (100% độ phủ)**.
 
 ## Bảng tổng (thứ tự build)
 
@@ -67,10 +67,12 @@
 | RM-010 | POS / Đơn hàng (Orders) | operations | 3 | RM-006, RM-008, RM-015 | [010-rm-010-pos-ordering-and-billing](../specs/010-rm-010-pos-ordering-and-billing/spec.md) | xong |
 | RM-011 | Quản lý Tồn kho & Giao dịch | operations | 3 | RM-005 | [011-rm-011-inventory-transactions](../specs/011-rm-011-inventory-transactions/spec.md) | xong |
 | RM-012 | Giao diện Tồn kho (UI Redesign) | operations | 3 | RM-011 | [012-rm-012-inventory-ui-redesign](../specs/012-rm-012-inventory-ui-redesign/spec.md) | xong |
-| RM-013 | Tồn kho - Khóa/Khôi phục | operations | 3 | RM-011 | [013-rm-013-inventory-deactivate-restore](../specs/013-rm-013-inventory-deactivate-restore/spec.md) | chưa |
-| RM-014 | Dự báo (Forecasts) | operations | 4 | RM-010, RM-011, RM-016 | — | chưa |
-| RM-015 | Điều hướng & Bố cục Waiter (Waiter Routing & Layout) | waiter | 2 | RM-001, RM-002, RM-003 | [015-rm-015-waiter-routing-and-layout](../specs/015-rm-015-waiter-routing-and-layout/spec.md) | chưa |
+| RM-013 | Tồn kho - Khóa/Khôi phục | operations | 3 | RM-011 | [013-rm-013-inventory-deactivate-restore](../specs/013-rm-013-inventory-deactivate-restore/spec.md) | xong |
+| RM-014 | Dự báo (Forecasts) | operations | 4 | RM-010, RM-011, RM-016 | [014-rm-014-forecasts](../specs/014-rm-014-forecasts/spec.md) | xong |
+| RM-015 | Điều hướng & Bố cục Waiter (Waiter Routing & Layout) | waiter | 2 | RM-001, RM-002, RM-003 | [015-rm-015-waiter-routing-and-layout](../specs/015-rm-015-waiter-routing-and-layout/spec.md) | xong |
 | RM-016 | Thanh toán đơn hàng (Payment Page) | operations | 3 | RM-010 | [016-rm-016-payment-page](../specs/016-rm-016-payment-page/spec.md) | xong |
+| RM-017 | Làm lại trang Quản lý bàn (Table Management Redesign) | setup | 2 | RM-008, RM-015 | [017-rm-017-table-management-redesign](../specs/017-rm-017-table-management-redesign/spec.md) | xong |
+| RM-018 | Làm mới trang Dashboard (Dashboard Redesign) | dashboard | 4 | RM-002, RM-006, RM-008, RM-010, RM-011 | [018-rm-018-dashboard-redesign](../specs/018-rm-018-dashboard-redesign/spec.md) | xong |
 
 ## Chi tiết
 
@@ -290,24 +292,26 @@
   - (trống)
 
 ### RM-013 — Tồn kho - Khóa/Khôi phục (operations, Wave 3)
-- **Mô tả**: Thêm luồng khóa, ẩn sản phẩm khỏi kho hoặc khôi phục lại khi cần.
-- **Nguồn**: N/A
-- **Thực thể/CRUD**: InventoryItem — Deactivate, Restore.
-- **Backend**: Thêm API cho RM-011.
+- **Mô tả**: Quản lý vòng đời tạm ngưng, cách ly và khôi phục an toàn ở cả 2 cấp độ: Mặt hàng nguyên liệu (`Ingredient`) và Lô hàng thực tế (`InventoryBatch`). Hỗ trợ cơ chế vô hiệu hóa dây chuyền (Cascading Deactivation) đến Recipe/Dish, loại trừ lô bị khóa khỏi thuật toán FEFO, màn hình quản lý nguyên liệu đã vô hiệu hóa, và khôi phục thông minh (Smart Restoration) khi thiết lập kho.
+- **Nguồn**: `src/Acme.TooHungry.Domain/Ingredients`, `src/Acme.TooHungry.Domain/Inventories`, Angular UI (`/inventory`, `/ingredients/deactivated`)
+- **Thực thể/CRUD**: `Ingredient`, `InventoryBatch` — Deactivate, Reactivate, SmartRestore, DeactivateBatch, ReactivateBatch.
+- **Backend**: Đã hoàn thành toàn bộ Domain logic (`IngredientManager.DeactivateAsync` kích hoạt Cascading Deactivation tự động khóa Recipe & Dish liên quan nhưng bảo toàn đơn POS dở dang; `InventoryBatch` thêm `DeactivationReason` và cập nhật thuật toán FEFO loại bỏ lô Inactive), Application Services (`IngredientAppService`, `InventoryAppService`), DTOs, EF Core Migration, phân quyền chi tiết (`TooHungryPermissions.Inventories.DeactivateBatch`), và 100% test suites tự động.
+- **Frontend**: Đã hoàn thành Tab 1 & Tab 2 trên `/inventory` (Modal tạm ngưng kèm cảnh báo tồn kho, modal tạm khóa lô theo lý do mẫu, nút kích hoạt lại, bộ lọc trạng thái hoạt động), màn hình chuyên biệt `/ingredients/deactivated` bảng 4 cột tinh gọn, hộp thoại Khôi phục thông minh khi tạo nguyên liệu trùng tên bị khóa, huy hiệu cảnh báo vàng cam trên Recipe & Dish, và bộ từ điển i18n song ngữ đầy đủ (`en.json`, `vi.json`).
 - **Phụ thuộc**: RM-011
 - **Spec**: `specs/013-rm-013-inventory-deactivate-restore/`
-- **Trạng thái**: chưa
+- **Trạng thái**: xong
 - **Nợ phát sinh**:
   - (trống)
 
 ### RM-014 — Dự báo (operations, Wave 4)
-- **Mô tả**: Dự báo doanh thu, nguyên liệu cần mua dựa trên dữ liệu quá khứ.
-- **Nguồn**: `src/Acme.TooHungry.Domain/Forecasts`
-- **Thực thể/CRUD**: Forecast — list, gen báo cáo.
-- **Backend**: CHƯA CÓ — cần tạo API.
+- **Mô tả**: Dự báo doanh thu, nhu cầu món ăn và nguyên liệu cần mua dựa trên dữ liệu quá khứ.
+- **Nguồn**: `src/Acme.TooHungry.Domain/Forecasts`, `angular/src/app/forecast/`
+- **Thực thể/CRUD**: DemandForecast, DemandForecastItem, IngredientPlan, IngredientPlanItem — list, tạo, sửa, xóa, phân tích dự báo, bóc tách định lượng nguyên liệu, đối soát tồn kho và xuất bảng kê mua hàng.
+- **Backend**: Đã hoàn thành toàn diện Domain, EF Core DbContext, DTOs, Application Services (`DemandForecastAppService`, `IngredientPlanAppService`), Controllers (`ForecastController`), phân quyền (`TooHungryPermissions.Forecasts.*`), thuật toán SMA 7/14/30 ngày làm tròn trần, bóc tách công thức (Recipe Explosion) tự động sinh Kế hoạch nguyên liệu (`IngredientPlan`), đối soát tồn kho khả dụng (`CurrentStock`), tính toán số lượng gợi ý mua thêm và phân tích tài chính dự toán 4 thẻ KPI. 100% kiểm thử tự động đạt chuẩn PASS.
+- **Frontend**: Đã hoàn thành giao diện Angular chuẩn nhận diện Cam & Trắng (`/forecasts`, `/forecasts/detail/:id`), modal tạo dự báo tự động tính SMA (`ForecastCreateComponent`), màn hình chi tiết 4 thẻ KPI tài chính, 2 tab chuyển đổi (Món ăn & Kế hoạch nguyên liệu), phê duyệt kế hoạch, xuất file Excel CSV UTF-8 BOM (`KeHoachMuaHang_YYYYMMDD_YYYYMMDD.csv`) và in phiếu chuẩn bị bếp khổ A4 chuyên biệt (@media print). Đồng bộ 100% từ điển song ngữ trong `vi.json` và `en.json`.
 - **Phụ thuộc**: RM-010, RM-011, RM-016
-- **Spec**: —
-- **Trạng thái**: chưa
+- **Spec**: [014-rm-014-forecasts](../specs/014-rm-014-forecasts/spec.md)
+- **Trạng thái**: xong
 - **Nợ phát sinh**:
   - (trống)
 
@@ -326,7 +330,7 @@
 - **Backend**: Tận dụng ABP Identity / Role & Permission Management từ RM-003.
 - **Phụ thuộc**: RM-001, RM-002, RM-003
 - **Spec**: `specs/015-rm-015-waiter-routing-and-layout/`
-- **Trạng thái**: chưa
+- **Trạng thái**: xong
 - **Nợ phát sinh**:
   - (trống)
 
@@ -352,6 +356,39 @@
 - **Backend**: Cần API xác nhận thanh toán và cập nhật đồng thời trạng thái Order và Table (`CompletePaymentAsync`).
 - **Phụ thuộc**: RM-010
 - **Spec**: [016-rm-016-payment-page](../specs/016-rm-016-payment-page/spec.md)
+- **Trạng thái**: xong
+- **Nợ phát sinh**:
+  - (trống)
+
+### RM-017 — Làm lại trang Quản lý bàn (Table Management Redesign) (setup, Wave 2)
+- **Mô tả**: Tái thiết kế toàn diện giao diện và tối ưu trải nghiệm người dùng (UI/UX Redesign) cho phân hệ Quản lý Bàn ăn (`/tables` và `/waiter/tables`).
+  - **Mục tiêu chính**:
+    - Nâng cấp giao diện sơ đồ bàn / danh sách bàn ăn sang phong cách hiện đại, chuẩn nhận diện Cam & Trắng (`#EA580C`), bo góc mềm mại, hiển thị trực quan và thanh lịch.
+    - Cải tiến thẻ bàn (Table Card): Hiển thị rõ ràng trạng thái phục vụ, đồng bộ thời gian sử dụng bàn theo thời gian thực (Elapsed Seated Time), đếm thời lượng phiên dùng bữa, cảnh báo bàn ngồi lâu (> 90 phút).
+    - Tối ưu hóa các hộp thoại tương tác ngữ cảnh: Modal Đón khách, Đặt bàn trước (Reservation), Xác nhận kết thúc bữa ăn với Timeline tiến trình trực quan (`Seated At → Elapsed → Ended At`).
+    - Nâng cấp tính năng quản trị sơ đồ bàn của Admin/Manager (`/tables`): Chuyển bàn, gộp bàn, cấu hình sơ đồ khu vực linh hoạt, tối ưu hiệu năng render danh sách bàn số lượng lớn.
+    - Đảm bảo trải nghiệm Responsive mượt mà trên mọi thiết bị (máy POS bán hàng, tablet, mobile của nhân viên).
+- **Nguồn**: `angular/src/app/table/`, `angular/src/app/waiter/tables/`, `src/Acme.TooHungry.Domain/Tables`
+- **Thực thể/CRUD**: `RestaurantTable`, `DiningArea` — Redesign UI/UX, tái cấu trúc component, tối ưu luồng thao tác.
+- **Backend**: Tận dụng và mở rộng hệ thống API hiện có từ RM-008 và Realtime SignalR (`TableHub`).
+- **Phụ thuộc**: RM-008, RM-015
+- **Spec**: [017-rm-017-table-management-redesign](../specs/017-rm-017-table-management-redesign/spec.md)
+- **Trạng thái**: xong
+- **Nợ phát sinh**:
+  - (trống)
+
+### RM-018 — Làm mới trang Dashboard (Dashboard Redesign) (dashboard, Wave 4)
+- **Mô tả**: Tái thiết kế toàn diện giao diện và nâng cấp trải nghiệm Dashboard trung tâm (`/`), tối ưu cho quản lý nhà hàng và nhân viên vận hành:
+  - Nâng cấp visual chuẩn nhận diện Cam & Trắng (`#EA580C`), phong cách Bento Grid / Card hiện đại, hiển thị trực quan và tương thích responsive đa thiết bị (Desktop, Tablet).
+  - Khối KPI tổng quan thời gian thực: Doanh thu trong ngày, Tổng số đơn hàng, Tỷ lệ lấp đầy bàn ăn (Table Occupancy Rate), Cảnh báo tồn kho / nguyên liệu sắp hết / quá hạn.
+  - Biểu đồ thống kê trực quan: Biểu đồ xu hướng doanh thu & đơn hàng theo giờ trong ngày, Top món ăn bán chạy nhất (Best Sellers), Thống kê trạng thái bàn trực tiếp (Live Table Map Summary).
+  - Khối tác vụ nhanh (Quick Actions) điều hướng tiện lợi: Quản lý món ăn, Đặt bàn / Sơ đồ bàn, Kiểm kê kho, Xem báo cáo dự báo.
+  - Tích hợp cảnh báo vận hành thông minh và cập nhật số liệu theo thời gian thực (Realtime SignalR) mà không cần reload trang.
+- **Nguồn**: `angular/src/app/home/`, `src/Acme.TooHungry.Domain/Orders`, `src/Acme.TooHungry.Domain/Inventories`, `src/Acme.TooHungry.Domain/Tables`
+- **Thực thể/CRUD**: Dashboard DTOs / Aggregation Services — Tổng hợp dữ liệu từ `Order`, `RestaurantTable`, `Dish`, `InventoryBatch`.
+- **Backend**: Xây dựng Application Service chuyên biệt (`DashboardAppService` / `IDashboardAppService`) cung cấp endpoint tổng hợp thống kê tập trung (`GetDashboardSummaryAsync`), tối ưu hiệu năng truy vấn và tránh phân tán lời gọi API ở Frontend.
+- **Phụ thuộc**: RM-002, RM-006, RM-008, RM-010, RM-011
+- **Spec**: [018-rm-018-dashboard-redesign](../specs/018-rm-018-dashboard-redesign/spec.md)
 - **Trạng thái**: xong
 - **Nợ phát sinh**:
   - (trống)

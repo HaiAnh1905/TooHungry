@@ -1,0 +1,270 @@
+<abp-modal [(visible)]="visible" [busy]="isSaving">
+  <ng-template #abpHeader>
+    <div class="modal-header-tableform d-flex align-items-center gap-3">
+      <div class="header-icon-box">
+        <i class="fa fa-chair"></i>
+      </div>
+      <div>
+        <h4 class="modal-title m-0">
+          {{ isEdit ? ('::EditTable' | abpLocalization) : ('::AddNewTable' | abpLocalization) }}
+        </h4>
+        <p class="modal-subtitle m-0 text-muted">
+          {{ isEdit ? ('::EditTableSubtitle' | abpLocalization: (selectedTable?.name || '')) : ('::AddNewTableSubtitle' | abpLocalization) }}
+        </p>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #abpBody>
+    <form id="table-form" [formGroup]="form" (ngSubmit)="save()" class="table-form-body">
+      <!-- 1. Tên bàn ăn -->
+      <div class="form-field-group mb-3">
+        <label for="table-name" class="field-label">
+          <span>{{ '::TableName' | abpLocalization }}</span>
+          <span class="required-star">*</span>
+        </label>
+        <div class="input-with-icon">
+          <i class="fa fa-tag input-icon"></i>
+          <input
+            type="text"
+            id="table-name"
+            class="form-control custom-form-input"
+            formControlName="name"
+            [placeholder]="'::EnterTableNamePlaceholder' | abpLocalization"
+            [skipValidation]="true"
+            autofocus
+          />
+        </div>
+        @if (form.get('name')?.invalid && (form.get('name')?.touched || form.get('name')?.dirty)) {
+          <div class="field-validation-error mt-1">
+            <i class="fa fa-exclamation-circle me-1"></i>
+            <span>{{ { key: '::FieldRequired', defaultValue: 'Trường này là bắt buộc.' } | abpLocalization }}</span>
+          </div>
+        }
+      </div>
+
+      <!-- 2. Sức chứa & Trạng thái -->
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <div class="form-field-group">
+            <label for="table-capacity" class="field-label">
+              <span>{{ '::TableCapacity' | abpLocalization }}</span>
+              <span class="required-star">*</span>
+            </label>
+            <div class="input-with-icon">
+              <i class="fa fa-users input-icon"></i>
+              <input
+                type="number"
+                id="table-capacity"
+                class="form-control custom-form-input"
+                formControlName="capacity"
+                min="1"
+                [skipValidation]="true"
+              />
+            </div>
+            @if (form.get('capacity')?.invalid && (form.get('capacity')?.touched || form.get('capacity')?.dirty)) {
+              <div class="field-validation-error mt-1">
+                <i class="fa fa-exclamation-circle me-1"></i>
+                <span>{{ '::InvalidCapacity' | abpLocalization }}</span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-field-group">
+            <label class="field-label">
+              <span>{{ '::TableStatus' | abpLocalization }}</span>
+              <span class="required-star">*</span>
+            </label>
+            <div class="custom-dropdown-container position-relative">
+              <input type="hidden" formControlName="status" />
+
+              <div
+                class="custom-dropdown-trigger"
+                [class.is-open]="isStatusDropdownOpen"
+                (click)="toggleStatusDropdown($event)"
+                tabindex="0"
+              >
+                <div class="d-flex align-items-center text-truncate flex-grow-1 gap-2">
+                  <div class="trigger-status-badge status-{{ form.get('status')?.value }}">
+                    <i class="fa" [ngClass]="getSelectedStatusIcon(form.get('status')?.value)"></i>
+                  </div>
+                  <span class="selected-value-text text-truncate font-weight-bold">
+                    {{ getSelectedStatusLabel(form.get('status')?.value) }}
+                  </span>
+                </div>
+                <i class="fa fa-chevron-down chevron-arrow" [class.rotate]="isStatusDropdownOpen"></i>
+              </div>
+
+              @if (isStatusDropdownOpen) {
+                <div class="custom-dropdown-panel" (click)="$event.stopPropagation()">
+                  <div class="dropdown-items-scroll">
+                    @for (opt of statusOptionsList; track opt.value) {
+                      <div
+                        class="dropdown-option-item"
+                        [class.is-selected]="form.get('status')?.value === opt.value"
+                        (click)="selectTableStatus(opt.value)"
+                      >
+                        <div class="d-flex align-items-center flex-grow-1 gap-2">
+                          <span class="option-icon-box status-{{ opt.value }}">
+                            <i class="fa" [ngClass]="opt.icon"></i>
+                          </span>
+                          <div class="d-flex flex-column text-truncate">
+                            <span class="option-name font-weight-bold">{{ opt.key | abpLocalization }}</span>
+                            <span class="option-desc text-muted small">{{ opt.descKey | abpLocalization }}</span>
+                          </div>
+                        </div>
+                        @if (form.get('status')?.value === opt.value) {
+                          <i class="fa fa-check text-primary"></i>
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Khu vực bàn ăn (Dining Area) -->
+      <div class="form-field-group mb-2">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <label class="field-label m-0">
+            <span>{{ '::DiningArea' | abpLocalization }}</span>
+          </label>
+          <button
+            type="button"
+            class="btn-quick-add-area"
+            (click)="openCreateArea.emit()"
+          >
+            <i class="fa fa-plus me-1"></i>
+            <span>{{ '::AddNewDiningArea' | abpLocalization }}</span>
+          </button>
+        </div>
+
+        <div class="custom-dropdown-container position-relative">
+          <input type="hidden" formControlName="diningAreaId" />
+
+          <div
+            class="custom-dropdown-trigger"
+            [class.is-open]="isAreaDropdownOpen"
+            (click)="toggleAreaDropdown($event)"
+            tabindex="0"
+          >
+            <div class="d-flex align-items-center text-truncate flex-grow-1 gap-2">
+              <div class="trigger-icon-badge" [class.active]="!!form.get('diningAreaId')?.value">
+                <i class="fa fa-layer-group"></i>
+              </div>
+              @if (getSelectedAreaName(); as areaName) {
+                <span class="selected-value-text text-truncate font-weight-bold">{{ areaName }}</span>
+              } @else {
+                <span class="placeholder-text text-muted">{{ '::NoDiningArea' | abpLocalization }}</span>
+              }
+            </div>
+            <div class="d-flex align-items-center gap-1">
+              @if (form.get('diningAreaId')?.value) {
+                <button
+                  type="button"
+                  class="btn-clear-selection"
+                  (click)="clearSelectedArea($event)"
+                  [title]="'::Clear' | abpLocalization"
+                >
+                  <i class="fa fa-times"></i>
+                </button>
+              }
+              <i class="fa fa-chevron-down chevron-arrow" [class.rotate]="isAreaDropdownOpen"></i>
+            </div>
+          </div>
+
+          @if (isAreaDropdownOpen) {
+            <div class="custom-dropdown-panel" (click)="$event.stopPropagation()">
+              @if (diningAreas.length > 4) {
+                <div class="dropdown-search-box p-2 border-bottom">
+                  <input
+                    type="text"
+                    class="form-control form-control-sm"
+                    [(ngModel)]="areaDropdownSearch"
+                    [ngModelOptions]="{ standalone: true }"
+                    [placeholder]="'::SearchTablePlaceholder' | abpLocalization"
+                    (click)="$event.stopPropagation()"
+                  />
+                </div>
+              }
+
+              <div class="dropdown-items-scroll">
+                <!-- Không gán khu vực -->
+                <div
+                  class="dropdown-option-item"
+                  [class.is-selected]="!form.get('diningAreaId')?.value"
+                  (click)="selectDiningArea(null)"
+                >
+                  <div class="d-flex align-items-center flex-grow-1 gap-2">
+                    <span class="option-icon-box text-muted">
+                      <i class="fa fa-minus-circle"></i>
+                    </span>
+                    <span class="option-name text-muted">{{ '::NoDiningArea' | abpLocalization }}</span>
+                  </div>
+                  @if (!form.get('diningAreaId')?.value) {
+                    <i class="fa fa-check text-primary"></i>
+                  }
+                </div>
+
+                <!-- Danh sách khu vực -->
+                @for (area of getFilteredDiningAreas(); track area.id) {
+                  <div
+                    class="dropdown-option-item"
+                    [class.is-selected]="form.get('diningAreaId')?.value === area.id"
+                    (click)="selectDiningArea(area.id)"
+                  >
+                    <div class="d-flex align-items-center flex-grow-1 gap-2">
+                      <span class="option-icon-box text-primary">
+                        <i class="fa fa-layer-group"></i>
+                      </span>
+                      <div class="d-flex flex-column text-truncate">
+                        <span class="option-name font-weight-bold">{{ area.name }}</span>
+                        @if (area.description) {
+                          <span class="option-desc text-muted small">{{ area.description }}</span>
+                        }
+                      </div>
+                    </div>
+                    @if (form.get('diningAreaId')?.value === area.id) {
+                      <i class="fa fa-check text-primary"></i>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </form>
+  </ng-template>
+
+  <ng-template #abpFooter>
+    <div class="d-flex align-items-center justify-content-end gap-2 w-100">
+      <button
+        type="button"
+        class="btn btn-outline-secondary btn-cancel"
+        (click)="close()"
+        [disabled]="isSaving"
+      >
+        {{ '::Close' | abpLocalization }}
+      </button>
+      <button
+        form="table-form"
+        type="submit"
+        class="btn btn-primary btn-save"
+        [disabled]="form.invalid || isSaving"
+      >
+        @if (isSaving) {
+          <i class="fa fa-spinner fa-spin me-1"></i>
+        } @else {
+          <i class="fa fa-save me-1"></i>
+        }
+        <span>{{ '::Save' | abpLocalization }}</span>
+      </button>
+    </div>
+  </ng-template>
+</abp-modal>

@@ -51,9 +51,9 @@ export class IngredientModalComponent implements OnInit, OnChanges {
   }
 
   readonly consumptionMethodOptions: CustomSelectOption[] = [
-    { value: ConsumptionMethod.RECIPE, label: '::ConsumptionMethod:RECIPE', icon: 'fa-book-open', desc: 'Tự động trừ theo định lượng món ăn' },
-    { value: ConsumptionMethod.MANUAL, label: '::ConsumptionMethod:MANUAL', icon: 'fa-hand', desc: 'Kiểm kê hoặc xuất hủy thủ công' },
-    { value: ConsumptionMethod.HYBRID, label: '::ConsumptionMethod:HYBRID', icon: 'fa-shuffle', desc: 'Kết hợp cả công thức và thủ công' },
+    { value: ConsumptionMethod.RECIPE, label: '::ConsumptionMethod_RECIPE', icon: 'fa-book-open', desc: 'Tự động trừ theo định lượng món ăn' },
+    { value: ConsumptionMethod.MANUAL, label: '::ConsumptionMethod_MANUAL', icon: 'fa-hand', desc: 'Kiểm kê hoặc xuất hủy thủ công' },
+    { value: ConsumptionMethod.HYBRID, label: '::ConsumptionMethod_HYBRID', icon: 'fa-shuffle', desc: 'Kết hợp cả công thức và thủ công' },
   ];
 
   StorageTypeEnum = StorageType;

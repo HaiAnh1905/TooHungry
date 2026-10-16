@@ -1,0 +1,153 @@
+<abp-modal [(visible)]="visible" [busy]="isSubmitting">
+  <ng-template #abpHeader>
+    <div class="modal-header-endmeal d-flex align-items-center gap-3">
+      <div
+        class="header-icon-box"
+        [ngClass]="hasOrder ? 'icon-payment' : 'icon-free'"
+      >
+        <i
+          class="fas"
+          [ngClass]="hasOrder ? 'fa-credit-card' : 'fa-circle-info'"
+        ></i>
+      </div>
+      <div>
+        <h4 class="modal-title m-0">
+          {{ '::EndMealTitle' | abpLocalization }} - {{ table?.name }}
+        </h4>
+        <p class="modal-subtitle m-0 text-muted">
+          {{ hasOrder ? ('::EndMealWithOrderSubtitle' | abpLocalization) : ('::EndMealNoOrderSubtitle' | abpLocalization) }}
+        </p>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #abpBody>
+    <div class="end-meal-modal-body">
+      <!-- 1. CARD TIMELINE 3 MỐC THỜI GIAN CAO CẤP -->
+      @if (table?.occupiedTime) {
+        <div class="meal-session-timeline-card mb-3">
+          <div class="session-top-bar d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2">
+              <div class="session-badge-icon">
+                <i class="fas fa-stopwatch"></i>
+              </div>
+              <div>
+                <div class="session-title font-weight-bold">
+                  {{ '::TableDiningDuration' | abpLocalization }}
+                </div>
+                <div class="session-subtitle text-muted small">
+                  {{ table?.name }} • {{ '::TableMealSession' | abpLocalization }}
+                </div>
+              </div>
+            </div>
+            <div class="session-duration-pill">
+              <i class="fas fa-hourglass-half me-1"></i>
+              <span>{{ elapsedDurationText }}</span>
+            </div>
+          </div>
+
+          <div class="timeline-track-wrap mt-3">
+            <!-- Mốc 1: Nhận bàn -->
+            <div class="timeline-node start">
+              <div class="node-indicator">
+                <i class="fas fa-user-check"></i>
+              </div>
+              <div class="node-info">
+                <span class="node-label">{{ '::TableMealStartedAt' | abpLocalization }}</span>
+                <span class="node-time font-weight-bold">{{ table?.occupiedTime | date: 'HH:mm' }}</span>
+                <span class="node-date text-muted">{{ table?.occupiedTime | date: 'dd/MM/yyyy' }}</span>
+              </div>
+            </div>
+
+            <!-- Mốc 2: Đường nối thời lượng dùng bữa -->
+            <div class="timeline-connector">
+              <span class="connector-line"></span>
+              <span class="connector-pill">{{ elapsedDurationText }}</span>
+              <span class="connector-arrow">
+                <i class="fas fa-chevron-right"></i>
+              </span>
+            </div>
+
+            <!-- Mốc 3: Kết thúc bữa ăn -->
+            <div class="timeline-node end">
+              <div class="node-indicator">
+                <i class="fas fa-flag-checkered"></i>
+              </div>
+              <div class="node-info">
+                <span class="node-label">{{ '::TableMealEndedAt' | abpLocalization }}</span>
+                <span class="node-time font-weight-bold">{{ endingMealTime | date: 'HH:mm' }}</span>
+                <span class="node-date text-muted">{{ endingMealTime | date: 'dd/MM/yyyy' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- 2. PHÂN NHÁNH THÔNG MINH THEO TRẠNG THÁI ĐƠN HÀNG -->
+      @if (hasOrder) {
+        <!-- Nhánh 1: Có đơn hàng -->
+        <div class="alert alert-info alert-order-card d-flex align-items-start gap-3 m-0">
+          <i class="fas fa-receipt fs-3 mt-1 text-primary"></i>
+          <div>
+            <h5 class="alert-heading font-weight-bold m-0 mb-1">
+              {{ '::EndMealWithOrderTitle' | abpLocalization }}
+            </h5>
+            <p class="m-0 text-muted">
+              {{ '::EndMealWithOrderDesc' | abpLocalization: (table?.name || '') }}
+            </p>
+            <div class="mt-2 text-muted small">
+              <i class="fas fa-circle-info me-1 text-primary"></i>
+              {{ '::EndMealWithOrderNote' | abpLocalization }}
+            </div>
+          </div>
+        </div>
+      } @else {
+        <!-- Nhánh 2: Không có đơn hàng / Khách không dùng món -->
+        <div class="alert alert-warning alert-no-order-card d-flex align-items-start gap-3 m-0">
+          <i class="fas fa-triangle-exclamation fs-3 mt-1 text-warning"></i>
+          <div>
+            <h5 class="alert-heading font-weight-bold m-0 mb-1">
+              {{ '::EndMealNoOrderTitle' | abpLocalization }}
+            </h5>
+            <p class="m-0 text-muted">
+              {{ '::EndMealNoOrderDesc' | abpLocalization: (table?.name || '') }}
+            </p>
+          </div>
+        </div>
+      }
+    </div>
+  </ng-template>
+
+  <ng-template #abpFooter>
+    <div class="d-flex align-items-center justify-content-end gap-2 w-100">
+      <button
+        type="button"
+        class="btn btn-outline-secondary btn-cancel"
+        (click)="close()"
+        [disabled]="isSubmitting"
+      >
+        {{ '::Cancel' | abpLocalization }}
+      </button>
+
+      <button
+        type="button"
+        class="btn btn-action"
+        [ngClass]="hasOrder ? 'btn-payment' : 'btn-free'"
+        [disabled]="isSubmitting"
+        (click)="confirm()"
+      >
+        @if (isSubmitting) {
+          <i class="fas fa-spinner fa-spin me-1"></i>
+        } @else if (hasOrder) {
+          <i class="fas fa-arrow-right me-1"></i>
+        } @else {
+          <i class="fas fa-check me-1"></i>
+        }
+
+        <span>
+          {{ hasOrder ? ('::ProceedToPayment' | abpLocalization) : ('::ConfirmFreeTable' | abpLocalization) }}
+        </span>
+      </button>
+    </div>
+  </ng-template>
+</abp-modal>

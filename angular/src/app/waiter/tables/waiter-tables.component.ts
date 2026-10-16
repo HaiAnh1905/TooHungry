@@ -29,6 +29,9 @@ import { TableReservationDto } from '../../proxy/reservations/models';
 import { TableReservationModalComponent } from '../reservation-modal/table-reservation-modal.component';
 import { TableReservationDetailModalComponent } from '../reservation-modal/table-reservation-detail-modal.component';
 import { WaiterSidebarService } from '../services/waiter-sidebar.service';
+import { TableTransferModalComponent } from '../../shared/components/tables/table-transfer-modal.component';
+import { TableMergeModalComponent } from '../../shared/components/tables/table-merge-modal.component';
+import { TableEndMealModalComponent } from '../../shared/components/tables/table-end-meal-modal.component';
 
 @Component({
   selector: 'app-waiter-tables',
@@ -43,6 +46,9 @@ import { WaiterSidebarService } from '../services/waiter-sidebar.service';
     CustomSelectComponent,
     TableReservationModalComponent,
     TableReservationDetailModalComponent,
+    TableTransferModalComponent,
+    TableMergeModalComponent,
+    TableEndMealModalComponent,
   ],
   templateUrl: './waiter-tables.component.html',
   styleUrl: './waiter-tables.component.scss',
@@ -80,12 +86,19 @@ export class WaiterTablesComponent implements OnInit, AfterViewInit, OnDestroy {
   isReservationDetailModalOpen = false;
   selectedReservedTable: TableDto | null = null;
 
-  // Confirm End Meal Modal (2 cases)
+  // Modals (RM-017)
+  isTransferModalOpen = false;
+  selectedTransferTable: TableDto | null = null;
+
+  isMergeModalOpen = false;
+  selectedPrimaryMergeTable: TableDto | null = null;
+
   isEndMealModalOpen = false;
-  isEndingMeal = false;
-  endingMealTable: TableDto | null = null;
-  endingMealHasOrder = false;
-  endingMealOrderId: string | null = null;
+  selectedEndMealTable: TableDto | null = null;
+
+  // Timer cập nhật thời gian phục vụ mỗi 30s
+  readonly currentTime = signal<Date>(new Date());
+  private timerInterval?: any;
 
   private signalrSubscription?: Subscription;
 
@@ -204,6 +217,10 @@ export class WaiterTablesComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnInit() {
     this.loadData();
     this.listenToSignalr();
+    this.timerInterval = setInterval(() => {
+      this.currentTime.set(new Date());
+      this.cdr.markForCheck();
+    }, 30000);
   }
 
   ngAfterViewInit() {
@@ -217,6 +234,9 @@ export class WaiterTablesComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+    }
     this.signalrSubscription?.unsubscribe();
     this.sidebarService.clearTemplate();
   }
@@ -265,6 +285,12 @@ export class WaiterTablesComponent implements OnInit, AfterViewInit, OnDestroy {
             return {
               ...table,
               status: event.status as TableStatus,
+              occupiedTime:
+                event.occupiedTime !== undefined
+                  ? event.occupiedTime
+                  : event.status === TableStatus.Occupied
+                    ? (table.occupiedTime || new Date().toISOString())
+                    : undefined,
               ...(isCleared
                 ? {
                     reservedCustomerName: undefined,
@@ -274,6 +300,7 @@ export class WaiterTablesComponent implements OnInit, AfterViewInit, OnDestroy {
                     reservedNote: undefined,
                     hasActiveOrder: false,
                     activeOrderId: undefined,
+                    occupiedTime: undefined,
                   }
                 : {}),
             };
@@ -580,79 +607,53 @@ export class WaiterTablesComponent implements OnInit, AfterViewInit, OnDestroy {
     this.router.navigate(['/waiter/order', table.id]);
   }
 
-  // 9. Kết thúc bữa ăn 2 nhánh (OCCUPIED)
-  endMeal(table: TableDto) {
+  // 9. Thao tác thẻ bàn RM-017 (OCCUPIED)
+  openTransferModal(table: TableDto) {
     if (!table.id) return;
-    this.endingMealTable = table;
-    this.isEndingMeal = true;
-
-    // Kiểm tra xem bàn có đơn hàng đang hoạt động không
-    if (table.hasActiveOrder && table.activeOrderId) {
-      this.endingMealHasOrder = true;
-      this.endingMealOrderId = table.activeOrderId;
-      this.isEndingMeal = false;
-      this.isEndMealModalOpen = true;
-      this.cdr.markForCheck();
-      return;
-    }
-
-    // Nếu chưa chắc chắn, tra cứu từ OrderAppService
-    this.orderService.getActiveOrderByTableId(table.id).subscribe({
-      next: activeOrder => {
-        this.isEndingMeal = false;
-        if (activeOrder && activeOrder.id) {
-          this.endingMealHasOrder = true;
-          this.endingMealOrderId = activeOrder.id;
-        } else {
-          this.endingMealHasOrder = false;
-          this.endingMealOrderId = null;
-        }
-        this.isEndMealModalOpen = true;
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.isEndingMeal = false;
-        this.endingMealHasOrder = false;
-        this.endingMealOrderId = null;
-        this.isEndMealModalOpen = true;
-        this.cdr.markForCheck();
-      },
-    });
-  }
-
-  closeEndMealModal() {
-    this.isEndMealModalOpen = false;
-    this.endingMealTable = null;
-    this.endingMealOrderId = null;
+    this.selectedTransferTable = table;
+    this.isTransferModalOpen = true;
     this.cdr.markForCheck();
   }
 
-  confirmEndMeal() {
-    if (!this.endingMealTable || !this.endingMealTable.id) return;
+  onTableTransferred(event: { sourceTable: TableDto; targetTable: TableDto }) {
+    this.loadData();
+  }
 
-    if (this.endingMealHasOrder && this.endingMealOrderId) {
-      // Nhánh 2: Có order -> Điều hướng sang /payment/:orderId
-      const orderId = this.endingMealOrderId;
-      this.closeEndMealModal();
-      this.router.navigate(['/payment', orderId]);
+  openMergeModal(table: TableDto) {
+    if (!table.id) return;
+    this.selectedPrimaryMergeTable = table;
+    this.isMergeModalOpen = true;
+    this.cdr.markForCheck();
+  }
+
+  onTablesMerged(event: { primaryTable: TableDto; secondaryTable: TableDto }) {
+    this.loadData();
+  }
+
+  endMeal(table: TableDto) {
+    if (!table.id) return;
+    this.selectedEndMealTable = table;
+    this.isEndMealModalOpen = true;
+    this.cdr.markForCheck();
+  }
+
+  onMealEnded(event: { table: TableDto; action: 'freed' | 'payment'; orderId?: string }) {
+    if (event.action === 'freed') {
+      this.updateLocalTable(event.table);
     } else {
-      // Nhánh 1: Không có order -> Giải phóng bàn về Available
-      const tableId = this.endingMealTable.id;
-      const tableName = this.endingMealTable.name || '';
-      this.closeEndMealModal();
-
-      this.tableService.changeStatus(tableId, TableStatus.Available).subscribe({
-        next: updated => {
-          this.updateLocalTable(updated);
-          this.toaster.success(
-            this.localizationService.instant('::FreeTableSuccess', tableName)
-          );
-        },
-        error: err => {
-          this.handleError(err);
-        },
-      });
+      this.loadData();
     }
+  }
+
+  getMealDurationWarningClass(occupiedTime?: string | null): string {
+    const mins = this.getMealDurationMinutes(occupiedTime);
+    if (mins >= 90) {
+      return 'badge-meal-long pulse-warning';
+    }
+    if (mins >= 60) {
+      return 'badge-meal-warning';
+    }
+    return 'badge-meal-normal';
   }
 
   // Helper cập nhật local list mượt mà
@@ -729,6 +730,72 @@ export class WaiterTablesComponent implements OnInit, AfterViewInit, OnDestroy {
         return '::TableStatusDisabled';
       default:
         return '::Unknown';
+    }
+  }
+
+  // --- HELPER FORMAT THỜI GIAN DÙNG BỮA ---
+  getMealDuration(occupiedTime?: string | null, targetTime?: Date | null): string {
+    if (!occupiedTime) return '';
+    const start = new Date(occupiedTime).getTime();
+    if (isNaN(start)) return '';
+    const end = (targetTime || this.currentTime()).getTime();
+    const diffMs = Math.max(0, end - start);
+    const diffMins = Math.floor(diffMs / 60000);
+
+    if (diffMins < 1) {
+      return this.localizationService.instant('::JustSeated') || 'Vừa nhận bàn';
+    }
+
+    const hours = Math.floor(diffMins / 60);
+    const mins = diffMins % 60;
+
+    if (hours === 0) {
+      const minUnit = this.localizationService.instant('::MinutesShort') || 'phút';
+      return `${diffMins} ${minUnit}`;
+    }
+
+    const template = this.localizationService.instant('::HoursAndMinutes', hours.toString(), mins.toString());
+    if (template && !template.includes('::')) {
+      return template;
+    }
+    const hrUnit = this.localizationService.instant('::HoursShort') || 'giờ';
+    const minUnit = this.localizationService.instant('::MinutesShort') || 'phút';
+    return `${hours} ${hrUnit} ${mins} ${minUnit}`;
+  }
+
+  getMealDurationMinutes(occupiedTime?: string | null, targetTime?: Date | null): number {
+    if (!occupiedTime) return 0;
+    const start = new Date(occupiedTime).getTime();
+    if (isNaN(start)) return 0;
+    const end = (targetTime || this.currentTime()).getTime();
+    return Math.max(0, Math.floor((end - start) / 60000));
+  }
+
+  getActionLabel(action: string, hasActiveOrder: boolean = false): string {
+    const lang = this.localizationService.currentLang || 'vi';
+    const isVi = lang.toLowerCase().startsWith('vi');
+
+    switch (action) {
+      case 'order':
+        return hasActiveOrder ? (isVi ? 'Xem đơn' : 'View Order') : (isVi ? 'Gọi món' : 'Order');
+      case 'endMeal':
+        return isVi ? 'Kết thúc' : 'End Meal';
+      case 'transfer':
+        return isVi ? 'Đổi bàn' : 'Transfer';
+      case 'merge':
+        return isVi ? 'Gộp bàn' : 'Merge';
+      case 'seatGuests':
+        return isVi ? 'Đón khách' : 'Seat Guests';
+      case 'reserve':
+        return isVi ? 'Đặt lịch' : 'Reserve';
+      case 'disable':
+        return isVi ? 'Khóa bàn' : 'Disable';
+      case 'checkIn':
+        return isVi ? 'Nhận bàn' : 'Check In';
+      case 'reservationDetails':
+        return isVi ? 'Chi tiết' : 'Details';
+      default:
+        return '';
     }
   }
 }

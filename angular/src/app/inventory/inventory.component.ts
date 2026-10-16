@@ -1,5 +1,6 @@
 import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { CoreModule, LocalizationService } from '@abp/ng.core';
 import { Confirmation, ConfirmationService, ThemeSharedModule, ToasterService } from '@abp/ng.theme.shared';
@@ -62,6 +63,12 @@ export class InventoryComponent implements OnInit {
   private readonly toaster = inject(ToasterService);
   private readonly confirmation = inject(ConfirmationService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+
+  highlightedIngredientId: string | null = null;
+  highlightedBatchId: string | null = null;
+  highlightedBatchCode: string | null = null;
 
   activeTab: 'ingredients' | 'batches' | 'transactions' = 'ingredients';
 
@@ -113,10 +120,10 @@ export class InventoryComponent implements OnInit {
   }
 
   readonly storageTypeFilterOptions: CustomSelectOption[] = [
-    { value: 'all', label: '::AllStorageLifecycles', icon: 'fa-layer-group' },
-    { value: '0', label: '::StorageFresh', icon: 'fa-fish' },
-    { value: '1', label: '::StorageShortTerm', icon: 'fa-clock' },
-    { value: '2', label: '::StorageLongTerm', icon: 'fa-box-archive' },
+    { value: 'all', label: '::AllStorage', icon: 'fa-layer-group' },
+    { value: '0', label: '::StorageType_FRESH', icon: 'fa-leaf' },
+    { value: '1', label: '::StorageType_SHORT_TERM', icon: 'fa-snowflake' },
+    { value: '2', label: '::StorageType_LONG_TERM', icon: 'fa-box-archive' },
   ];
 
   readonly ingredientStatusFilterOptions: CustomSelectOption[] = [
@@ -248,6 +255,40 @@ export class InventoryComponent implements OnInit {
   };
 
   ngOnInit(): void {
+    this.route.queryParams.subscribe((params) => {
+      const hasAnyParams = Object.keys(params).length > 0;
+      if (!hasAnyParams) {
+        return;
+      }
+
+      if (params['tab']) {
+        this.activeTab = params['tab'] as any;
+      }
+      if (params['search']) {
+        this.searchTerm = params['search'];
+      }
+      if (params['ingredientId']) {
+        this.highlightedIngredientId = params['ingredientId'];
+      }
+      if (params['batchId']) {
+        this.highlightedBatchId = params['batchId'];
+      }
+      if (params['batchCode']) {
+        this.highlightedBatchCode = params['batchCode'];
+      }
+      if (this.ingredients.length > 0 || this.batches.length > 0) {
+        this.onFilterChange();
+      }
+
+      // Xóa query parameters trên thanh địa chỉ URL sau khi đã nhận xong
+      // để khi người dùng F5 / reload trang không bị kẹt từ khóa tìm kiếm
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: {},
+        replaceUrl: true,
+      });
+    });
+
     this.loadData();
   }
 
@@ -256,6 +297,13 @@ export class InventoryComponent implements OnInit {
     this.ingredientService.getList(true).subscribe({
       next: (res) => {
         this.ingredients = res?.items || [];
+        if (!this.searchTerm && this.highlightedIngredientId) {
+          const ing = this.ingredients.find((i) => i.id === this.highlightedIngredientId);
+          if (ing) {
+            this.searchTerm = ing.name;
+          }
+          this.highlightedIngredientId = null;
+        }
         this.applyIngredientFilter();
         this.calculateKpiSummary();
         this.isLoading = false;
@@ -270,6 +318,10 @@ export class InventoryComponent implements OnInit {
     this.inventoryService.getBatches().subscribe({
       next: (res) => {
         this.batches = res?.items || [];
+        if (this.activeTab === 'batches' && !this.searchTerm && this.highlightedBatchCode) {
+          this.searchTerm = this.highlightedBatchCode;
+          this.highlightedBatchCode = null;
+        }
         this.applyBatchFilter();
         this.calculateKpiSummary();
         this.cdr.markForCheck();
@@ -280,6 +332,20 @@ export class InventoryComponent implements OnInit {
     });
 
     this.loadAlerts();
+  }
+
+  navigateToAlertItem(alert: InventoryAlertDto): void {
+    const isBatchAlert =
+      alert.alertType === 'EXPIRED' ||
+      alert.alertType === 'EXPIRING_SOON' ||
+      !!alert.batchCode;
+    this.activeTab = isBatchAlert ? 'batches' : 'ingredients';
+    this.searchTerm = alert.ingredientName || alert.batchCode || '';
+    this.highlightedIngredientId = alert.ingredientId || null;
+    this.highlightedBatchId = alert.batchId || null;
+    this.highlightedBatchCode = alert.batchCode || null;
+    this.onFilterChange();
+    this.cdr.markForCheck();
   }
 
   loadAlerts(): void {
@@ -344,8 +410,19 @@ export class InventoryComponent implements OnInit {
     }
   }
 
+  clearSearch(): void {
+    this.searchTerm = '';
+    this.highlightedIngredientId = null;
+    this.highlightedBatchId = null;
+    this.highlightedBatchCode = null;
+    this.onFilterChange();
+  }
+
   resetFilters(): void {
     this.searchTerm = '';
+    this.highlightedIngredientId = null;
+    this.highlightedBatchId = null;
+    this.highlightedBatchCode = null;
     this.selectedStorageType = 'all';
     this.selectedIngredientStatus = 'active';
     this.selectedBatchActiveStatus = 'all';
@@ -726,6 +803,10 @@ export class InventoryComponent implements OnInit {
       next: () => {
         this.isSavingBatch = false;
         this.isNewBatchModalOpen = false;
+        this.highlightedIngredientId = null;
+        this.highlightedBatchId = null;
+        this.highlightedBatchCode = null;
+        this.searchTerm = '';
         this.cdr.detectChanges();
         this.toaster.success('Nhập lô hàng mới thành công');
         this.loadData();

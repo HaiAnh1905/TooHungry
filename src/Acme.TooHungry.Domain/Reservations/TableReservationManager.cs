@@ -164,6 +164,7 @@ public class TableReservationManager : DomainService
 
         var table = await _tableRepository.GetAsync(reservation.TableId);
         table.Status = TableStatus.Occupied;
+        table.OccupiedTime = DateTime.Now;
         table.ReservedCustomerName = null;
         table.ReservedCustomerPhone = null;
         table.ReservedTime = null;

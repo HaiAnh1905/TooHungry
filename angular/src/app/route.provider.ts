@@ -60,6 +60,14 @@ function configureRoutes() {
       requiredPolicy: 'TooHungry.Recipes',
     },
     {
+      path: '/forecasts',
+      name: '::Menu:Forecasts',
+      iconClass: 'fas fa-chart-line',
+      layout: eLayoutType.application,
+      order: 3,
+      requiredPolicy: 'TooHungry.Forecasts',
+    },
+    {
       path: '/orders',
       name: '::Menu:Orders',
       iconClass: 'fas fa-receipt',

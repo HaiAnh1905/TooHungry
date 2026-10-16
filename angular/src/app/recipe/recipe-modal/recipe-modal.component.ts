@@ -26,9 +26,10 @@ export class RecipeModalComponent implements OnInit, OnChanges {
   private readonly permissionService = inject(PermissionService);
   private readonly toaster = inject(ToasterService);
 
-  @Input() dishId?: string;
-  @Input() dishName?: string;
-  @Input() dishPrice?: number;
+  @Input() dishId?: string | null;
+  @Input() dishName?: string | null;
+  @Input() dishPrice?: number | null;
+  @Input() dishCategoryName?: string | null;
   @Input() visible = false;
   @Output() visibleChange = new EventEmitter<boolean>();
   @Output() recipeSaved = new EventEmitter<void>();
@@ -225,7 +226,7 @@ export class RecipeModalComponent implements OnInit, OnChanges {
 
   getWarehouseUnitName(ingredientId: string): string {
     const ing = this.availableIngredients.find((x) => x.id === ingredientId);
-    return ing?.unitName || '';
+    return ing?.unitName || ing?.baseUnit || '';
   }
 
   calculateWarehouseDeduction(index: number): number {

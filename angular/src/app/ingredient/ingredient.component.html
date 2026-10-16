@@ -100,6 +100,7 @@
   </div>
 
   <!-- 3. DATA TABLE CARD WITH SHARED TABLE -->
+  <!-- 3. DATA TABLE CARD WITH SHARED TABLE -->
   <div class="data-card-wrapper">
     <app-shared-table
       [data]="displayIngredients"
@@ -114,14 +115,14 @@
 
   <!-- Column Templates for SharedTable -->
   <ng-template #nameTpl let-row>
-    <div class="d-flex align-items-center text-truncate py-1">
-      <div class="theme-avatar-icon me-2">
+    <div class="d-flex align-items-center gap-2 py-1">
+      <div class="ingredient-avatar">
         <i class="fa fa-carrot"></i>
       </div>
-      <div>
-        <span class="main-name-text text-truncate d-block fw-bold" [title]="row.name">{{ row.name }}</span>
+      <div class="min-w-0">
+        <span class="ingredient-name text-truncate d-block fw-bold" [title]="row.name">{{ row.name }}</span>
         @if (!row.isActive && row.deactivationReason) {
-          <small class="text-danger d-block text-truncate" [title]="row.deactivationReason">
+          <small class="subtext-deactivated text-truncate d-block" [title]="row.deactivationReason">
             <i class="fa fa-info-circle me-1"></i>{{ row.deactivationReason }}
           </small>
         }
@@ -130,49 +131,62 @@
   </ng-template>
 
   <ng-template #unitTpl let-row>
-    <span class="badge-unit">
+    <span class="tag-unit">
       {{ row.baseUnit }}
     </span>
   </ng-template>
 
   <ng-template #storageTpl let-row>
-    <span class="badge-storage" [ngClass]="row.storageType === 1 ? 'storage-fresh' : (row.storageType === 2 ? 'storage-short' : 'storage-long')">
-      <i class="fa" [ngClass]="row.storageType === 1 ? 'fa-leaf' : (row.storageType === 2 ? 'fa-snowflake' : 'fa-box-archive')"></i>
-      <span>{{ (row.storageType === 1 ? '::StorageType_FRESH' : (row.storageType === 2 ? '::StorageType_SHORT_TERM' : '::StorageType_LONG_TERM')) | abpLocalization }}</span>
+    <span class="tag-storage" [ngClass]="row.storageType === 0 ? 'storage-fresh' : (row.storageType === 1 ? 'storage-short' : 'storage-long')">
+      <i class="fa" [ngClass]="row.storageType === 0 ? 'fa-leaf' : (row.storageType === 1 ? 'fa-snowflake' : 'fa-box-archive')"></i>
+      <span>{{ (row.storageType === 0 ? '::StorageType_FRESH' : (row.storageType === 1 ? '::StorageType_SHORT_TERM' : '::StorageType_LONG_TERM')) | abpLocalization }}</span>
     </span>
   </ng-template>
 
   <ng-template #consumptionTpl let-row>
-    <span class="badge-consumption" [ngClass]="row.consumptionMethod === 1 ? 'consumption-recipe' : (row.consumptionMethod === 2 ? 'consumption-manual' : 'consumption-hybrid')">
+    <span class="tag-consumption" [ngClass]="row.consumptionMethod === 1 ? 'consumption-recipe' : (row.consumptionMethod === 2 ? 'consumption-manual' : 'consumption-hybrid')">
       <i class="fa" [ngClass]="row.consumptionMethod === 1 ? 'fa-utensils' : (row.consumptionMethod === 2 ? 'fa-hand' : 'fa-sliders')"></i>
       <span>{{ (row.consumptionMethod === 1 ? '::ConsumptionMethod_RECIPE' : (row.consumptionMethod === 2 ? '::ConsumptionMethod_MANUAL' : '::ConsumptionMethod_HYBRID')) | abpLocalization }}</span>
     </span>
   </ng-template>
 
+  <ng-template #minStockTpl let-row>
+    <div class="text-end font-monospace">
+      <span class="stock-num-muted">{{ row.minStock | number:'1.0-2' }}</span>
+    </div>
+  </ng-template>
+
   <ng-template #priceTpl let-row>
-    <span class="price-text">
-      {{ (row.estimatedPrice || 0) | number:'1.0-2' }} đ
-    </span>
+    <div class="text-end font-monospace">
+      @if (row.estimatedPrice > 0) {
+        <span class="price-val-positive">{{ (row.estimatedPrice || 0) | number:'1.0-0' }} ₫</span>
+      } @else {
+        <span class="price-val-zero">0 ₫</span>
+      }
+    </div>
   </ng-template>
 
   <ng-template #stockTpl let-row>
-    <div class="d-flex flex-column gap-1">
+    <div class="d-flex flex-column align-items-end gap-1">
       <!-- Tồn an toàn -->
       <div>
         @if (row.currentStock <= 0) {
-          <span class="badge-stock stock-empty" [title]="'::StockStatus_OutOfStock' | abpLocalization">
-            <i class="fa fa-circle-exclamation me-1"></i>
-            <strong>0</strong> {{ row.baseUnit }}
+          <span class="stock-pill stock-empty" [title]="'::StockStatus_OutOfStock' | abpLocalization">
+            <i class="fa fa-circle-exclamation"></i>
+            <span class="stock-qty font-monospace">0</span>
+            <span class="stock-unit">{{ row.baseUnit }}</span>
           </span>
         } @else if (row.currentStock <= row.minStock) {
-          <span class="badge-stock stock-warning" [title]="'::StockStatus_LowStock' | abpLocalization">
-            <i class="fa fa-triangle-exclamation me-1"></i>
-            <strong>{{ row.currentStock | number:'1.0-2' }}</strong> {{ row.baseUnit }}
+          <span class="stock-pill stock-warning" [title]="'::StockStatus_LowStock' | abpLocalization">
+            <i class="fa fa-triangle-exclamation"></i>
+            <span class="stock-qty font-monospace">{{ row.currentStock | number:'1.0-2' }}</span>
+            <span class="stock-unit">{{ row.baseUnit }}</span>
           </span>
         } @else {
-          <span class="badge-stock stock-normal">
-            <i class="fa fa-check-circle me-1"></i>
-            <strong>{{ row.currentStock | number:'1.0-2' }}</strong> {{ row.baseUnit }}
+          <span class="stock-pill stock-normal" [title]="'::StockStatus_Normal' | abpLocalization">
+            <i class="fa fa-circle-check"></i>
+            <span class="stock-qty font-monospace">{{ row.currentStock | number:'1.0-2' }}</span>
+            <span class="stock-unit">{{ row.baseUnit }}</span>
           </span>
         }
       </div>
@@ -180,9 +194,10 @@
       <!-- Cảnh báo quá hạn -->
       @if (row.expiredStock > 0) {
         <div>
-          <span class="badge-expired" [title]="'::ExpiredStockWarning' | abpLocalization">
-            <i class="fa fa-clock-rotate-left me-1"></i>
-            {{ row.expiredStock | number:'1.0-2' }} {{ row.baseUnit }} quá hạn
+          <span class="stock-expired-pill" [title]="'::ExpiredStockWarning' | abpLocalization">
+            <i class="fa fa-clock-rotate-left"></i>
+            <span class="font-monospace">{{ row.expiredStock | number:'1.0-2' }}</span>
+            <span>{{ row.baseUnit }} {{ '::ExpiredSuffix' | abpLocalization }}</span>
           </span>
         </div>
       }
@@ -190,22 +205,24 @@
   </ng-template>
 
   <ng-template #statusTpl let-row>
-    <span
-      class="badge-status"
-      [ngClass]="row.isActive !== false ? 'badge-active' : 'badge-inactive'"
-    >
-      <i class="fa" [ngClass]="row.isActive !== false ? 'fa-check-circle' : 'fa-pause-circle'"></i>
-      <span>{{ (row.isActive !== false ? '::IngredientStatusActive' : '::IngredientStatusInactive') | abpLocalization }}</span>
-    </span>
+    <div class="d-flex justify-content-center">
+      <span
+        class="status-indicator"
+        [ngClass]="row.isActive !== false ? 'status-active' : 'status-inactive'"
+      >
+        <span class="status-dot"></span>
+        <span class="status-label">{{ (row.isActive !== false ? '::IngredientStatusActive' : '::IngredientStatusInactive') | abpLocalization }}</span>
+      </span>
+    </div>
   </ng-template>
 
   <ng-template #actionsTpl let-row>
-    <div class="actions-container d-flex align-items-center gap-2">
+    <div class="actions-wrapper d-flex align-items-center justify-content-center gap-1">
       <!-- Nút Chỉnh sửa -->
       <button
         *abpPermission="'TooHungry.Ingredients.Edit'"
         type="button"
-        class="icon-action-btn btn-edit"
+        class="action-btn btn-edit"
         (click)="editIngredient(row)"
         [title]="'::Edit' | abpLocalization"
       >
@@ -217,7 +234,7 @@
         <button
           *abpPermission="'TooHungry.Ingredients.Edit'"
           type="button"
-          class="icon-action-btn btn-deactivate"
+          class="action-btn btn-deactivate"
           (click)="openDeactivateModal(row)"
           [title]="'::DeactivateIngredient' | abpLocalization"
         >
@@ -230,7 +247,7 @@
         <button
           *abpPermission="'TooHungry.Ingredients.Edit'"
           type="button"
-          class="icon-action-btn btn-reactivate"
+          class="action-btn btn-reactivate"
           (click)="openReactivateModal(row)"
           [title]="'::ReactivateIngredient' | abpLocalization"
         >
@@ -242,7 +259,7 @@
       <button
         *abpPermission="'TooHungry.Ingredients.Delete'"
         type="button"
-        class="icon-action-btn btn-delete"
+        class="action-btn btn-delete"
         (click)="deleteIngredient(row)"
         [title]="'::Delete' | abpLocalization"
       >
@@ -251,214 +268,357 @@
     </div>
   </ng-template>
 
-  <!-- 4. MODAL THÊM MỚI / CHỈNH SỬA -->
-  <app-shared-modal
-    [(isVisible)]="isModalOpen"
-    [title]="modalTitle"
-    [confirmLoading]="isSaving"
-    (onOk)="save()"
-    (onCancel)="closeModal()"
+  <!-- 4. MODAL THÊM MỚI / CHỈNH SỬA (CHUẨN HÓA THEO THIẾT KẾ TOOHUNGRY) -->
+  <abp-modal
+    [(visible)]="isModalOpen"
+    [options]="{
+      size: 'lg',
+      centered: true,
+      scrollable: false,
+      windowClass: 'ingredient-manage-modal',
+      modalDialogClass: 'ingredient-manage-dialog'
+    }"
   >
-    <form [formGroup]="form" (ngSubmit)="save()" class="ingredient-modal-form py-2">
-      <!-- Tên nguyên liệu -->
-      <div class="form-group mb-3">
-        <label class="form-label fw-bold mb-1" for="ingredient-name">
-          {{ '::IngredientName' | abpLocalization }} <span class="text-danger">*</span>
-        </label>
-        <input
-          id="ingredient-name"
-          type="text"
-          class="form-control modern-input"
-          formControlName="name"
-          [placeholder]="'::EnterDishName' | abpLocalization"
-        />
-        @if (form.get('name')?.invalid && form.get('name')?.touched) {
-          <div class="text-danger small mt-1">
-            {{ '::FieldRequired' | abpLocalization }}
-          </div>
-        }
-      </div>
-
-      <!-- Đơn vị tính -->
-      <div class="form-group mb-3">
-        <div class="d-flex align-items-center justify-content-between mb-1">
-          <label class="form-label fw-bold m-0" for="ingredient-unit">
-            {{ '::IngredientUnit' | abpLocalization }} <span class="text-danger">*</span>
-          </label>
-          @if (isEditMode && selectedItem?.canEditUnit === false) {
-            <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1 small">
-              <i class="fa fa-lock me-1"></i>{{ '::IngredientUnitLockedTooltip' | abpLocalization }}
-            </span>
-          }
+    <ng-template #abpHeader>
+      <div class="d-flex align-items-center gap-3">
+        <div class="modal-header-icon">
+          <i class="fa fa-carrot"></i>
         </div>
-
-        <app-custom-select
-          [options]="unitOptions"
-          formControlName="unitId"
-          minWidth="100%"
-        ></app-custom-select>
-
-        @if (isEditMode && selectedItem?.canEditUnit === false) {
-          <div class="alert alert-warning py-1 px-2 mt-2 small d-flex align-items-center gap-2">
-            <i class="fa fa-exclamation-triangle"></i>
-            <span>{{ '::IngredientUnitLockedNotice' | abpLocalization }}</span>
-          </div>
-        }
-        @if (form.get('unitId')?.invalid && form.get('unitId')?.touched) {
-          <div class="text-danger small mt-1">
-            {{ '::FieldRequired' | abpLocalization }}
-          </div>
-        }
+        <div>
+          <h5 class="m-0 modal-title-text">
+            {{ (isEditMode ? '::EditIngredient' : '::NewIngredient') | abpLocalization }}
+          </h5>
+          <span class="modal-subtitle-text">
+            {{ (isEditMode ? '::EditIngredientSubtitle' : '::NewIngredientSubtitle') | abpLocalization }}
+          </span>
+        </div>
       </div>
+    </ng-template>
 
-      <!-- Tồn tối thiểu & Đơn giá tham khảo -->
-      <div class="row g-3 mb-3">
-        <div class="col-md-6">
-          <label class="form-label fw-bold mb-1" for="min-stock">
-            {{ '::MinStock' | abpLocalization }} <span class="text-danger">*</span>
-          </label>
-          <div class="input-group">
+    <ng-template #abpBody>
+      <form id="ingredient-form" [formGroup]="form" (ngSubmit)="save()" class="ingredient-modal-form theme-modal-form">
+        <div class="row g-3">
+          <!-- Cột TRÁI: Tên nguyên liệu -->
+          <div class="col-md-6 form-field-group mb-0">
+            <label for="ingredient-name" class="field-label">
+              <span>{{ '::IngredientName' | abpLocalization }}</span>
+              <span class="required-star">*</span>
+            </label>
             <input
-              id="min-stock"
-              type="number"
-              min="0"
-              step="any"
+              type="text"
+              id="ingredient-name"
               class="form-control modern-input"
-              formControlName="minStock"
+              formControlName="name"
+              [placeholder]="'::EnterIngredientName' | abpLocalization"
+              autofocus
             />
+            @if (form.get('name')?.invalid && form.get('name')?.touched) {
+              <div class="text-danger small mt-1">
+                {{ '::FieldRequired' | abpLocalization }}
+              </div>
+            }
           </div>
-          @if (form.get('minStock')?.invalid && form.get('minStock')?.touched) {
-            <div class="text-danger small mt-1">
-              {{ '::Ingredient:InvalidMinStock' | abpLocalization }}
-            </div>
-          }
-        </div>
 
-        <div class="col-md-6">
-          <label class="form-label fw-bold mb-1" for="estimated-price">
-            {{ '::EstimatedPrice' | abpLocalization }} (VND)
-          </label>
-          <div class="input-group">
-            <input
-              id="estimated-price"
-              type="number"
-              min="0"
-              step="any"
-              class="form-control modern-input"
-              formControlName="estimatedPrice"
-            />
+          <!-- Cột PHẢI: Đơn vị tính -->
+          <div class="col-md-6 form-field-group mb-0">
+            <div class="d-flex align-items-center justify-content-between">
+              <label class="field-label mb-0">
+                <span>{{ '::IngredientUnit' | abpLocalization }}</span>
+                <span class="required-star">*</span>
+              </label>
+              @if (isEditMode && selectedItem?.canEditUnit === false) {
+                <span
+                  class="badge badge-unit-locked"
+                  [title]="'::IngredientUnitLockedNotice' | abpLocalization"
+                >
+                  <i class="fa fa-lock me-1"></i>{{ '::UnitLocked' | abpLocalization }}
+                </span>
+              }
+            </div>
+            <div class="mt-1">
+              <app-custom-select
+                [options]="unitOptions"
+                formControlName="unitId"
+                minWidth="100%"
+                [disabled]="isEditMode && selectedItem?.canEditUnit === false"
+              ></app-custom-select>
+            </div>
+            @if (form.get('unitId')?.invalid && form.get('unitId')?.touched) {
+              <div class="text-danger small mt-1">
+                {{ '::FieldRequired' | abpLocalization }}
+              </div>
+            }
           </div>
-          @if (form.get('estimatedPrice')?.invalid && form.get('estimatedPrice')?.touched) {
-            <div class="text-danger small mt-1">
-              {{ '::Ingredient:InvalidEstimatedPrice' | abpLocalization }}
+
+          <!-- Cột TRÁI: Tồn kho tối thiểu (Min Stock) -->
+          <div class="col-md-6 form-field-group mb-0">
+            <label for="min-stock" class="field-label">
+              <span>{{ '::MinStock' | abpLocalization }}</span>
+              <span class="required-star">*</span>
+            </label>
+            <div class="input-group modern-input-group">
+              <input
+                id="min-stock"
+                type="number"
+                min="0"
+                step="any"
+                class="form-control modern-input"
+                formControlName="minStock"
+              />
+              <span class="input-group-text unit-suffix" *ngIf="currentUnitSuffix">
+                {{ currentUnitSuffix }}
+              </span>
             </div>
-          }
-        </div>
-      </div>
+            @if (form.get('minStock')?.hasError('min') && form.get('minStock')?.touched) {
+              <div class="text-danger small mt-1">
+                {{ '::Ingredient:InvalidMinStock' | abpLocalization }}
+              </div>
+            }
+          </div>
 
-      <!-- Loại bảo quản & Phương thức tiêu hao -->
-      <div class="row g-3 mb-3">
-        <div class="col-md-6">
-          <label class="form-label fw-bold mb-1">
-            {{ '::StorageType' | abpLocalization }}
-          </label>
-          <app-custom-select
-            [options]="storageSelectOptions"
-            formControlName="storageType"
-            minWidth="100%"
-          ></app-custom-select>
-        </div>
+          <!-- Cột PHẢI: Giá ước tính (Estimated Price) -->
+          <div class="col-md-6 form-field-group mb-0">
+            <label for="estimated-price" class="field-label">
+              <span>{{ '::EstimatedPrice' | abpLocalization }} (VND)</span>
+            </label>
+            <div class="input-group modern-input-group">
+              <input
+                id="estimated-price"
+                type="number"
+                min="0"
+                step="any"
+                class="form-control modern-input"
+                formControlName="estimatedPrice"
+              />
+              <span class="input-group-text currency-suffix">VND</span>
+            </div>
+            @if (form.get('estimatedPrice')?.hasError('min') && form.get('estimatedPrice')?.touched) {
+              <div class="text-danger small mt-1">
+                {{ '::Ingredient:InvalidEstimatedPrice' | abpLocalization }}
+              </div>
+            }
+          </div>
 
-        <div class="col-md-6">
-          <label class="form-label fw-bold mb-1">
-            {{ '::ConsumptionMethod' | abpLocalization }}
-          </label>
-          <app-custom-select
-            [options]="consumptionSelectOptions"
-            formControlName="consumptionMethod"
-            minWidth="100%"
-          ></app-custom-select>
-        </div>
-      </div>
+          <!-- Cột TRÁI: Loại bảo quản (Storage Type) -->
+          <div class="col-md-6 form-field-group mb-0">
+            <label class="field-label">
+              <span>{{ '::StorageType' | abpLocalization }}</span>
+            </label>
+            <app-custom-select
+              [options]="storageSelectOptions"
+              formControlName="storageType"
+              minWidth="100%"
+              placement="top"
+            ></app-custom-select>
+          </div>
 
-      <!-- Ghi chú về Ranh giới Quản lý kho (RM-012) -->
-      <div class="alert alert-light border py-2 px-3 mt-2 text-muted small d-flex align-items-start gap-2">
-        <i class="fa fa-info-circle text-primary mt-1"></i>
-        <span>
-          <strong>Lưu ý:</strong> Dữ liệu tồn kho thực tế và quản lý hạn sử dụng theo lô BẮT BUỘC thực hiện thông qua Phiếu nhập kho tại phân hệ <em>Quản lý kho (RM-012)</em>. Màn hình danh mục nguyên liệu không cho phép nhập trực tiếp số lượng tồn ban đầu.
-        </span>
-      </div>
-    </form>
-  </app-shared-modal>
+          <!-- Cột PHẢI: Phương thức tiêu hao (Consumption Method) -->
+          <div class="col-md-6 form-field-group mb-0">
+            <label class="field-label">
+              <span>{{ '::ConsumptionMethod' | abpLocalization }}</span>
+            </label>
+            <app-custom-select
+              [options]="consumptionSelectOptions"
+              formControlName="consumptionMethod"
+              minWidth="100%"
+              placement="top"
+            ></app-custom-select>
+          </div>
+
+          <!-- Thông báo ranh giới quản lý kho (RM-012) -->
+          <div class="col-12 mt-1">
+            <div class="ingredient-policy-notice d-flex align-items-center gap-2">
+              <i class="fa fa-circle-info text-primary flex-shrink-0"></i>
+              <div class="notice-content">
+                <strong>{{ '::IngredientStockNoticeTitle' | abpLocalization }}</strong>
+                <span>{{ '::IngredientStockNoticeDesc' | abpLocalization }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </ng-template>
+
+    <ng-template #abpFooter>
+      <button type="button" class="btn btn-outline-secondary px-3" (click)="closeModal()">
+        {{ '::Cancel' | abpLocalization }}
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary btn-save px-4"
+        (click)="save()"
+        [disabled]="form.invalid || isSaving"
+      >
+        <i class="fa fa-check me-1" *ngIf="!isSaving"></i>
+        <i class="fa fa-spinner fa-spin me-1" *ngIf="isSaving"></i>
+        <span>{{ '::Save' | abpLocalization }}</span>
+      </button>
+    </ng-template>
+  </abp-modal>
 
   <!-- 5. MODAL TẠM NGƯNG NGUYÊN LIỆU (DEACTIVATE) -->
-  <app-shared-modal
-    [(isVisible)]="isDeactivateModalOpen"
-    [title]="'::DeactivateIngredient' | abpLocalization"
-    [confirmLoading]="isDeactivating"
-    (onOk)="confirmDeactivate()"
-    (onCancel)="closeDeactivateModal()"
+  <abp-modal
+    [(visible)]="isDeactivateModalOpen"
+    [options]="{
+      size: 'md',
+      centered: true,
+      scrollable: false,
+      windowClass: 'ingredient-action-modal',
+      modalDialogClass: 'ingredient-action-dialog'
+    }"
   >
-    <form [formGroup]="deactivateForm" (ngSubmit)="confirmDeactivate()" class="py-2">
-      <div class="alert alert-warning d-flex align-items-center gap-2 mb-3">
-        <i class="fa fa-triangle-exclamation"></i>
-        <span>Bạn sắp tạm ngưng sử dụng nguyên liệu <strong>{{ deactivatingItem?.name }}</strong>. Hãy cung cấp lý do tạm ngưng.</span>
-      </div>
-
-      <div class="form-group mb-2">
-        <label class="form-label fw-bold mb-1" for="deactivate-reason">
-          {{ '::DeactivationReason' | abpLocalization }} <span class="text-danger">*</span>
-        </label>
-        <textarea
-          id="deactivate-reason"
-          class="form-control modern-input"
-          rows="3"
-          formControlName="reason"
-          [placeholder]="'::EnterDeactivationReason' | abpLocalization"
-        ></textarea>
-        @if (deactivateForm.get('reason')?.invalid && deactivateForm.get('reason')?.touched) {
-          <div class="text-danger small mt-1">
-            {{ '::FieldRequired' | abpLocalization }}
-          </div>
-        }
-      </div>
-    </form>
-  </app-shared-modal>
-
-  <!-- 6. MODAL KHÔI PHỤC THÔNG MINH (SMART RESTORE) -->
-  <app-shared-modal
-    [(isVisible)]="isRestoreModalOpen"
-    [title]="'::IngredientAlreadyInactiveTitle' | abpLocalization"
-    [confirmLoading]="isRestoring"
-    (onOk)="confirmRestore()"
-    (onCancel)="closeRestoreModal()"
-  >
-    <form [formGroup]="restoreForm" (ngSubmit)="confirmRestore()" class="py-2">
-      <div class="alert alert-info d-flex align-items-start gap-2 mb-3">
-        <i class="fa fa-info-circle mt-1"></i>
+    <ng-template #abpHeader>
+      <div class="d-flex align-items-center gap-3">
+        <div class="modal-header-icon modal-header-icon-warning">
+          <i class="fa fa-triangle-exclamation"></i>
+        </div>
         <div>
-          <p class="m-0 mb-1">
-            Nguyên liệu <strong>{{ restoringItemName }}</strong> đã từng tồn tại trong hệ thống nhưng đang ở trạng thái <strong>Tạm ngưng</strong>.
-          </p>
-          <p class="m-0 small text-muted">
-            Bạn có thể kích hoạt lại nguyên liệu này và cập nhật định mức tồn tối thiểu mới nếu cần.
-          </p>
+          <h5 class="m-0 modal-title-text">
+            {{ '::DeactivateIngredient' | abpLocalization }}
+          </h5>
+          <span class="modal-subtitle-text">
+            {{ deactivatingItem?.name }}
+          </span>
         </div>
       </div>
+    </ng-template>
 
-      <div class="form-group mb-2">
-        <label class="form-label fw-bold mb-1" for="new-min-stock">
-          {{ '::NewMinStockOptional' | abpLocalization }}
-        </label>
-        <input
-          id="new-min-stock"
-          type="number"
-          min="0"
-          step="any"
-          class="form-control modern-input"
-          formControlName="newMinStock"
-        />
+    <ng-template #abpBody>
+      <form [formGroup]="deactivateForm" (ngSubmit)="confirmDeactivate()" class="ingredient-action-form">
+        <!-- Hộp cảnh báo tác động -->
+        <div class="action-alert-box alert-warning-box mb-3 d-flex align-items-start gap-2">
+          <i class="fa fa-circle-exclamation text-warning mt-1 fs-5 flex-shrink-0"></i>
+          <div>
+            <div class="alert-title">{{ '::Warning' | abpLocalization }}</div>
+            <div class="alert-desc">
+              {{ '::DeactivateIngredientNotice' | abpLocalization: (deactivatingItem?.name || '') }}
+            </div>
+          </div>
+        </div>
+
+        <div class="form-field-group mb-0">
+          <label class="field-label" for="deactivate-reason">
+            <span>{{ '::DeactivationReason' | abpLocalization }}</span>
+            <span class="required-star">*</span>
+          </label>
+          <textarea
+            id="deactivate-reason"
+            class="form-control modern-textarea"
+            rows="3"
+            formControlName="reason"
+            [placeholder]="'::EnterDeactivationReason' | abpLocalization"
+            autofocus
+          ></textarea>
+          @if (deactivateForm.get('reason')?.invalid && deactivateForm.get('reason')?.touched) {
+            <div class="text-danger small mt-1 d-flex align-items-center gap-1">
+              <i class="fa fa-circle-xmark"></i>
+              <span>{{ '::FieldRequired' | abpLocalization }}</span>
+            </div>
+          }
+        </div>
+      </form>
+    </ng-template>
+
+    <ng-template #abpFooter>
+      <button
+        type="button"
+        class="btn btn-outline-secondary px-3"
+        (click)="closeDeactivateModal()"
+        [disabled]="isDeactivating"
+      >
+        {{ '::Cancel' | abpLocalization }}
+      </button>
+      <button
+        type="button"
+        class="btn btn-warning-action px-4"
+        (click)="confirmDeactivate()"
+        [disabled]="deactivateForm.invalid || isDeactivating"
+      >
+        <i class="fa fa-pause me-1" *ngIf="!isDeactivating"></i>
+        <i class="fa fa-spinner fa-spin me-1" *ngIf="isDeactivating"></i>
+        <span>{{ '::ConfirmDeactivate' | abpLocalization }}</span>
+      </button>
+    </ng-template>
+  </abp-modal>
+
+  <!-- 6. MODAL KHÔI PHỤC THÔNG MINH (SMART RESTORE) -->
+  <abp-modal
+    [(visible)]="isRestoreModalOpen"
+    [options]="{
+      size: 'md',
+      centered: true,
+      scrollable: false,
+      windowClass: 'ingredient-action-modal',
+      modalDialogClass: 'ingredient-action-dialog'
+    }"
+  >
+    <ng-template #abpHeader>
+      <div class="d-flex align-items-center gap-3">
+        <div class="modal-header-icon modal-header-icon-success">
+          <i class="fa fa-rotate-left"></i>
+        </div>
+        <div>
+          <h5 class="m-0 modal-title-text">
+            {{ '::IngredientAlreadyInactiveTitle' | abpLocalization }}
+          </h5>
+          <span class="modal-subtitle-text">
+            {{ restoringItemName }}
+          </span>
+        </div>
       </div>
-    </form>
-  </app-shared-modal>
+    </ng-template>
+
+    <ng-template #abpBody>
+      <form [formGroup]="restoreForm" (ngSubmit)="confirmRestore()" class="ingredient-action-form">
+        <div class="action-alert-box alert-info-box mb-3 d-flex align-items-start gap-2">
+          <i class="fa fa-circle-info text-success mt-1 fs-5 flex-shrink-0"></i>
+          <div>
+            <div class="alert-desc mb-1">
+              {{ '::IngredientRestoreNotice' | abpLocalization: restoringItemName }}
+            </div>
+            <div class="small text-muted">
+              {{ '::IngredientRestoreHint' | abpLocalization }}
+            </div>
+          </div>
+        </div>
+
+        <div class="form-field-group mb-0">
+          <label class="field-label" for="new-min-stock">
+            <span>{{ '::NewMinStockOptional' | abpLocalization }}</span>
+          </label>
+          <div class="input-group modern-input-group">
+            <input
+              id="new-min-stock"
+              type="number"
+              min="0"
+              step="any"
+              class="form-control modern-input"
+              formControlName="newMinStock"
+            />
+          </div>
+        </div>
+      </form>
+    </ng-template>
+
+    <ng-template #abpFooter>
+      <button
+        type="button"
+        class="btn btn-outline-secondary px-3"
+        (click)="closeRestoreModal()"
+        [disabled]="isRestoring"
+      >
+        {{ '::Cancel' | abpLocalization }}
+      </button>
+      <button
+        type="button"
+        class="btn btn-success-action px-4"
+        (click)="confirmRestore()"
+        [disabled]="isRestoring"
+      >
+        <i class="fa fa-rotate-left me-1" *ngIf="!isRestoring"></i>
+        <i class="fa fa-spinner fa-spin me-1" *ngIf="isRestoring"></i>
+        <span>{{ '::ConfirmReactivate' | abpLocalization }}</span>
+      </button>
+    </ng-template>
+  </abp-modal>
 </div>

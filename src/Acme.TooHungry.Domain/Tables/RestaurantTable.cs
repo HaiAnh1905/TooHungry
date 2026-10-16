@@ -27,6 +27,11 @@ public class RestaurantTable : FullAuditedAggregateRoot<Guid>
     public int? ReservedGuestCount { get; set; }
     public string? ReservedNote { get; set; }
 
+    /// <summary>
+    /// Thời điểm bàn bắt đầu có khách ngồi (Occupied) để tính thời gian dùng bữa
+    /// </summary>
+    public DateTime? OccupiedTime { get; set; }
+
     public ICollection<Order> Orders { get; set; } = new List<Order>();
     public ICollection<Acme.TooHungry.Reservations.TableReservation> Reservations { get; set; } = new List<Acme.TooHungry.Reservations.TableReservation>();
 }

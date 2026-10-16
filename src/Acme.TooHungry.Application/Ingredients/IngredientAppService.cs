@@ -203,7 +203,35 @@ public class IngredientAppService : TooHungryAppService, IIngredientAppService
 
         var ingredient = await _ingredientRepository.GetAsync(id);
 
-        if (!string.Equals(ingredient.BaseUnit?.Trim(), input.BaseUnit.Trim(), StringComparison.OrdinalIgnoreCase))
+        var isSameUnit = string.Equals(ingredient.BaseUnit?.Trim(), input.BaseUnit.Trim(), StringComparison.OrdinalIgnoreCase);
+        if (!isSameUnit)
+        {
+            Acme.TooHungry.Units.Unit? unit = null;
+            if (input.UnitId.HasValue && input.UnitId.Value != Guid.Empty)
+            {
+                unit = await _unitRepository.FindAsync(input.UnitId.Value);
+            }
+            else
+            {
+                var inputUnitStr = input.BaseUnit.Trim().ToLower();
+                unit = await _unitRepository.FirstOrDefaultAsync(u => u.Name.ToLower() == inputUnitStr || (u.Abbreviation != null && u.Abbreviation.ToLower() == inputUnitStr));
+            }
+
+            if (unit != null)
+            {
+                var origBaseUnit = ingredient.BaseUnit?.Trim().ToLower();
+                var unitName = unit.Name?.Trim().ToLower();
+                var unitAbbr = unit.Abbreviation?.Trim().ToLower();
+
+                if (origBaseUnit == unitName || (unitAbbr != null && origBaseUnit == unitAbbr))
+                {
+                    isSameUnit = true;
+                    input.BaseUnit = unit.Name;
+                }
+            }
+        }
+
+        if (!isSameUnit)
         {
             await _ingredientManager.CheckCanChangeUnitAsync(id);
         }

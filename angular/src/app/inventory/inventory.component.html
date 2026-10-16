@@ -165,7 +165,9 @@
           <div class="row g-2">
             @for (alert of alertsBanner.alerts; track $index) {
               <div class="col-12">
-                <div class="alert-item-card p-2 rounded-3 bg-white border border-danger-subtle d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div class="alert-item-card p-2 rounded-3 bg-white border border-danger-subtle d-flex align-items-center justify-content-between flex-wrap gap-2"
+                     style="cursor: pointer;"
+                     (click)="navigateToAlertItem(alert)">
                   <div class="d-flex align-items-center gap-2">
                     <span class="badge bg-danger text-white">
                       {{ alert.alertType }}
@@ -240,9 +242,9 @@
   <!-- Filter & Search Card (Tab 1 & Tab 2) -->
   @if (activeTab === 'ingredients' || activeTab === 'batches') {
     <div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
-      <div class="row g-2 align-items-center">
-        <!-- Search Input -->
-        <div class="col-12 col-md-4 col-lg-3">
+      <!-- Dòng 1: Ô tìm kiếm -->
+      <div class="row g-2 mb-3">
+        <div class="col-12">
           <div class="search-input-wrapper">
             <i class="fa fa-search search-icon"></i>
             <input
@@ -256,17 +258,20 @@
               <button
                 type="button"
                 class="btn-clear-search"
-                (click)="searchTerm = ''; onFilterChange()"
+                (click)="clearSearch()"
               >
                 <i class="fa fa-times-circle"></i>
               </button>
             }
           </div>
         </div>
+      </div>
 
+      <!-- Dòng 2: Các dropdown bộ lọc -->
+      <div class="row g-2 align-items-center">
         @if (activeTab === 'ingredients') {
           <!-- Dropdown Trạng thái hoạt động (Tab 1 RM-013) -->
-          <div class="col-12 col-sm-6 col-md-2 col-lg-3">
+          <div class="col-12 col-sm-6 col-md-4">
             <app-custom-select
               class="w-100 d-block"
               [options]="ingredientStatusFilterOptions"
@@ -278,7 +283,7 @@
           </div>
 
           <!-- Dropdown Vòng đời bảo quản (Tab 1) -->
-          <div class="col-12 col-sm-6 col-md-3 col-lg-3">
+          <div class="col-12 col-sm-6 col-md-4">
             <app-custom-select
               class="w-100 d-block"
               [options]="storageTypeFilterOptions"
@@ -290,7 +295,7 @@
           </div>
         } @else {
           <!-- Dropdown Trạng thái khóa Lô hàng (Tab 2 RM-013) -->
-          <div class="col-12 col-sm-6 col-md-2 col-lg-3">
+          <div class="col-12 col-sm-6 col-md-4">
             <app-custom-select
               class="w-100 d-block"
               [options]="batchActiveStatusOptions"
@@ -302,7 +307,7 @@
           </div>
 
           <!-- Dropdown Tình trạng lô hàng (Tab 2) -->
-          <div class="col-12 col-sm-6 col-md-3 col-lg-3">
+          <div class="col-12 col-sm-6 col-md-4">
             <app-custom-select
               class="w-100 d-block"
               [options]="batchStatusFilterOptions"
@@ -314,8 +319,8 @@
           </div>
         }
 
-        <!-- Dropdown Thứ tự Ngày nhập -->
-        <div class="col-12 col-sm-6 col-md-3 col-lg-3">
+        <!-- Dropdown Thứ tự Ngày nhập & Nút Đặt lại -->
+        <div class="col-12 col-sm-6 col-md-4">
           <div class="d-flex align-items-center gap-2">
             <div class="flex-grow-1">
               <app-custom-select
@@ -331,7 +336,7 @@
             @if (hasActiveFilters) {
               <button
                 type="button"
-                class="btn btn-outline-secondary btn-reset-filter"
+                class="btn btn-outline-secondary btn-reset-filter flex-shrink-0"
                 (click)="resetFilters()"
                 [title]="'::ResetFilter' | abpLocalization"
               >
@@ -354,7 +359,7 @@
               <th class="ps-4" style="width: 60px;">{{ '::Index' | abpLocalization }}</th>
               <th>{{ '::Ingredient' | abpLocalization }}</th>
               <th>{{ '::Unit' | abpLocalization }}</th>
-              <th>{{ '::StorageLifecycle' | abpLocalization }}</th>
+              <th>{{ '::StorageType' | abpLocalization }}</th>
               <th>{{ '::ConsumptionMethodHeader' | abpLocalization }}</th>
               <th class="text-end">{{ '::StockQuantity' | abpLocalization }}</th>
               <th class="text-end">{{ '::MinStockHeader' | abpLocalization }}</th>
@@ -377,7 +382,7 @@
               </tr>
             } @else {
               @for (item of pagedIngredients; track item.id; let idx = $index) {
-                <tr>
+                <tr [class.highlighted-alert-row]="highlightedIngredientId === item.id">
                   <td class="ps-4 font-monospace text-muted">{{ (ingredientPage - 1) * ingredientPageSize + idx + 1 }}</td>
                   <td>
                     <span class="fw-bold text-dark d-block">{{ item.name }}</span>
@@ -389,23 +394,10 @@
                     <span class="badge bg-light text-dark border">{{ item.baseUnit || item.unitName }}</span>
                   </td>
                   <td>
-                    @switch (item.storageType) {
-                      @case (StorageTypeEnum.FRESH) {
-                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
-                          {{ '::StorageFresh' | abpLocalization }}
-                        </span>
-                      }
-                      @case (StorageTypeEnum.SHORT_TERM) {
-                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">
-                          {{ '::StorageShortTerm' | abpLocalization }}
-                        </span>
-                      }
-                      @case (StorageTypeEnum.LONG_TERM) {
-                        <span class="badge bg-info-subtle text-info border border-info-subtle">
-                          {{ '::StorageLongTerm' | abpLocalization }}
-                        </span>
-                      }
-                    }
+                    <span class="tag-storage" [ngClass]="item.storageType === StorageTypeEnum.FRESH ? 'storage-fresh' : (item.storageType === StorageTypeEnum.SHORT_TERM ? 'storage-short' : 'storage-long')">
+                      <i class="fa" [ngClass]="item.storageType === StorageTypeEnum.FRESH ? 'fa-leaf' : (item.storageType === StorageTypeEnum.SHORT_TERM ? 'fa-snowflake' : 'fa-box-archive')"></i>
+                      <span>{{ (item.storageType === StorageTypeEnum.FRESH ? '::StorageType_FRESH' : (item.storageType === StorageTypeEnum.SHORT_TERM ? '::StorageType_SHORT_TERM' : '::StorageType_LONG_TERM')) | abpLocalization }}</span>
+                    </span>
                   </td>
                   <td>
                     <span class="small text-muted">
@@ -608,7 +600,7 @@
             <tr>
               <th class="ps-4">{{ '::BatchCode' | abpLocalization }}</th>
               <th>{{ '::Ingredient' | abpLocalization }}</th>
-              <th>{{ '::StorageLifecycle' | abpLocalization }}</th>
+              <th>{{ '::StorageType' | abpLocalization }}</th>
               <th>{{ '::ReceivedDate' | abpLocalization }}</th>
               <th>{{ '::ExpiryDate' | abpLocalization }}</th>
               <th class="text-end">{{ '::InitialQuantity' | abpLocalization }}</th>
@@ -626,7 +618,7 @@
               </tr>
             } @else {
               @for (batch of pagedBatches; track batch.id) {
-                <tr>
+                <tr [class.highlighted-alert-row]="highlightedBatchId === batch.id || (highlightedBatchCode && batch.batchCode === highlightedBatchCode)">
                   <td class="ps-4">
                     <span class="badge bg-light text-dark border font-monospace fs-6">
                       {{ batch.batchCode }}
@@ -634,23 +626,10 @@
                   </td>
                   <td class="fw-bold text-dark">{{ batch.ingredientName }}</td>
                   <td>
-                    @switch (batch.storageType) {
-                      @case (StorageTypeEnum.FRESH) {
-                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
-                          {{ '::StorageFresh' | abpLocalization }}
-                        </span>
-                      }
-                      @case (StorageTypeEnum.SHORT_TERM) {
-                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">
-                          {{ '::StorageShortTerm' | abpLocalization }}
-                        </span>
-                      }
-                      @case (StorageTypeEnum.LONG_TERM) {
-                        <span class="badge bg-info-subtle text-info border border-info-subtle">
-                          {{ '::StorageLongTerm' | abpLocalization }}
-                        </span>
-                      }
-                    }
+                    <span class="tag-storage" [ngClass]="batch.storageType === StorageTypeEnum.FRESH ? 'storage-fresh' : (batch.storageType === StorageTypeEnum.SHORT_TERM ? 'storage-short' : 'storage-long')">
+                      <i class="fa" [ngClass]="batch.storageType === StorageTypeEnum.FRESH ? 'fa-leaf' : (batch.storageType === StorageTypeEnum.SHORT_TERM ? 'fa-snowflake' : 'fa-box-archive')"></i>
+                      <span>{{ (batch.storageType === StorageTypeEnum.FRESH ? '::StorageType_FRESH' : (batch.storageType === StorageTypeEnum.SHORT_TERM ? '::StorageType_SHORT_TERM' : '::StorageType_LONG_TERM')) | abpLocalization }}</span>
+                    </span>
                   </td>
                   <td class="small text-muted">
                     {{ batch.receivedAt | date:'dd/MM/yyyy HH:mm' }}
@@ -977,7 +956,7 @@
     [(visible)]="isNewBatchModalOpen"
     [busy]="isSavingBatch"
     [suppressUnsavedChangesWarning]="true"
-    [options]="{ size: 'lg', centered: true }"
+    [options]="{ size: 'lg', centered: true, scrollable: false, windowClass: 'modal-overflow-visible purchase-receipt-modal' }"
   >
     <ng-template #abpHeader>
       <div class="d-flex align-items-center gap-3">

@@ -1,7 +1,7 @@
 <abp-modal
   [(visible)]="visible"
   (visibleChange)="visibleChange.emit($event)"
-  [options]="{ size: 'lg', centered: true }"
+  [options]="{ size: 'lg', centered: true, scrollable: false, windowClass: 'modal-overflow-visible' }"
 >
   <ng-template #abpHeader>
     <div class="d-flex align-items-center gap-3">

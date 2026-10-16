@@ -15,7 +15,7 @@ using Acme.TooHungry.Permissions;
 namespace Acme.TooHungry.Dishes;
 
 [RemoteService(IsEnabled = false)]
-[Authorize(TooHungryPermissions.Dishes.Default)]
+[Authorize]
 public class DishAppService : TooHungryAppService, IDishAppService
 {
     private readonly IRepository<Dish, Guid> _dishRepository;
@@ -35,6 +35,7 @@ public class DishAppService : TooHungryAppService, IDishAppService
     /// <summary>
     /// Lấy thông tin chi tiết một món ăn theo Id (kèm thông tin danh mục)
     /// </summary>
+    [Authorize(TooHungryPermissions.Dishes.Default)]
     public virtual async Task<DishDto> GetAsync(Guid id)
     {
         var queryable = await _dishRepository.WithDetailsAsync(x => x.DishCategory!);
@@ -71,6 +72,7 @@ public class DishAppService : TooHungryAppService, IDishAppService
     /// <summary>
     /// Lấy danh sách món ăn có phân trang và bộ lọc (theo từ khóa, danh mục món ăn, và trạng thái IsActive)
     /// </summary>
+    [Authorize(TooHungryPermissions.Dishes.Default)]
     public virtual async Task<PagedResultDto<DishDto>> GetListAsync(GetDishesInput input)
     {
         var queryable = await _dishRepository.WithDetailsAsync(x => x.DishCategory!);

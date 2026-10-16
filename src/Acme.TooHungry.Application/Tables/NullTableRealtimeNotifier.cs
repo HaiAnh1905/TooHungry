@@ -6,7 +6,7 @@ namespace Acme.TooHungry.Tables;
 
 public class NullTableRealtimeNotifier : ITableRealtimeNotifier, ITransientDependency
 {
-    public Task NotifyTableStatusChangedAsync(Guid tableId, TableStatus newStatus, string? tableName = null, Guid? diningAreaId = null)
+    public Task NotifyTableStatusChangedAsync(Guid tableId, TableStatus newStatus, string? tableName = null, Guid? diningAreaId = null, DateTime? occupiedTime = null)
     {
         return Task.CompletedTask;
     }

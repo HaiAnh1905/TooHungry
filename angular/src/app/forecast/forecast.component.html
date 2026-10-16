@@ -1,0 +1,192 @@
+<div class="forecast-list-page">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <div class="header-icon">
+        <i class="fas fa-chart-line"></i>
+      </div>
+      <div>
+        <h1 class="page-title">{{ '::Forecasts' | abpLocalization }}</h1>
+        <p class="page-subtitle">{{ '::ForecastSubtitle' | abpLocalization }}</p>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <button type="button" class="btn-create" (click)="openCreateModal()">
+        <i class="fas fa-plus"></i>
+        <span>{{ '::CreateForecast' | abpLocalization }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
+  <div class="filter-card">
+    <div class="filter-inputs">
+      <div class="input-with-icon">
+        <i class="fas fa-search search-icon"></i>
+        <input
+          type="text"
+          class="form-control-custom search-input"
+          [(ngModel)]="searchTerm"
+          (keyup.enter)="applyFilter()"
+          [placeholder]="'::SearchByNotePlaceholder' | abpLocalization"
+        />
+      </div>
+
+      <div class="date-picker-group">
+        <span class="date-label">{{ '::StartDate' | abpLocalization }}:</span>
+        <input
+          type="date"
+          class="form-control-custom date-input"
+          [(ngModel)]="startDate"
+          (change)="applyFilter()"
+        />
+      </div>
+
+      <div class="date-picker-group">
+        <span class="date-label">{{ '::EndDate' | abpLocalization }}:</span>
+        <input
+          type="date"
+          class="form-control-custom date-input"
+          [(ngModel)]="endDate"
+          (change)="applyFilter()"
+        />
+      </div>
+    </div>
+
+    <div class="filter-actions">
+      <button type="button" class="btn-filter" (click)="applyFilter()">
+        <i class="fas fa-filter"></i> {{ '::Filter' | abpLocalization }}
+      </button>
+      <button type="button" class="btn-clear" (click)="clearFilter()" *ngIf="startDate || endDate || searchTerm">
+        <i class="fas fa-rotate-left"></i> {{ '::Reset' | abpLocalization }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Table Card -->
+  <div class="table-card">
+    <div class="table-responsive">
+      <table class="custom-table">
+        <thead>
+          <tr>
+            <th style="width: 50px" class="text-center">#</th>
+            <th style="width: 140px">{{ '::ForecastDate' | abpLocalization }}</th>
+            <th style="width: 220px">{{ '::ForecastPeriod' | abpLocalization }}</th>
+            <th style="width: 150px" class="text-center">{{ '::DishesQuantity' | abpLocalization }}</th>
+            <th style="width: 180px" class="text-end">{{ '::ProjectedRevenue' | abpLocalization }}</th>
+            <th style="width: 160px" class="text-center">{{ '::IngredientPlan' | abpLocalization }}</th>
+            <th>{{ '::Note' | abpLocalization }}</th>
+            <th style="width: 130px" class="text-center">{{ '::Actions' | abpLocalization }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of forecasts; let idx = index" (click)="viewDetail(item)" class="clickable-row">
+            <td class="text-center font-mono">{{ (pageIndex - 1) * pageSize + idx + 1 }}</td>
+            <td class="font-mono">{{ item.forecastDate | date : 'dd/MM/yyyy' }}</td>
+            <td>
+              <span class="period-pill">
+                <i class="far fa-calendar-alt text-brand"></i>
+                {{ item.startDate | date : 'dd/MM/yyyy' }} - {{ item.endDate | date : 'dd/MM/yyyy' }}
+              </span>
+            </td>
+            <td class="text-center">
+              <span class="badge-dishes">{{ item.totalDishes }} {{ '::DishesUnit' | abpLocalization }} ({{ item.totalQuantity }} {{ '::Portions' | abpLocalization }})</span>
+            </td>
+            <td class="text-end font-mono font-bold text-brand">
+              {{ item.projectedRevenue | number }} đ
+            </td>
+            <td class="text-center">
+              <span
+                class="status-pill"
+                [ngClass]="{
+                  'status-draft': item.ingredientPlanStatus === PlanStatus.Draft || item.ingredientPlanStatus === null,
+                  'status-confirmed': item.ingredientPlanStatus === PlanStatus.Confirmed,
+                  'status-executed': item.ingredientPlanStatus === PlanStatus.Executed
+                }"
+              >
+                <i class="fas fa-circle-dot"></i>
+                {{
+                  (item.ingredientPlanStatus === PlanStatus.Confirmed
+                    ? '::PlanStatusConfirmed'
+                    : item.ingredientPlanStatus === PlanStatus.Executed
+                    ? '::PlanStatusExecuted'
+                    : '::PlanStatusDraft') | abpLocalization
+                }}
+              </span>
+            </td>
+            <td class="text-muted text-truncate" style="max-width: 250px;">
+              {{ item.note || '—' }}
+            </td>
+            <td class="text-center" (click)="$event.stopPropagation()">
+              <div class="row-actions">
+                <button
+                  type="button"
+                  class="btn-icon btn-view"
+                  (click)="viewDetail(item)"
+                  [title]="'::ViewDetail' | abpLocalization"
+                >
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button
+                  type="button"
+                  class="btn-icon btn-delete"
+                  (click)="deleteForecast(item)"
+                  [title]="'::DeleteForecast' | abpLocalization"
+                >
+                  <i class="fas fa-trash-can"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <tr *ngIf="forecasts.length === 0 && !isLoading">
+            <td colspan="8" class="text-center py-5 text-muted">
+              <i class="fas fa-chart-line fa-3x mb-3 text-secondary"></i>
+              <p>{{ '::NoForecastPrompt' | abpLocalization }}</p>
+            </td>
+          </tr>
+
+          <tr *ngIf="isLoading">
+            <td colspan="8" class="text-center py-5 text-muted">
+              <i class="fas fa-spinner fa-spin fa-2x mb-3 text-brand"></i>
+              <p>{{ '::LoadingForecasts' | abpLocalization }}</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-footer" *ngIf="totalCount > pageSize">
+      <span class="pagination-info">
+        {{ '::Showing' | abpLocalization }} {{ (pageIndex - 1) * pageSize + 1 }} - {{ (pageIndex * pageSize > totalCount ? totalCount : pageIndex * pageSize) }} {{ '::Of' | abpLocalization }} {{ totalCount }} {{ '::Forecasts' | abpLocalization }}
+      </span>
+      <div class="pagination-nav">
+        <button
+          type="button"
+          class="btn-page"
+          [disabled]="pageIndex <= 1"
+          (click)="onPageChange(pageIndex - 1)"
+        >
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <span class="page-current">{{ pageIndex }} / {{ totalPages }}</span>
+        <button
+          type="button"
+          class="btn-page"
+          [disabled]="pageIndex >= totalPages"
+          (click)="onPageChange(pageIndex + 1)"
+        >
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Modal -->
+  <app-forecast-create
+    [(isVisible)]="isCreateModalVisible"
+    (saved)="onForecastSaved($event)"
+  ></app-forecast-create>
+</div>

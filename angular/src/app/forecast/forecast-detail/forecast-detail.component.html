@@ -1,0 +1,566 @@
+<div class="forecast-detail-page" *ngIf="!isLoading && forecast">
+  <!-- Screen Navigation Header (Hidden in Print) -->
+  <div class="page-header no-print">
+    <div class="header-left">
+      <button type="button" class="btn-back" (click)="goBack()">
+        <i class="fas fa-arrow-left"></i>
+      </button>
+      <div>
+        <div class="header-badge-row">
+          <span class="badge-date">
+            <i class="far fa-calendar-alt"></i> {{ forecast.startDate | date : 'dd/MM/yyyy' }} - {{ forecast.endDate | date : 'dd/MM/yyyy' }}
+          </span>
+          <span
+            class="badge-status"
+            [ngClass]="{
+              'status-draft': forecast.ingredientPlanStatus === PlanStatus.Draft || forecast.ingredientPlanStatus === null,
+              'status-confirmed': forecast.ingredientPlanStatus === PlanStatus.Confirmed,
+              'status-executed': forecast.ingredientPlanStatus === PlanStatus.Executed
+            }"
+          >
+            <i class="fas fa-circle-dot"></i>
+            {{
+              (forecast.ingredientPlanStatus === PlanStatus.Confirmed
+                ? '::PlanStatusConfirmed'
+                : forecast.ingredientPlanStatus === PlanStatus.Executed
+                ? '::PlanStatusExecuted'
+                : '::PlanStatusDraft') | abpLocalization
+            }}
+          </span>
+        </div>
+        <h1 class="page-title">{{ '::ForecastDetail' | abpLocalization }}</h1>
+        <p class="page-subtitle" *ngIf="forecast.note">{{ forecast.note }}</p>
+      </div>
+    </div>
+
+    <!-- Header Actions -->
+    <div class="header-actions">
+      <button
+        type="button"
+        class="btn-action btn-approve"
+        *ngIf="forecast.ingredientPlanStatus === PlanStatus.Draft || forecast.ingredientPlanStatus === null"
+        (click)="approvePlan()"
+        [disabled]="isApproving"
+      >
+        <i class="fas" [ngClass]="isApproving ? 'fa-spinner fa-spin' : 'fa-check-double'"></i>
+        <span>{{ '::ApprovePlan' | abpLocalization }}</span>
+      </button>
+
+      <button type="button" class="btn-action btn-excel" (click)="exportExcel()">
+        <i class="fas fa-file-excel"></i>
+        <span>{{ '::ExportExcel' | abpLocalization }}</span>
+      </button>
+
+      <button type="button" class="btn-action btn-print" (click)="printA4()">
+        <i class="fas fa-print"></i>
+        <span>{{ '::PrintA4' | abpLocalization }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 4 KPI Cards (Hidden in Print) -->
+  <div class="kpi-grid no-print">
+    <!-- Card 1: Revenue -->
+    <div class="kpi-card kpi-orange">
+      <div class="kpi-icon">
+        <i class="fas fa-coins"></i>
+      </div>
+      <div class="kpi-content">
+        <span class="kpi-label" [title]="'::ProjectedRevenue' | abpLocalization">{{ '::ProjectedRevenue' | abpLocalization }}</span>
+        <h3 class="kpi-value">{{ financialSummary.projectedRevenue | number }}<small> đ</small></h3>
+        <span class="kpi-subtext" [title]="('::From' | abpLocalization) + ' ' + forecast.totalDishes + ' ' + ('::DishesUnit' | abpLocalization) + ' (' + forecast.totalQuantity + ' ' + ('::PortionsUnit' | abpLocalization) + ')'">{{ '::From' | abpLocalization }} {{ forecast.totalDishes }} {{ '::DishesUnit' | abpLocalization }} ({{ forecast.totalQuantity }} {{ '::PortionsUnit' | abpLocalization }})</span>
+      </div>
+    </div>
+
+    <!-- Card 2: Projected Ingredient Cost -->
+    <div class="kpi-card kpi-blue">
+      <div class="kpi-icon">
+        <i class="fas fa-receipt"></i>
+      </div>
+      <div class="kpi-content">
+        <span class="kpi-label" [title]="'::ProjectedCost' | abpLocalization">{{ '::ProjectedCost' | abpLocalization }}</span>
+        <h3 class="kpi-value">{{ financialSummary.projectedIngredientCost | number }}<small> đ</small></h3>
+        <span class="kpi-subtext" [title]="'::TheoreticalIngredientCost' | abpLocalization">{{ '::TheoreticalIngredientCost' | abpLocalization }}</span>
+      </div>
+    </div>
+
+    <!-- Card 3: Food Cost % -->
+    <div class="kpi-card kpi-purple">
+      <div class="kpi-icon">
+        <i class="fas fa-percent"></i>
+      </div>
+      <div class="kpi-content">
+        <span class="kpi-label" [title]="'::FoodCostRate' | abpLocalization">{{ '::FoodCostRate' | abpLocalization }}</span>
+        <h3 class="kpi-value">{{ financialSummary.foodCostPercentage }}%</h3>
+        <div class="kpi-progress">
+          <div
+            class="progress-bar-fill"
+            [style.width.%]="financialSummary.foodCostPercentage > 100 ? 100 : financialSummary.foodCostPercentage"
+            [ngClass]="{
+              'bar-safe': financialSummary.foodCostPercentage <= 35,
+              'bar-warn': financialSummary.foodCostPercentage > 35 && financialSummary.foodCostPercentage <= 45,
+              'bar-alert': financialSummary.foodCostPercentage > 45
+            }"
+          ></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 4: Purchase Budget -->
+    <div class="kpi-card kpi-green">
+      <div class="kpi-icon">
+        <i class="fas fa-wallet"></i>
+      </div>
+      <div class="kpi-content">
+        <span class="kpi-label" [title]="'::PurchaseBudget' | abpLocalization">{{ '::PurchaseBudget' | abpLocalization }}</span>
+        <h3 class="kpi-value text-green">{{ financialSummary.projectedPurchaseBudget | number }}<small> đ</small></h3>
+        <span class="kpi-subtext" [title]="'::RequiredPurchaseBudgetSubtext' | abpLocalization">{{ '::RequiredPurchaseBudgetSubtext' | abpLocalization }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs Switcher (Hidden in Print) -->
+  <div class="tab-switcher no-print">
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="activeTab === 'dishes'"
+      (click)="switchTab('dishes')"
+    >
+      <i class="fas fa-utensils"></i>
+      <span>{{ '::DishesTab' | abpLocalization }} ({{ forecast.items.length }})</span>
+    </button>
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="activeTab === 'ingredients'"
+      (click)="switchTab('ingredients')"
+    >
+      <i class="fas fa-boxes-stacked"></i>
+      <span>{{ '::IngredientsTab' | abpLocalization }} ({{ ingredientPlan?.items?.length || 0 }})</span>
+    </button>
+  </div>
+
+  <!-- Tab 1: Dishes Content (Hidden in Print) -->
+  <div class="tab-content-panel no-print" *ngIf="activeTab === 'dishes'">
+    <div class="content-card">
+      <!-- Table Filter Toolbar -->
+      <div class="table-toolbar">
+        <div class="toolbar-left">
+          <div class="search-box">
+            <i class="fas fa-search search-icon"></i>
+            <input
+              type="text"
+              class="toolbar-input"
+              [(ngModel)]="dishSearch"
+              (ngModelChange)="onDishSearchChange()"
+              [placeholder]="'::SearchDishPlaceholder' | abpLocalization"
+            />
+            <button
+              type="button"
+              class="btn-clear-search"
+              *ngIf="dishSearch"
+              (click)="dishSearch = ''; onDishSearchChange()"
+            >
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+
+          <div class="filter-select-group">
+            <select
+              class="toolbar-select"
+              [(ngModel)]="dishRecipeFilter"
+              (ngModelChange)="onDishSearchChange()"
+            >
+              <option value="all">{{ '::AllRecipes' | abpLocalization }}</option>
+              <option value="hasRecipe">{{ '::HasRecipe' | abpLocalization }}</option>
+              <option value="noRecipe">{{ '::NoRecipeWarning' | abpLocalization }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="toolbar-right">
+          <span class="toolbar-stat">
+            <span class="stat-dot"></span>
+            {{ '::ShowingRecords' | abpLocalization }} <strong>{{ filteredDishes.length }}</strong> {{ '::DishesCount' | abpLocalization }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-responsive">
+        <table class="detail-table">
+          <thead>
+            <tr>
+              <th style="width: 50px" class="text-center">#</th>
+              <th>{{ '::Dish' | abpLocalization }}</th>
+              <th style="width: 140px" class="text-end">{{ '::Price' | abpLocalization }}</th>
+              <th style="width: 160px" class="text-center">{{ '::ForecastQuantity' | abpLocalization }}</th>
+              <th style="width: 160px" class="text-end">{{ '::TotalPrice' | abpLocalization }}</th>
+              <th style="width: 150px" class="text-center">{{ '::Recipe' | abpLocalization }}</th>
+              <th>{{ '::OrderNote' | abpLocalization }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of pagedDishes; let idx = index">
+              <td class="text-center font-mono">{{ (dishPageIndex - 1) * dishPageSize + idx + 1 }}</td>
+              <td>
+                <div class="dish-cell">
+                  <img
+                    [src]="item.dishImageUrl || 'assets/images/default-dish.png'"
+                    class="dish-thumb"
+                    alt="{{ item.dishName }}"
+                    onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&auto=format&fit=crop&q=80'"
+                  />
+                  <span class="dish-name">{{ item.dishName }}</span>
+                </div>
+              </td>
+              <td class="text-end font-mono">{{ item.dishPrice | number }} đ</td>
+              <td class="text-center">
+                <span class="badge-qty">{{ item.forecastQuantity | number }} {{ '::Portions' | abpLocalization }}</span>
+              </td>
+              <td class="text-end font-mono font-bold text-orange">
+                {{ item.forecastQuantity * item.dishPrice | number }} đ
+              </td>
+              <td class="text-center">
+                <span
+                  class="recipe-status-pill"
+                  [ngClass]="item.hasRecipe ? 'pill-recipe-ok' : 'pill-recipe-warn'"
+                >
+                  <i class="fas" [ngClass]="item.hasRecipe ? 'fa-check' : 'fa-triangle-exclamation'"></i>
+                  {{ (item.hasRecipe ? '::HasRecipe' : '::NoRecipeWarning') | abpLocalization }}
+                </span>
+              </td>
+              <td class="text-muted">{{ item.note || '—' }}</td>
+            </tr>
+
+            <tr *ngIf="filteredDishes.length === 0">
+              <td colspan="7" class="text-center py-5 text-muted">
+                <i class="fas fa-utensils fa-3x mb-3 text-secondary"></i>
+                <p>{{ '::NoMatchingDishes' | abpLocalization }}</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Footer -->
+      <div class="custom-table-footer" *ngIf="filteredDishes.length > 0">
+        <div class="footer-left">
+          <span class="records-summary-text">
+            {{ '::ShowingRecords' | abpLocalization }}
+            <strong>{{ (dishPageIndex - 1) * dishPageSize + 1 }} - {{ (dishPageIndex * dishPageSize > filteredDishes.length ? filteredDishes.length : dishPageIndex * dishPageSize) }}</strong>
+            {{ '::OfTotal' | abpLocalization }}
+            <strong>{{ filteredDishes.length }}</strong>
+            {{ '::DishesCount' | abpLocalization }}
+          </span>
+
+          <div class="page-size-selector">
+            <span class="page-size-label">{{ '::PageSize' | abpLocalization }}:</span>
+            <select
+              class="page-size-select"
+              [ngModel]="dishPageSize"
+              (ngModelChange)="onDishPageSizeChange($event)"
+            >
+              <option *ngFor="let s of pageSizeOptions" [value]="s">{{ s }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="footer-right">
+          <div class="pagination-btn-group">
+            <button
+              type="button"
+              class="btn-page-nav"
+              [disabled]="dishPageIndex <= 1"
+              (click)="onDishPageChange(1)"
+              [title]="'::FirstPage' | abpLocalization"
+            >
+              <i class="fas fa-angles-left"></i>
+            </button>
+            <button
+              type="button"
+              class="btn-page-nav"
+              [disabled]="dishPageIndex <= 1"
+              (click)="onDishPageChange(dishPageIndex - 1)"
+              [title]="'::PreviousPage' | abpLocalization"
+            >
+              <i class="fas fa-angle-left"></i>
+            </button>
+
+            <button
+              *ngFor="let p of dishPageNumbers"
+              type="button"
+              class="btn-page-num"
+              [class.active]="p === dishPageIndex"
+              (click)="onDishPageChange(p)"
+            >
+              {{ p }}
+            </button>
+
+            <button
+              type="button"
+              class="btn-page-nav"
+              [disabled]="dishPageIndex >= dishTotalPages"
+              (click)="onDishPageChange(dishPageIndex + 1)"
+              [title]="'::NextPage' | abpLocalization"
+            >
+              <i class="fas fa-angle-right"></i>
+            </button>
+            <button
+              type="button"
+              class="btn-page-nav"
+              [disabled]="dishPageIndex >= dishTotalPages"
+              (click)="onDishPageChange(dishTotalPages)"
+              [title]="'::LastPage' | abpLocalization"
+            >
+              <i class="fas fa-angles-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab 2: Ingredients Content (Hidden in Print) -->
+  <div class="tab-content-panel no-print" *ngIf="activeTab === 'ingredients'">
+    <div class="content-card">
+      <!-- Table Filter Toolbar -->
+      <div class="table-toolbar">
+        <div class="toolbar-left">
+          <div class="search-box">
+            <i class="fas fa-search search-icon"></i>
+            <input
+              type="text"
+              class="toolbar-input"
+              [(ngModel)]="ingredientSearch"
+              (ngModelChange)="onIngredientSearchChange()"
+              [placeholder]="'::SearchIngredientPlaceholder' | abpLocalization"
+            />
+            <button
+              type="button"
+              class="btn-clear-search"
+              *ngIf="ingredientSearch"
+              (click)="ingredientSearch = ''; onIngredientSearchChange()"
+            >
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+
+          <div class="filter-select-group">
+            <select
+              class="toolbar-select"
+              [(ngModel)]="ingredientStockFilter"
+              (ngModelChange)="onIngredientSearchChange()"
+            >
+              <option value="all">{{ '::AllStockStatus' | abpLocalization }}</option>
+              <option value="needBuy">{{ '::NeedPurchase' | abpLocalization }}</option>
+              <option value="sufficient">{{ '::StockSufficient' | abpLocalization }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="toolbar-right">
+          <span class="toolbar-stat">
+            <span class="stat-dot dot-green"></span>
+            {{ '::ShowingRecords' | abpLocalization }} <strong>{{ filteredIngredients.length }}</strong> {{ '::IngredientsCount' | abpLocalization }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-responsive">
+        <table class="detail-table">
+          <thead>
+            <tr>
+              <th style="width: 50px" class="text-center">#</th>
+              <th>{{ '::IngredientName' | abpLocalization }}</th>
+              <th style="width: 100px" class="text-center">{{ '::BaseUnit' | abpLocalization }}</th>
+              <th style="width: 140px" class="text-end">{{ '::RequiredQuantity' | abpLocalization }}</th>
+              <th style="width: 140px" class="text-end">{{ '::CurrentStock' | abpLocalization }}</th>
+              <th style="width: 160px" class="text-end">{{ '::SuggestedPurchase' | abpLocalization }}</th>
+              <th style="width: 140px" class="text-end">{{ '::EstimatedPrice' | abpLocalization }}</th>
+              <th style="width: 160px" class="text-end">{{ '::EstimatedCost' | abpLocalization }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of pagedIngredients; let idx = index">
+              <td class="text-center font-mono">{{ (ingredientPageIndex - 1) * ingredientPageSize + idx + 1 }}</td>
+              <td>
+                <span class="ingredient-name">{{ item.ingredientName }}</span>
+              </td>
+              <td class="text-center font-mono">
+                <span class="unit-pill">{{ item.baseUnit }}</span>
+              </td>
+              <td class="text-end font-mono font-bold">{{ item.requiredQuantity | number : '1.1-4' }}</td>
+              <td class="text-end font-mono text-muted">{{ item.currentStock | number : '1.1-4' }}</td>
+              <td class="text-end font-mono">
+                <span
+                  class="purchase-pill"
+                  [ngClass]="item.suggestedPurchaseQuantity > 0 ? 'pill-need-buy' : 'pill-stock-ok'"
+                >
+                  <i class="fas" [ngClass]="item.suggestedPurchaseQuantity > 0 ? 'fa-cart-shopping' : 'fa-check'"></i>
+                  {{ item.suggestedPurchaseQuantity | number : '1.1-4' }}
+                </span>
+              </td>
+              <td class="text-end font-mono text-muted">{{ item.estimatedPrice | number }} đ</td>
+              <td class="text-end font-mono font-bold text-orange">
+                {{ item.estimatedCost | number }} đ
+              </td>
+            </tr>
+
+            <tr *ngIf="filteredIngredients.length === 0">
+              <td colspan="8" class="text-center py-5 text-muted">
+                <i class="fas fa-boxes-packing fa-3x mb-3 text-secondary"></i>
+                <p>{{ '::NoMatchingIngredients' | abpLocalization }}</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Footer -->
+      <div class="custom-table-footer" *ngIf="filteredIngredients.length > 0">
+        <div class="footer-left">
+          <span class="records-summary-text">
+            {{ '::ShowingRecords' | abpLocalization }}
+            <strong>{{ (ingredientPageIndex - 1) * ingredientPageSize + 1 }} - {{ (ingredientPageIndex * ingredientPageSize > filteredIngredients.length ? filteredIngredients.length : ingredientPageIndex * ingredientPageSize) }}</strong>
+            {{ '::OfTotal' | abpLocalization }}
+            <strong>{{ filteredIngredients.length }}</strong>
+            {{ '::IngredientsCount' | abpLocalization }}
+          </span>
+
+          <div class="page-size-selector">
+            <span class="page-size-label">{{ '::PageSize' | abpLocalization }}:</span>
+            <select
+              class="page-size-select"
+              [ngModel]="ingredientPageSize"
+              (ngModelChange)="onIngredientPageSizeChange($event)"
+            >
+              <option *ngFor="let s of pageSizeOptions" [value]="s">{{ s }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="footer-right">
+          <div class="pagination-btn-group">
+            <button
+              type="button"
+              class="btn-page-nav"
+              [disabled]="ingredientPageIndex <= 1"
+              (click)="onIngredientPageChange(1)"
+              [title]="'::FirstPage' | abpLocalization"
+            >
+              <i class="fas fa-angles-left"></i>
+            </button>
+            <button
+              type="button"
+              class="btn-page-nav"
+              [disabled]="ingredientPageIndex <= 1"
+              (click)="onIngredientPageChange(ingredientPageIndex - 1)"
+              [title]="'::PreviousPage' | abpLocalization"
+            >
+              <i class="fas fa-angle-left"></i>
+            </button>
+
+            <button
+              *ngFor="let p of ingredientPageNumbers"
+              type="button"
+              class="btn-page-num"
+              [class.active]="p === ingredientPageIndex"
+              (click)="onIngredientPageChange(p)"
+            >
+              {{ p }}
+            </button>
+
+            <button
+              type="button"
+              class="btn-page-nav"
+              [disabled]="ingredientPageIndex >= ingredientTotalPages"
+              (click)="onIngredientPageChange(ingredientPageIndex + 1)"
+              [title]="'::NextPage' | abpLocalization"
+            >
+              <i class="fas fa-angle-right"></i>
+            </button>
+            <button
+              type="button"
+              class="btn-page-nav"
+              [disabled]="ingredientPageIndex >= ingredientTotalPages"
+              (click)="onIngredientPageChange(ingredientTotalPages)"
+              [title]="'::LastPage' | abpLocalization"
+            >
+              <i class="fas fa-angles-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dedicated Print-Only A4 Sheet -->
+  <div class="print-sheet">
+    <div class="print-header">
+      <div class="print-logo-row">
+        <div>
+          <h2 class="print-restaurant-name">{{ '::PrintRestaurantName' | abpLocalization }}</h2>
+          <p class="print-sub-addr">{{ '::PrintRestaurantAddress' | abpLocalization }}</p>
+        </div>
+        <div class="text-end">
+          <p class="print-meta-line">{{ '::PrintSheetCode' | abpLocalization }}: <strong>{{ forecast.id ? forecast.id.slice(0, 8) : '' }}</strong></p>
+          <p class="print-meta-line">{{ '::PrintCreatedDate' | abpLocalization }}: {{ forecast.forecastDate | date : 'dd/MM/yyyy HH:mm' }}</p>
+        </div>
+      </div>
+
+      <h1 class="print-title">{{ '::PrintSheetTitle' | abpLocalization }}</h1>
+      <p class="print-period">
+        {{ '::PrintPeriodLabel' | abpLocalization }}: {{ '::From' | abpLocalization }} <strong>{{ forecast.startDate | date : 'dd/MM/yyyy' }}</strong> {{ '::To' | abpLocalization }} <strong>{{ forecast.endDate | date : 'dd/MM/yyyy' }}</strong>
+      </p>
+    </div>
+
+    <!-- Print Table -->
+    <table class="print-table">
+      <thead>
+        <tr>
+          <th style="width: 40px" class="text-center">#</th>
+          <th>{{ '::IngredientName' | abpLocalization }}</th>
+          <th style="width: 70px" class="text-center">{{ '::BaseUnit' | abpLocalization }}</th>
+          <th style="width: 100px" class="text-end">{{ '::RequiredQuantity' | abpLocalization }}</th>
+          <th style="width: 100px" class="text-end">{{ '::CurrentStock' | abpLocalization }}</th>
+          <th style="width: 110px" class="text-end">{{ '::SuggestedPurchase' | abpLocalization }}</th>
+          <th style="width: 100px" class="text-end">{{ '::EstimatedPrice' | abpLocalization }}</th>
+          <th style="width: 120px" class="text-end">{{ '::EstimatedCost' | abpLocalization }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of ingredientPlan?.items; let idx = index">
+          <td class="text-center">{{ idx + 1 }}</td>
+          <td><strong>{{ item.ingredientName }}</strong></td>
+          <td class="text-center">{{ item.baseUnit }}</td>
+          <td class="text-end">{{ item.requiredQuantity | number : '1.1-4' }}</td>
+          <td class="text-end">{{ item.currentStock | number : '1.1-4' }}</td>
+          <td class="text-end"><strong>{{ item.suggestedPurchaseQuantity | number : '1.1-4' }}</strong></td>
+          <td class="text-end">{{ item.estimatedPrice | number }}</td>
+          <td class="text-end"><strong>{{ item.estimatedCost | number }}</strong></td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="7" class="text-end font-bold">{{ '::TotalPurchaseBudget' | abpLocalization }}:</td>
+          <td class="text-end font-bold">{{ financialSummary.projectedPurchaseBudget | number }} đ</td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <!-- Signatures -->
+    <div class="print-signatures">
+      <div class="sig-block">
+        <p class="sig-title">{{ '::HeadChef' | abpLocalization }}</p>
+        <span class="sig-hint">({{ '::SignAndFullName' | abpLocalization }})</span>
+      </div>
+      <div class="sig-block">
+        <p class="sig-title">{{ '::WarehousePurchaser' | abpLocalization }}</p>
+        <span class="sig-hint">({{ '::SignAndFullName' | abpLocalization }})</span>
+      </div>
+    </div>
+  </div>
+</div>

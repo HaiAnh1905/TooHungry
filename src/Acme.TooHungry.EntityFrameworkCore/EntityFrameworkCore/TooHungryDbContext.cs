@@ -56,9 +56,11 @@ public class TooHungryDbContext :
     public DbSet<Order> Orders { get; set; }
     public DbSet<OrderItem> OrderItems { get; set; }
 
-    // Demand Forecast
+    // Demand Forecast & Ingredient Plan
     public DbSet<DemandForecast> DemandForecasts { get; set; }
     public DbSet<DemandForecastItem> DemandForecastItems { get; set; }
+    public DbSet<IngredientPlan> IngredientPlans { get; set; }
+    public DbSet<IngredientPlanItem> IngredientPlanItems { get; set; }
 
     // Ingredients, Recipes & Inventories
     public DbSet<Ingredient> Ingredients { get; set; }
@@ -189,6 +191,7 @@ public class TooHungryDbContext :
             b.Property(x => x.ReservedCustomerName).HasMaxLength(128);
             b.Property(x => x.ReservedCustomerPhone).HasMaxLength(32);
             b.Property(x => x.ReservedNote).HasMaxLength(512);
+            b.Property(x => x.OccupiedTime);
             b.HasOne(x => x.DiningArea).WithMany(x => x.Tables).HasForeignKey(x => x.DiningAreaId).OnDelete(DeleteBehavior.SetNull);
             b.HasMany(x => x.Orders).WithOne(x => x.Table).HasForeignKey(x => x.TableId).OnDelete(DeleteBehavior.SetNull);
             b.HasMany(x => x.Reservations).WithOne(x => x.Table).HasForeignKey(x => x.TableId).OnDelete(DeleteBehavior.Cascade);
@@ -258,6 +261,29 @@ public class TooHungryDbContext :
             b.Property(x => x.Note).HasMaxLength(256);
             b.HasOne(x => x.Dish).WithMany().HasForeignKey(x => x.DishId).OnDelete(DeleteBehavior.Restrict);
             b.Navigation(x => x.Dish).AutoInclude();
+        });
+
+        // IngredientPlan
+        builder.Entity<IngredientPlan>(b =>
+        {
+            b.ToTable(TooHungryConsts.DbTablePrefix + "IngredientPlans", TooHungryConsts.DbSchema);
+            b.ConfigureByConvention();
+            b.Property(x => x.Note).HasMaxLength(512);
+            b.Property(x => x.Status).IsRequired();
+            b.HasOne(x => x.DemandForecast).WithOne().HasForeignKey<IngredientPlan>(x => x.DemandForecastId).OnDelete(DeleteBehavior.Cascade);
+            b.HasMany(x => x.Items).WithOne(x => x.IngredientPlan).HasForeignKey(x => x.IngredientPlanId).OnDelete(DeleteBehavior.Cascade);
+            b.Navigation(x => x.Items).AutoInclude();
+        });
+
+        // IngredientPlanItem
+        builder.Entity<IngredientPlanItem>(b =>
+        {
+            b.ToTable(TooHungryConsts.DbTablePrefix + "IngredientPlanItems", TooHungryConsts.DbSchema);
+            b.ConfigureByConvention();
+            b.Property(x => x.RequiredQuantity).HasPrecision(18, 4);
+            b.Property(x => x.Note).HasMaxLength(256);
+            b.HasOne(x => x.Ingredient).WithMany().HasForeignKey(x => x.IngredientId).OnDelete(DeleteBehavior.Restrict);
+            b.Navigation(x => x.Ingredient).AutoInclude();
         });
 
         // Ingredient

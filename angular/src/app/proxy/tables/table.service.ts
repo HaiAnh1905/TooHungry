@@ -1,4 +1,4 @@
-import type { CreateUpdateTableDto, GetTablesInput, TableDto } from './models';
+import type { CreateUpdateTableDto, GetTablesInput, TableDto, TransferTableInputDto, MergeTablesInputDto } from './models';
 import type { TableStatus } from './table-status.enum';
 import { RestService, Rest } from '@abp/ng.core';
 import type { PagedResultDto } from '@abp/ng.core';
@@ -10,6 +10,24 @@ import { Injectable, inject } from '@angular/core';
 export class TableService {
   private restService = inject(RestService);
   apiName = 'Default';
+
+  transferTable = (input: TransferTableInputDto, config?: Partial<Rest.Config>) =>
+    this.restService.request<any, TableDto>({
+      method: 'POST',
+      headers: { Accept: 'application/json' },
+      url: '/api/app/table/transfer-table',
+      body: input,
+    },
+    { apiName: this.apiName,...config });
+
+  mergeTables = (input: MergeTablesInputDto, config?: Partial<Rest.Config>) =>
+    this.restService.request<any, TableDto>({
+      method: 'POST',
+      headers: { Accept: 'application/json' },
+      url: '/api/app/table/merge-tables',
+      body: input,
+    },
+    { apiName: this.apiName,...config });
   
 
   changeStatus = (id: string, status: TableStatus, config?: Partial<Rest.Config>) =>

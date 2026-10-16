@@ -1,10 +1,23 @@
-/* Dashboard & Guest Operations Portal SCSS */
+/* Dashboard & Operational Command Center SCSS (RM-018 Bento Grid Redesign) */
+
+// Color Tokens & Themes
+$brand-orange: #EA580C;
+$brand-orange-hover: #C2410C;
+$brand-orange-subtle: rgba(234, 88, 12, 0.08);
+$brand-orange-border: rgba(234, 88, 12, 0.2);
+
+$color-blue: #2563EB;
+$color-emerald: #10B981;
+$color-amber: #F59E0B;
+$color-danger: #EF4444;
+$color-purple: #8B5CF6;
+$color-slate: #64748B;
 
 .dashboard-container {
-  padding-bottom: 0;
+  padding-bottom: 2rem;
 }
 
-/* ================= Guest Workstation Terminal ================= */
+/* ================= Guest Workstation Terminal (Unauthenticated) ================= */
 .terminal-container {
   display: flex;
   align-items: center;
@@ -92,7 +105,7 @@
   margin-top: 0.5rem;
 }
 
-/* Restaurant Status Pill (Ở TRÊN clock-display-box) */
+/* Restaurant Status Pill */
 .restaurant-status-wrapper {
   margin-top: 1.1rem;
   margin-bottom: 0.35rem;
@@ -102,84 +115,79 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.82rem;
+  padding: 7px 20px;
+  border-radius: 30px;
+  font-size: 0.92rem;
   font-weight: 700;
-  padding: 5px 16px;
-  border-radius: 20px;
-  letter-spacing: 0.3px;
-  transition: all 0.3s ease;
+  letter-spacing: 0.2px;
 
   &.status-open {
-    color: #0b8043;
-    background-color: #e6f7ee;
-    border: 1.5px solid #9fe6bf;
-    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);
+    background-color: #e6f9ed;
+    color: #108537;
+    border: 1.5px solid #a3e9b9;
 
     .status-indicator-dot {
-      background-color: #10b981;
-      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+      background-color: #18a946;
+      box-shadow: 0 0 0 3px rgba(24, 169, 70, 0.25);
     }
   }
 
   &.status-closed {
-    color: #c53030;
-    background-color: #fef2f2;
-    border: 1.5px solid #fecaca;
-    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.12);
+    background-color: #fdeeee;
+    color: #c92a2a;
+    border: 1.5px solid #f8c2c2;
 
     .status-indicator-dot {
-      background-color: #ef4444;
-      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25);
+      background-color: #d63333;
+      box-shadow: 0 0 0 3px rgba(214, 51, 51, 0.22);
     }
   }
+}
 
-  .status-indicator-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    display: inline-block;
+.status-indicator-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+  animation: pulse-dot 2s infinite ease-in-out;
+}
+
+@keyframes pulse-dot {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.25);
+    opacity: 0.8;
   }
 }
 
-/* Operating Hours Text (Ở DƯỚI clock-display-box) */
 .operating-hours-box {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  background: transparent;
-  border: none;
-  padding: 0;
   font-size: 0.92rem;
-  color: #635749;
-
-  .operating-hours-label {
-    font-weight: 500;
-  }
-
-  .operating-hours-time {
-    color: #ff4b12;
-    font-weight: 700;
-  }
+  color: #6d6355;
 }
 
-/* Button Clock-in */
+.operating-hours-time {
+  color: #1e1915;
+  font-size: 1rem;
+}
+
 .btn-clock-in {
-  background: linear-gradient(135deg, #ff7a29 0%, #ff4910 100%) !important;
+  background: linear-gradient(135deg, #ff7a28 0%, #ff4b12 100%) !important;
   color: #ffffff !important;
-  font-weight: 800 !important;
-  font-size: 1.02rem !important;
-  letter-spacing: 0.5px;
-  padding: 14px 24px !important;
-  border-radius: 14px !important;
   border: none !important;
-  box-shadow: 0 6px 18px rgba(255, 75, 18, 0.32) !important;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  font-size: 1rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.5px !important;
+  padding: 0.95rem 1.5rem !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 22px rgba(255, 75, 18, 0.35) !important;
+  transition: all 0.25s ease !important;
 
   &:hover {
-    background: linear-gradient(135deg, #ff6a15 0%, #de3702 100%) !important;
     transform: translateY(-2px);
-    box-shadow: 0 10px 24px rgba(255, 75, 18, 0.45) !important;
+    box-shadow: 0 12px 28px rgba(255, 75, 18, 0.45) !important;
   }
 
   &:active {
@@ -187,329 +195,517 @@
   }
 }
 
-.terminal-hint {
-  font-size: 0.78rem;
-  color: #8a7e70;
+/* ================= Authenticated Bento Grid Dashboard ================= */
+
+.dashboard-content {
+  animation: fadeIn 0.3s ease-in-out;
 }
 
-/* Dashboard Top Header Card (White Background Container) */
-.dashboard-header-card {
-  background-color: #ffffff !important;
-  border: 1px solid #ede4d6 !important;
-  border-radius: 20px !important;
-  padding: 1.25rem 1.75rem !important;
-  box-shadow: 0 4px 20px rgba(180, 150, 110, 0.07) !important;
-  margin-bottom: 1.5rem !important;
-  transition: all 0.25s ease !important;
-
-  h2 {
-    letter-spacing: -0.5px;
-    font-size: 1.45rem;
-  }
-
-  p {
-    font-size: 0.9rem;
-  }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-/* ================= Existing Dashboard Helper Classes ================= */
 .text-orange {
-  color: #ff6b35 !important;
+  color: $brand-orange !important;
 }
 
 .bg-orange {
-  background: linear-gradient(135deg, #ff8c42 0%, #ff521b 100%) !important;
+  background-color: $brand-orange !important;
 }
 
-.bg-orange-light {
-  background-color: #fff2eb !important;
+.bg-blue {
+  background-color: $color-blue !important;
+}
+
+.bg-emerald {
+  background-color: $color-emerald !important;
+}
+
+.bg-amber {
+  background-color: $color-amber !important;
+}
+
+.bg-slate {
+  background-color: $color-slate !important;
+}
+
+.bg-purple {
+  background-color: $color-purple !important;
 }
 
 .bg-orange-subtle {
-  background-color: #fff1eb !important;
-  color: #ff521b !important;
-  border: 1px solid #ffd8c7 !important;
-  border-radius: 20px !important;
-  font-weight: 600 !important;
-  padding: 4px 10px !important;
-  font-size: 0.75rem !important;
+  background-color: $brand-orange-subtle !important;
+  color: $brand-orange !important;
+}
+
+.bg-blue-subtle {
+  background-color: rgba(37, 99, 235, 0.1) !important;
+  color: $color-blue !important;
+}
+
+.bg-emerald-subtle {
+  background-color: rgba(16, 185, 129, 0.1) !important;
+  color: $color-emerald !important;
+}
+
+.bg-amber-subtle {
+  background-color: rgba(245, 158, 11, 0.1) !important;
+  color: $color-amber !important;
+}
+
+.bg-purple-subtle {
+  background-color: rgba(139, 92, 246, 0.1) !important;
+  color: $color-purple !important;
+}
+
+.bg-danger-subtle {
+  background-color: rgba(239, 68, 68, 0.1) !important;
+  color: $color-danger !important;
+}
+
+.bg-success-subtle {
+  background-color: rgba(16, 185, 129, 0.1) !important;
+  color: $color-emerald !important;
 }
 
 .btn-orange {
-  background: linear-gradient(135deg, #ff843a 0%, #ff4b12 100%) !important;
-  color: #ffffff !important;
-  border: none !important;
-  font-weight: 700 !important;
-  border-radius: 12px !important;
-  padding: 10px 22px !important;
-  box-shadow: 0 4px 14px rgba(255, 85, 20, 0.3) !important;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  background-color: $brand-orange;
+  color: #ffffff;
+  border: none;
+  font-weight: 600;
+  transition: all 0.2s ease;
 
   &:hover {
-    background: linear-gradient(135deg, #ff7422 0%, #e03a05 100%) !important;
-    color: #ffffff !important;
-    box-shadow: 0 6px 18px rgba(255, 85, 20, 0.45) !important;
-    transform: translateY(-2px);
+    background-color: $brand-orange-hover;
+    color: #ffffff;
   }
 }
 
 .btn-outline-orange {
-  color: #ff6b35 !important;
-  border: 1.5px solid #ff6b35 !important;
-  background-color: #ffffff !important;
-  border-radius: 12px !important;
-  padding: 9px 20px !important;
-  font-weight: 600 !important;
-  transition: all 0.2s ease !important;
-
-  &:hover {
-    background-color: #ff6b35 !important;
-    color: #ffffff !important;
-    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.25) !important;
-    transform: translateY(-1px);
-  }
-}
-
-/* Stat Cards */
-/* Stat Cards */
-.stat-card {
-  background-color: #ffffff !important;
-  border: 1.5px solid #ede4d6 !important;
-  border-radius: 22px !important;
-  box-shadow: 0 4px 18px rgba(180, 150, 110, 0.06) !important;
-  transition: all 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
-  display: block;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  text-decoration: none !important;
-
-  /* Viền sáng gradient cam phía trên khi hover */
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3.5px;
-    background: linear-gradient(90deg, #ff8c42, #ff521b);
-    opacity: 0;
-    transition: opacity 0.25s ease;
-  }
-
-  /* Hiệu ứng tỏa sáng góc trên bên phải */
-  &::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 80px;
-    height: 80px;
-    background: radial-gradient(circle at top right, rgba(255, 107, 53, 0.12), transparent 70%);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    border-radius: 0 22px 0 0;
-    pointer-events: none;
-  }
-
-  &:hover {
-    transform: translateY(-6px);
-    border-color: #ff8c42 !important;
-    box-shadow: 0 16px 36px rgba(255, 107, 53, 0.16), 0 4px 12px rgba(180, 150, 110, 0.08) !important;
-
-    &::before,
-    &::after {
-      opacity: 1;
-    }
-
-    .stat-number {
-      color: #ff521b;
-      transform: scale(1.02);
-    }
-
-    .stat-label {
-      color: #5c5248;
-    }
-
-    .badge.bg-orange-subtle {
-      background-color: #ffe6db !important;
-      border-color: #ffbe9e !important;
-      transform: translateY(-1px);
-    }
-  }
-
-  &:active {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(255, 107, 53, 0.14) !important;
-  }
-
-  .stat-label {
-    display: block !important;
-    width: 100%;
-    font-size: 0.78rem;
-    font-weight: 700;
-    letter-spacing: 0.6px;
-    color: #8c8072;
-    text-transform: uppercase;
-    line-height: 1.35;
-    margin-bottom: 0.4rem;
-    transition: color 0.2s ease;
-  }
-
-  .stat-number {
-    display: block !important;
-    width: 100%;
-    font-size: 2.35rem;
-    font-weight: 800;
-    letter-spacing: -1px;
-    color: #1e1915;
-    line-height: 1.1;
-    margin-bottom: 0.55rem;
-    transition: all 0.25s ease;
-  }
-
-  .badge.bg-orange-subtle {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 0.76rem;
-    padding: 4px 10px;
-    transition: all 0.2s ease;
-  }
-
-  .stat-icon-wrapper {
-    width: 54px;
-    height: 54px;
-    border-radius: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: #ffffff !important;
-    border: 2px solid #ff6b35 !important;
-    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.12);
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-
-    i {
-      color: #ff6b35 !important;
-      font-size: 1.35rem;
-      transition: all 0.25s ease;
-    }
-  }
-
-  &:hover .stat-icon-wrapper,
-  &:focus-within .stat-icon-wrapper {
-    background: linear-gradient(135deg, #ff843a 0%, #ff521b 100%) !important;
-    border: 2px solid #ffffff !important;
-    box-shadow: 0 8px 22px rgba(255, 85, 20, 0.45);
-    transform: scale(1.1) rotate(4deg);
-
-    i {
-      color: #ffffff !important;
-    }
-  }
-}
-
-/* Dish Avatar */
-.dish-avatar {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.15rem;
-  background-color: #ffffff !important;
-  border: 1.5px solid #ff6b35 !important;
+  border: 1.5px solid $brand-orange;
+  color: $brand-orange;
+  background-color: transparent;
+  font-weight: 600;
   transition: all 0.2s ease;
 
-  i {
-    color: #ff6b35 !important;
-    transition: all 0.2s ease;
+  &:hover {
+    background-color: $brand-orange;
+    color: #ffffff;
   }
 }
 
-tr:hover .dish-avatar {
-  background: linear-gradient(135deg, #ff843a 0%, #ff521b 100%) !important;
-  border: 1.5px solid #ffffff !important;
-
-  i {
-    color: #ffffff !important;
-  }
+/* Unified Dashboard Filter Pill & Refresh Toolbar (Rộng rãi, không có scrollbar) */
+.dashboard-toolbar-wrapper {
+  flex-shrink: 0;
+  overflow: visible !important;
 }
 
-/* Quick Actions */
-.quick-action-item {
-  background-color: #ffffff !important;
-  border: 1px solid #ede4d6 !important;
-  border-radius: 16px !important;
-  padding: 14px 18px !important;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+.dashboard-filter-pill {
+  background-color: #ffffff;
+  border: 1.5px solid #ede4d6;
+  white-space: nowrap;
+  flex-shrink: 0;
+  height: 48px;
+  padding: 4px 10px;
+  box-shadow: 0 4px 16px rgba(180, 150, 110, 0.08) !important;
 
-  &:hover, &:focus {
-    background-color: #fff9f5 !important;
-    border-color: #ffd4be !important;
-    box-shadow: 0 4px 16px rgba(255, 107, 53, 0.12) !important;
-    transform: translateX(4px);
+  .period-filter-group {
+    background: transparent;
+    border: none;
+    padding: 0;
+    gap: 4px;
 
-    .action-icon {
-      background: linear-gradient(135deg, #ff843a 0%, #ff521b 100%) !important;
-      border: 1.5px solid #ffffff !important;
-      box-shadow: 0 4px 14px rgba(255, 85, 20, 0.35);
-      transform: scale(1.08);
+    .period-btn {
+      border: none;
+      color: #5c5346;
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 0.45rem 1.05rem !important;
+      transition: all 0.2s ease;
+      line-height: 1.4;
 
-      i {
-        color: #ffffff !important;
+      &:hover {
+        color: $brand-orange;
+        background-color: rgba(234, 88, 12, 0.06);
+      }
+
+      &.active {
+        background-color: $brand-orange;
+        color: #ffffff;
+        box-shadow: 0 2px 10px rgba(234, 88, 12, 0.32);
       }
     }
   }
 
-  .action-icon {
+  .toolbar-divider {
+    width: 1.5px;
+    height: 22px;
+    background-color: #ede4d6;
+    flex-shrink: 0;
+  }
+
+  .refresh-icon-btn {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    border: none;
+    background-color: transparent;
+    color: #6d6355;
+    transition: all 0.2s ease;
+    padding: 0;
+    cursor: pointer;
+
+    i {
+      font-size: 0.95rem;
+    }
+
+    &:hover:not(:disabled) {
+      color: $brand-orange;
+      background-color: $brand-orange-subtle;
+      transform: scale(1.08);
+    }
+
+    &:active:not(:disabled) {
+      transform: scale(0.95);
+    }
+
+    &:disabled {
+      color: #c4b9aa;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+  }
+}
+
+/* Bento Card Base */
+.bento-card {
+  background-color: #ffffff;
+  border-radius: 1.25rem !important; // 20px
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05) !important;
+
+  &:hover {
+    box-shadow: 0 10px 25px -4px rgba(15, 23, 42, 0.08) !important;
+  }
+}
+
+/* KPI Cards */
+.kpi-card {
+  cursor: default;
+
+  &.text-decoration-none {
+    cursor: pointer;
+
+    &:hover {
+      transform: translateY(-3px);
+    }
+  }
+
+  .kpi-icon-badge {
     width: 44px;
     height: 44px;
     border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 1.2rem;
+  }
+}
+
+/* Multi-Segment Table Progress Bar */
+.table-progress-bar {
+  background-color: #f1f5f9;
+  overflow: hidden;
+
+  .progress-bar {
+    transition: width 0.4s ease-in-out;
+  }
+}
+
+.status-bullet {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-row-item {
+  background-color: #fafbfc;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background-color: #f1f5f9;
+  }
+}
+
+/* Rank Badges */
+.rank-badge {
+  width: 28px;
+  height: 28px;
+  font-size: 0.85rem;
+
+  &.rank-1 {
+    background: #fef3c7;
+    color: #d97706;
+    border: 1px solid #fde68a;
+  }
+
+  &.rank-2 {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+  }
+
+  &.rank-3 {
+    background: #ffedd5;
+    color: #c2410c;
+    border: 1px solid #fed7aa;
+  }
+
+  &.rank-other {
+    background: #f8fafc;
+    color: #94a3b8;
+    border: 1px solid #f1f5f9;
+  }
+}
+
+.dish-avatar-placeholder {
+  width: 36px;
+  height: 36px;
+  background-color: $brand-orange-subtle;
+  font-size: 0.95rem;
+}
+
+/* Quick Action Cards */
+.quick-action-card {
+  background-color: #ffffff;
+  border-color: #e2e8f0;
+  transition: all 0.2s ease;
+
+  .quick-action-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 1.1rem;
-    background-color: #ffffff !important;
-    border: 1.5px solid #ff6b35 !important;
-    box-shadow: 0 2px 8px rgba(255, 107, 53, 0.1);
-    transition: all 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.05);
+    border-color: $brand-orange;
+
+    strong {
+      color: $brand-orange !important;
+    }
+  }
+
+  &.bg-orange-subtle-hover:hover {
+    background-color: #fffaf5;
+  }
+}
+
+/* Inventory Alerts Card (Lưới 2 Cột - Nâng cấp toàn diện) */
+.alert-header-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.15);
+}
+
+.alert-count-pill {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: #ffffff;
+  font-size: 0.76rem;
+  font-weight: 750;
+  padding: 3px 9px;
+  border-radius: 20px;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.28);
+}
+
+.btn-manage-inventory {
+  border: 1.5px solid #fca5a5;
+  color: #dc2626;
+  background-color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.45rem 1.1rem;
+  border-radius: 9999px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: #dc2626;
+    color: #ffffff;
+    border-color: #dc2626;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.22);
+  }
+}
+
+.inventory-alert-card {
+  background-color: #ffffff;
+  padding: 0.85rem 1.15rem !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+  }
+
+  &.alert-danger-border {
+    border: 1.5px solid #fca5a5 !important;
+    background: linear-gradient(135deg, #fffafa 0%, #ffffff 100%);
+  }
+
+  &.alert-warning-border {
+    border: 1.5px solid #fed7aa !important;
+    background: linear-gradient(135deg, #fffdfa 0%, #ffffff 100%);
+  }
+
+  .alert-icon-box {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+
+    &.icon-danger-bg {
+      background-color: #fee2e2;
+      color: #dc2626;
+    }
+
+    &.icon-warning-bg {
+      background-color: #fef3c7;
+      color: #d97706;
+    }
+  }
+
+  .alert-message-text {
+    font-size: 0.85rem;
+    font-weight: 600;
+    line-height: 1.35;
+    color: #0f172a;
+    letter-spacing: 0.35px; // Giãn khoảng cách giữa các chữ cho thoáng, dễ đọc
+    margin-bottom: 0.25rem;
+  }
+
+  .alert-meta-row {
+    font-size: 0.78rem;
+    line-height: 1.3;
+    letter-spacing: 0.25px; // Giãn khoảng cách giữa các chữ
+
+    .ingredient-name {
+      color: #334155;
+      font-weight: 600;
+    }
+  }
+
+  .batch-code-pill {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 6px;
+    letter-spacing: 0.35px;
 
     i {
-      color: #ff6b35 !important;
-      transition: all 0.2s ease;
+      color: #94a3b8;
+      font-size: 0.68rem;
+    }
+  }
+
+  .alert-resolve-btn {
+    font-size: 0.76rem;
+    letter-spacing: 0.3px;
+    padding: 0.2rem 0.8rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+
+    &.resolve-danger {
+      background-color: #ffffff;
+      color: #dc2626;
+      border: 1.5px solid #fca5a5;
+
+      &:hover {
+        background-color: #dc2626;
+        color: #ffffff;
+        border-color: #dc2626;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(220, 38, 38, 0.2);
+      }
+    }
+
+    &.resolve-warning {
+      background-color: #ffffff;
+      color: #d97706;
+      border: 1.5px solid #fed7aa;
+
+      &:hover {
+        background-color: #d97706;
+        color: #ffffff;
+        border-color: #d97706;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(217, 119, 6, 0.2);
+      }
     }
   }
 }
 
-/* Tip Box */
-.tip-box {
-  background-color: #fff9f4;
-  border: 1px solid #ffe6d6;
-  border-left: 4px solid #ff6b35;
-  border-radius: 14px;
+.text-truncate-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-/* Inventory Alert Items */
-.inventory-alert-item {
-  transition: background-color 0.2s ease, border-color 0.2s ease;
-  
-  &.alert-danger-bg {
-    background-color: #fff2f2 !important;
-    border-color: #ffcdd2 !important;
-    
-    &:hover {
-      background-color: #ffe6e6 !important;
-    }
-  }
+/* Animations */
+.animate-pulse {
+  animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
 
-  &.alert-warning-bg {
-    background-color: #fff9e6 !important;
-    border-color: #ffe0b2 !important;
-    
-    &:hover {
-      background-color: #fff3cd !important;
-    }
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.animate-bounce-subtle {
+  animation: bounce-subtle 2s infinite;
+}
+
+@keyframes bounce-subtle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+/* Chart Canvas Container (Pattern ngăn chặn triệt để infinite resize loop của Chart.js) */
+.chart-container-wrapper {
+  position: relative;
+  width: 100%;
+  flex: 1 1 0;
+  min-height: 340px;
+  max-height: 100%;
+  overflow: hidden;
+
+  .chart-canvas-inner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
   }
 }

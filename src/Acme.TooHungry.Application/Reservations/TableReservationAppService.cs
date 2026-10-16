@@ -120,7 +120,7 @@ public class TableReservationAppService : ApplicationService, ITableReservationA
     {
         var (reservation, table) = await _reservationManager.CheckInAsync(id);
 
-        await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name, table.DiningAreaId);
+        await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name, table.DiningAreaId, table.OccupiedTime);
 
         var dto = ObjectMapper.Map<TableReservation, TableReservationDto>(reservation);
         dto.TableName = table.Name;

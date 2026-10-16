@@ -107,6 +107,12 @@ public class TooHungryPermissionDefinitionProvider : PermissionDefinitionProvide
         payments.AddChild(TooHungryPermissions.Payments.Create, L("Permission:Payments.Create"));
         payments.AddChild(TooHungryPermissions.Payments.Edit, L("Permission:Payments.Edit"));
         payments.AddChild(TooHungryPermissions.Payments.Delete, L("Permission:Payments.Delete"));
+        // Forecasts
+        var forecasts = myGroup.AddPermission(TooHungryPermissions.Forecasts.Default, L("Permission:Forecasts"));
+        forecasts.AddChild(TooHungryPermissions.Forecasts.Create, L("Permission:Forecasts.Create"));
+        forecasts.AddChild(TooHungryPermissions.Forecasts.Edit, L("Permission:Forecasts.Edit"));
+        forecasts.AddChild(TooHungryPermissions.Forecasts.Delete, L("Permission:Forecasts.Delete"));
+        forecasts.AddChild(TooHungryPermissions.Forecasts.Approve, L("Permission:Forecasts.Approve"));
     }
     private static LocalizableString L(string name)
     {

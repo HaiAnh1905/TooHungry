@@ -1,9 +1,9 @@
 import { StorageType } from '../inventories/models';
 
 export enum ConsumptionMethod {
-  RECIPE = 0,
-  MANUAL = 1,
-  HYBRID = 2,
+  RECIPE = 1,
+  MANUAL = 2,
+  HYBRID = 3,
 }
 
 export interface IngredientDto {

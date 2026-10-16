@@ -1,5 +1,5 @@
 <div class="category-management-page">
-  <!-- 1. TOP HEADER: Tiêu đề & Nút Thêm mới -->
+  <!-- 1. TOP HEADER: Tiêu đề & Các nút thao tác (Thêm mới, Kích hoạt tất cả, Tạm ngưng tất cả) -->
   <div class="page-header-row d-flex align-items-center justify-content-between flex-wrap gap-3 mb-3">
     <div>
       <h2 class="page-title m-0">
@@ -9,7 +9,34 @@
         {{ '::ManageUnitsSubtitle' | abpLocalization }}
       </p>
     </div>
-    <div>
+    <div class="d-flex align-items-center flex-wrap gap-2">
+      <!-- Bulk Actions -->
+      <button
+        type="button"
+        class="btn btn-outline-success btn-bulk-action"
+        (click)="toggleAllStatus(true)"
+        [disabled]="isBulkProcessing || loading"
+        [title]="'::ConfirmActivateAllUnits' | abpLocalization"
+        *abpPermission="'TooHungry.Units.Edit'"
+      >
+        <i class="fa fa-check-double me-1" *ngIf="!isBulkProcessing"></i>
+        <i class="fa fa-spinner fa-spin me-1" *ngIf="isBulkProcessing"></i>
+        <span>{{ '::ActivateAll' | abpLocalization }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="btn btn-outline-warning btn-bulk-action"
+        (click)="toggleAllStatus(false)"
+        [disabled]="isBulkProcessing || loading"
+        [title]="'::ConfirmDeactivateAllUnits' | abpLocalization"
+        *abpPermission="'TooHungry.Units.Edit'"
+      >
+        <i class="fa fa-ban me-1" *ngIf="!isBulkProcessing"></i>
+        <i class="fa fa-spinner fa-spin me-1" *ngIf="isBulkProcessing"></i>
+        <span>{{ '::DeactivateAll' | abpLocalization }}</span>
+      </button>
+
       <button
         id="create-unit"
         class="btn btn-primary btn-add-theme"
@@ -17,13 +44,13 @@
         (click)="createUnit()"
         *abpPermission="'TooHungry.Units.Create'"
       >
-        <i class="fa fa-plus-circle"></i>
+        <i class="fa fa-plus-circle me-1"></i>
         <span>{{ '::AddNewUnit' | abpLocalization }}</span>
       </button>
     </div>
   </div>
 
-  <!-- 2. FILTER CARD: Ô tìm kiếm, Sắp xếp & Số dòng -->
+  <!-- 2. FILTER CARD: Ô tìm kiếm, Lọc trạng thái, Sắp xếp & Số dòng -->
   <div class="filter-card-container mb-4">
     <!-- Hàng tìm kiếm -->
     <div class="search-input-wrapper mb-3">
@@ -44,14 +71,26 @@
 
     <!-- Hàng lọc/sắp xếp & Số dòng trên trang -->
     <div class="d-flex align-items-center justify-content-between flex-wrap gap-4 filter-dropdowns-row">
-      <div class="filter-item d-flex align-items-center gap-2">
-        <span class="filter-label">{{ '::SortBy' | abpLocalization }}:</span>
-        <app-custom-select
-          [options]="sortOptions"
-          [(ngModel)]="sortBy"
-          (selectionChange)="onSortChange($event)"
-          minWidth="170px"
-        ></app-custom-select>
+      <div class="d-flex align-items-center gap-4 flex-wrap">
+        <div class="filter-item d-flex align-items-center gap-2">
+          <span class="filter-label">{{ '::FilterByStatus' | abpLocalization }}:</span>
+          <app-custom-select
+            [options]="statusFilterOptions"
+            [(ngModel)]="statusFilter"
+            (selectionChange)="onStatusFilterChange($event)"
+            minWidth="160px"
+          ></app-custom-select>
+        </div>
+
+        <div class="filter-item d-flex align-items-center gap-2">
+          <span class="filter-label">{{ '::SortBy' | abpLocalization }}:</span>
+          <app-custom-select
+            [options]="sortOptions"
+            [(ngModel)]="sortBy"
+            (selectionChange)="onSortChange($event)"
+            minWidth="170px"
+          ></app-custom-select>
+        </div>
       </div>
 
       <div class="filter-item d-flex align-items-center gap-2">
@@ -98,30 +137,57 @@
   </ng-template>
 
   <ng-template #statusTpl let-row>
-    <span
-      class="badge-status"
-      [ngClass]="row.isActive !== false ? 'badge-active' : 'badge-inactive'"
-    >
-      <i class="fa" [ngClass]="row.isActive !== false ? 'fa-check-circle' : 'fa-pause-circle'"></i>
-      <span>{{ (row.isActive !== false ? '::UnitStatusActive' : '::UnitStatusInactive') | abpLocalization }}</span>
-    </span>
-  </ng-template>
-
-  <ng-template #actionsTpl let-row>
-    <div class="actions-container d-flex align-items-center gap-2">
+    <div class="d-flex justify-content-center">
       <button
         *abpPermission="'TooHungry.Units.Edit'"
         type="button"
-        class="icon-action-btn btn-edit"
+        class="status-indicator status-clickable-toggle"
+        [ngClass]="row.isActive !== false ? 'status-active' : 'status-inactive'"
+        (click)="toggleUnitStatus(row)"
+        [title]="(row.isActive !== false ? '::ClickToDeactivate' : '::ClickToActivate') | abpLocalization"
+      >
+        <span class="status-dot"></span>
+        <span class="status-label">{{ (row.isActive !== false ? '::UnitStatusActive' : '::UnitStatusInactive') | abpLocalization }}</span>
+      </button>
+    </div>
+  </ng-template>
+
+  <ng-template #actionsTpl let-row>
+    <div class="actions-wrapper d-flex align-items-center justify-content-center gap-1">
+      <button
+        *abpPermission="'TooHungry.Units.Edit'"
+        type="button"
+        class="action-btn btn-edit"
         (click)="editUnit(row)"
         [title]="'::Edit' | abpLocalization"
       >
         <i class="fa fa-pencil-alt"></i>
       </button>
+      @if (row.isActive !== false) {
+        <button
+          *abpPermission="'TooHungry.Units.Edit'"
+          type="button"
+          class="action-btn btn-deactivate"
+          (click)="toggleUnitStatus(row)"
+          [title]="'::ClickToDeactivate' | abpLocalization"
+        >
+          <i class="fa fa-pause"></i>
+        </button>
+      } @else {
+        <button
+          *abpPermission="'TooHungry.Units.Edit'"
+          type="button"
+          class="action-btn btn-reactivate"
+          (click)="toggleUnitStatus(row)"
+          [title]="'::ClickToActivate' | abpLocalization"
+        >
+          <i class="fa fa-play"></i>
+        </button>
+      }
       <button
         *abpPermission="'TooHungry.Units.Delete'"
         type="button"
-        class="icon-action-btn btn-delete"
+        class="action-btn btn-delete"
         (click)="deleteUnit(row)"
         [title]="'::Delete' | abpLocalization"
       >
@@ -130,77 +196,115 @@
     </div>
   </ng-template>
 
-  <!-- 4. MODAL THÊM MỚI / CHỈNH SỬA DÙNG SHARED MODAL -->
-  <app-shared-modal
-    [(isVisible)]="isModalOpen"
-    [title]="modalTitle"
-    [confirmLoading]="isSaving"
-    (onOk)="save()"
-    (onCancel)="closeModal()"
+  <!-- 4. MODAL THÊM MỚI / CHỈNH SỬA DÙNG ABP MODAL -->
+  <abp-modal
+    [(visible)]="isModalOpen"
+    [options]="{
+      size: 'md',
+      centered: true,
+      scrollable: false,
+      windowClass: 'unit-manage-modal',
+      modalDialogClass: 'unit-manage-dialog'
+    }"
   >
-    <form [formGroup]="form" (ngSubmit)="save()" class="unit-modal-form py-2">
-      <!-- Tên đơn vị tính -->
-      <div class="form-group mb-3">
-        <label class="form-label fw-bold mb-1" for="unit-name">
-          {{ '::UnitName' | abpLocalization }} <span class="text-danger">*</span>
-        </label>
-        <input
-          id="unit-name"
-          type="text"
-          class="form-control modern-input"
-          formControlName="name"
-          [placeholder]="'::EnterUnitName' | abpLocalization"
-          maxlength="64"
-          [class.is-invalid]="form.get('name')?.invalid && (form.get('name')?.dirty || form.get('name')?.touched)"
-        />
-        @if (form.get('name')?.invalid && (form.get('name')?.dirty || form.get('name')?.touched)) {
-          <div class="invalid-feedback d-block mt-1">
-            {{ '::Unit:NameIsRequired' | abpLocalization }}
-          </div>
-        }
-      </div>
-
-      <!-- Ký hiệu viết tắt -->
-      <div class="form-group mb-3">
-        <label class="form-label fw-bold mb-1" for="unit-abbreviation">
-          {{ '::Abbreviation' | abpLocalization }}
-        </label>
-        <input
-          id="unit-abbreviation"
-          type="text"
-          class="form-control modern-input"
-          formControlName="abbreviation"
-          [placeholder]="'::EnterAbbreviation' | abpLocalization"
-          maxlength="16"
-        />
-        <small class="form-text text-muted mt-1 d-block">
-          Để trống sẽ tự động lấy theo Tên đơn vị
-        </small>
-      </div>
-
-      <!-- Trạng thái kích hoạt -->
-      <div class="form-group mb-2">
-        <label class="form-label fw-bold mb-1">
-          {{ '::UnitActiveStatus' | abpLocalization }}
-        </label>
-        <div class="d-flex align-items-center gap-2 mt-1">
-          <div class="form-check form-switch custom-switch">
-            <input
-              id="unit-active-switch"
-              class="form-check-input"
-              type="checkbox"
-              role="switch"
-              formControlName="isActive"
-            />
-            <label class="form-check-label ms-1" for="unit-active-switch">
-              {{ (form.get('isActive')?.value ? '::UnitStatusActive' : '::UnitStatusInactive') | abpLocalization }}
-            </label>
-          </div>
+    <ng-template #abpHeader>
+      <div class="d-flex align-items-center gap-3">
+        <div class="modal-header-icon">
+          <i class="fa fa-scale-balanced"></i>
         </div>
-        <small class="form-text text-muted mt-1 d-block">
-          {{ '::UnitActiveStatusDesc' | abpLocalization }}
-        </small>
+        <div>
+          <h5 class="m-0 modal-title-text">
+            {{ (isEditMode ? '::EditUnit' : '::NewUnit') | abpLocalization }}
+          </h5>
+          <span class="modal-subtitle-text">
+            {{ (isEditMode ? '::EditUnitSubtitle' : '::NewUnitSubtitle') | abpLocalization }}
+          </span>
+        </div>
       </div>
-    </form>
-  </app-shared-modal>
+    </ng-template>
+
+    <ng-template #abpBody>
+      <form id="unit-form" [formGroup]="form" (ngSubmit)="save()" class="unit-modal-form theme-modal-form">
+        <!-- Tên đơn vị tính -->
+        <div class="form-field-group mb-3">
+          <label class="field-label" for="unit-name">
+            <span>{{ '::UnitName' | abpLocalization }}</span>
+            <span class="required-star">*</span>
+          </label>
+          <input
+            id="unit-name"
+            type="text"
+            class="form-control modern-input"
+            formControlName="name"
+            [placeholder]="'::EnterUnitName' | abpLocalization"
+            maxlength="64"
+            autofocus
+          />
+          @if (form.get('name')?.invalid && (form.get('name')?.dirty || form.get('name')?.touched)) {
+            <div class="text-danger small mt-1">
+              {{ '::Unit:NameIsRequired' | abpLocalization }}
+            </div>
+          }
+        </div>
+
+        <!-- Ký hiệu viết tắt -->
+        <div class="form-field-group mb-3">
+          <label class="field-label" for="unit-abbreviation">
+            <span>{{ '::Abbreviation' | abpLocalization }}</span>
+          </label>
+          <input
+            id="unit-abbreviation"
+            type="text"
+            class="form-control modern-input"
+            formControlName="abbreviation"
+            [placeholder]="'::EnterAbbreviation' | abpLocalization"
+            maxlength="16"
+          />
+          <small class="form-text text-muted mt-1 d-block">
+            Để trống sẽ tự động lấy theo Tên đơn vị
+          </small>
+        </div>
+
+        <!-- Trạng thái kích hoạt -->
+        <div class="form-field-group mb-1">
+          <label class="field-label">
+            <span>{{ '::UnitActiveStatus' | abpLocalization }}</span>
+          </label>
+          <div class="d-flex align-items-center gap-2 mt-1">
+            <div class="form-check form-switch custom-switch">
+              <input
+                id="unit-active-switch"
+                class="form-check-input"
+                type="checkbox"
+                role="switch"
+                formControlName="isActive"
+              />
+              <label class="form-check-label ms-1 fw-bold" for="unit-active-switch">
+                {{ (form.get('isActive')?.value ? '::UnitStatusActive' : '::UnitStatusInactive') | abpLocalization }}
+              </label>
+            </div>
+          </div>
+          <small class="form-text text-muted mt-1 d-block">
+            {{ '::UnitActiveStatusDesc' | abpLocalization }}
+          </small>
+        </div>
+      </form>
+    </ng-template>
+
+    <ng-template #abpFooter>
+      <button type="button" class="btn btn-outline-secondary px-3" (click)="closeModal()">
+        {{ '::Cancel' | abpLocalization }}
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary btn-save px-4"
+        (click)="save()"
+        [disabled]="form.invalid || isSaving"
+      >
+        <i class="fa fa-check me-1" *ngIf="!isSaving"></i>
+        <i class="fa fa-spinner fa-spin me-1" *ngIf="isSaving"></i>
+        <span>{{ '::Save' | abpLocalization }}</span>
+      </button>
+    </ng-template>
+  </abp-modal>
 </div>

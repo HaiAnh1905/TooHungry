@@ -10,6 +10,7 @@ public class TableStatusChangedDto
     public Guid? DiningAreaId { get; set; }
     public TableStatus Status { get; set; }
     public string StatusName { get; set; } = string.Empty;
+    public DateTime? OccupiedTime { get; set; }
     public DateTime UpdatedTime { get; set; } = DateTime.UtcNow;
 }
 
@@ -22,6 +23,6 @@ public class TableOrderUpdatedDto
 
 public interface ITableRealtimeNotifier
 {
-    Task NotifyTableStatusChangedAsync(Guid tableId, TableStatus newStatus, string? tableName = null, Guid? diningAreaId = null);
+    Task NotifyTableStatusChangedAsync(Guid tableId, TableStatus newStatus, string? tableName = null, Guid? diningAreaId = null, DateTime? occupiedTime = null);
     Task NotifyTableOrderUpdatedAsync(Guid tableId, bool hasActiveOrder, Guid? orderId = null);
 }
