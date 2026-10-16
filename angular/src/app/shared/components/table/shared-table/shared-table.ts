@@ -8,6 +8,9 @@ export interface ColumnItem {
   sortOrder?: string | null;
   sortFn?: any;
   customTemplate?: TemplateRef<any>;
+  align?: 'left' | 'center' | 'right';
+  width?: string;
+  className?: string;
 }
 
 @Component({
@@ -15,7 +18,7 @@ export interface ColumnItem {
   standalone: true,
   imports: [CommonModule, NzTableModule],
   templateUrl: './shared-table.html',
-  styleUrls: []
+  styleUrls: ['./shared-table.scss'],
 })
 export class SharedTableComponent {
   @Input() data: any[] = [];
@@ -24,7 +27,8 @@ export class SharedTableComponent {
   @Input() totalCount = 0;
   @Input() pageIndex = 1;
   @Input() pageSize = 10;
-  
+  @Input() scrollX: string | null = null;
+
   @Output() queryParamsChange = new EventEmitter<any>();
 
   onQueryParamsChange(params: any): void {

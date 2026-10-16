@@ -1,0 +1,226 @@
+.modal-header-endmeal {
+  .header-icon-box {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+
+    &.icon-payment {
+      background: #eff6ff;
+      color: #2563eb;
+      border: 1.5px solid #bfdbfe;
+    }
+
+    &.icon-free {
+      background: #fefce8;
+      color: #d97706;
+      border: 1.5px solid #fef08a;
+    }
+  }
+
+  .modal-title {
+    font-weight: 800;
+    color: #1e293b;
+    font-size: 1.15rem;
+  }
+
+  .modal-subtitle {
+    font-size: 0.85rem;
+  }
+}
+
+.end-meal-modal-body {
+  .meal-session-timeline-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 16px;
+
+    .session-badge-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: #ea580c;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+    }
+
+    .session-title {
+      font-size: 0.95rem;
+      color: #1e293b;
+    }
+
+    .session-duration-pill {
+      background: #fff7ed;
+      color: #ea580c;
+      border: 1px solid #fed7aa;
+      font-weight: 800;
+      font-size: 0.88rem;
+      padding: 6px 14px;
+      border-radius: 20px;
+    }
+
+    .timeline-track-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: #ffffff;
+      padding: 14px 18px;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+
+      .timeline-node {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+
+        .node-indicator {
+          width: 38px;
+          height: 38px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1rem;
+        }
+
+        &.start .node-indicator {
+          background: #ecfdf5;
+          color: #059669;
+          border: 1.5px solid #a7f3d0;
+        }
+
+        &.end .node-indicator {
+          background: #eff6ff;
+          color: #2563eb;
+          border: 1.5px solid #bfdbfe;
+        }
+
+        .node-info {
+          display: flex;
+          flex-direction: column;
+
+          .node-label {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: #64748b;
+          }
+
+          .node-time {
+            font-size: 1rem;
+            color: #1e293b;
+          }
+
+          .node-date {
+            font-size: 0.75rem;
+          }
+        }
+      }
+
+      .timeline-connector {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+        padding: 0 10px;
+
+        .connector-line {
+          position: absolute;
+          top: 50%;
+          left: 0;
+          right: 0;
+          height: 2px;
+          background: #e2e8f0;
+          z-index: 1;
+        }
+
+        .connector-pill {
+          position: relative;
+          z-index: 2;
+          background: #ea580c;
+          color: #ffffff;
+          font-weight: 700;
+          font-size: 0.75rem;
+          padding: 2px 10px;
+          border-radius: 12px;
+          margin-bottom: 2px;
+        }
+
+        .connector-arrow {
+          position: relative;
+          z-index: 2;
+          color: #94a3b8;
+          font-size: 0.7rem;
+        }
+      }
+    }
+  }
+
+  .alert-order-card {
+    border-radius: 12px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    padding: 14px;
+
+    .alert-heading {
+      color: #1e40af;
+      font-size: 1rem;
+    }
+  }
+
+  .alert-no-order-card {
+    border-radius: 12px;
+    background: #fefce8;
+    border: 1px solid #fef08a;
+    padding: 14px;
+
+    .alert-heading {
+      color: #854d0e;
+      font-size: 1rem;
+    }
+  }
+}
+
+.btn-action {
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 8px 16px;
+  min-height: 44px;
+
+  &.btn-payment {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #ffffff;
+
+    &:hover:not(:disabled) {
+      background: #1d4ed8;
+      border-color: #1d4ed8;
+    }
+  }
+
+  &.btn-free {
+    background: #ea580c;
+    border-color: #ea580c;
+    color: #ffffff;
+
+    &:hover:not(:disabled) {
+      background: #c2410c;
+      border-color: #c2410c;
+    }
+  }
+}
+
+.btn-cancel {
+  border-radius: 8px;
+  padding: 8px 16px;
+  min-height: 44px;
+}

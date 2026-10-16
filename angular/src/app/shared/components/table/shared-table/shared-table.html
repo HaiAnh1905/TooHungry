@@ -1,30 +1,47 @@
-<nz-table
-  #basicTable
-  [nzData]="data"
-  [nzFrontPagination]="false"
-  [nzLoading]="loading"
-  [nzTotal]="totalCount"
-  [nzPageIndex]="pageIndex"
-  [nzPageSize]="pageSize"
-  (nzQueryParams)="onQueryParamsChange($event)"
-  nzShowSizeChanger>
-  <thead>
-    <tr>
-      <th *ngFor="let col of columns" [nzColumnKey]="col.key" [nzSortFn]="col.sortFn">
-        {{ col.name | titlecase }}
-      </th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr *ngFor="let row of basicTable.data">
-      <td *ngFor="let col of columns">
-        <ng-container *ngIf="col.customTemplate; else textData">
-          <ng-container *ngTemplateOutlet="col.customTemplate; context: { $implicit: row, column: col }"></ng-container>
-        </ng-container>
-        <ng-template #textData>
-          {{ row[col.key] }}
-        </ng-template>
-      </td>
-    </tr>
-  </tbody>
-</nz-table>
+<div class="shared-table-container">
+  <nz-table
+    #basicTable
+    [nzData]="data"
+    [nzFrontPagination]="false"
+    [nzLoading]="loading"
+    [nzTotal]="totalCount"
+    [nzPageIndex]="pageIndex"
+    [nzPageSize]="pageSize"
+    [nzScroll]="scrollX ? { x: scrollX } : {}"
+    (nzQueryParams)="onQueryParamsChange($event)"
+    nzShowSizeChanger
+    [nzBordered]="false"
+    class="premium-saas-table"
+  >
+    <thead>
+      <tr>
+        <th
+          *ngFor="let col of columns"
+          [nzColumnKey]="col.key"
+          [nzSortFn]="col.sortFn"
+          [nzAlign]="col.align || 'left'"
+          [nzWidth]="col.width || null"
+          [class]="col.className || ''"
+        >
+          <span class="column-header-title">{{ col.name }}</span>
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let row of basicTable.data" class="table-data-row">
+        <td
+          *ngFor="let col of columns"
+          [nzAlign]="col.align || 'left'"
+          [class]="col.className || ''"
+        >
+          <ng-container *ngIf="col.customTemplate; else textData">
+            <ng-container *ngTemplateOutlet="col.customTemplate; context: { $implicit: row, column: col }"></ng-container>
+          </ng-container>
+          <ng-template #textData>
+            <span class="cell-text-default">{{ row[col.key] }}</span>
+          </ng-template>
+        </td>
+      </tr>
+    </tbody>
+  </nz-table>
+</div>

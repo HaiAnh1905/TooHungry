@@ -84,7 +84,7 @@
         <div class="avatar-circle">{{ userInitials() }}</div>
         <div class="user-meta d-none d-md-block">
           <div class="user-name">{{ userInfo().fullName }}</div>
-          <div class="user-role">{{ '::WaiterRoleBadge' | abpLocalization }}</div>
+          <div class="user-role">{{ { key: primaryRoleLocalizationKey(), defaultValue: primaryRoleDefaultValue() } | abpLocalization }}</div>
         </div>
       </div>
 

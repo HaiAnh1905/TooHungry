@@ -152,7 +152,13 @@ public class TooHungryDataSeederContributor : IDataSeedContributor, ITransientDe
                 "TooHungry.Reservations.Create",
                 "TooHungry.Reservations.Update",
                 "TooHungry.Reservations.Cancel",
-                "TooHungry.Reservations.CheckIn"
+                "TooHungry.Reservations.CheckIn",
+
+                "TooHungry.Forecasts",
+                "TooHungry.Forecasts.Create",
+                "TooHungry.Forecasts.Edit",
+                "TooHungry.Forecasts.Delete",
+                "TooHungry.Forecasts.Approve"
             },
             context.TenantId
         );
@@ -162,8 +168,6 @@ public class TooHungryDataSeederContributor : IDataSeedContributor, ITransientDe
             "Waiter",
             new[]
             {
-                "TooHungry.Dishes",
-                "TooHungry.DishCategories",
                 "TooHungry.DiningAreas",
                 "TooHungry.Tables",
                 "TooHungry.Tables.Create",
@@ -194,7 +198,13 @@ public class TooHungryDataSeederContributor : IDataSeedContributor, ITransientDe
                 "TooHungry.Reservations.Update",
                 "TooHungry.Reservations.Cancel",
                 "TooHungry.Reservations.CheckIn",
-                "TooHungry.Tables.Manage"
+                "TooHungry.Tables.Manage",
+
+                "TooHungry.Forecasts",
+                "TooHungry.Forecasts.Create",
+                "TooHungry.Forecasts.Edit",
+                "TooHungry.Forecasts.Delete",
+                "TooHungry.Forecasts.Approve"
             },
             context.TenantId
         );
@@ -228,16 +238,23 @@ public class TooHungryDataSeederContributor : IDataSeedContributor, ITransientDe
         {
             await _tableRepository.InsertAsync(new RestaurantTable { Name = "Bàn 01", Capacity = 4, Status = TableStatus.Available, DiningAreaId = floor1.Id, Location = "Tầng 1" });
             await _tableRepository.InsertAsync(new RestaurantTable { Name = "Bàn 02", Capacity = 2, Status = TableStatus.Available, DiningAreaId = floor1.Id, Location = "Tầng 1" });
-            await _tableRepository.InsertAsync(new RestaurantTable { Name = "Bàn 03", Capacity = 6, Status = TableStatus.Occupied, DiningAreaId = floor2.Id, Location = "Tầng 2" });
+            await _tableRepository.InsertAsync(new RestaurantTable { Name = "Bàn 03", Capacity = 6, Status = TableStatus.Occupied, DiningAreaId = floor2.Id, Location = "Tầng 2", OccupiedTime = DateTime.Now.AddMinutes(-35) });
             await _tableRepository.InsertAsync(new RestaurantTable { Name = "Bàn VIP 01", Capacity = 10, Status = TableStatus.Reserved, DiningAreaId = vip.Id, Location = "Phòng VIP" });
             await _tableRepository.InsertAsync(new RestaurantTable { Name = "Bàn Sân Vườn", Capacity = 4, Status = TableStatus.Available, DiningAreaId = outdoor.Id, Location = "Ngoài trời" });
         }
         else
         {
-            // Link existing tables that don't have DiningAreaId yet
+            // Link existing tables that don't have DiningAreaId yet or missing OccupiedTime
             var tables = await _tableRepository.GetListAsync();
             foreach (var table in tables)
             {
+                var isModified = false;
+                if (table.Status == TableStatus.Occupied && !table.OccupiedTime.HasValue)
+                {
+                    table.OccupiedTime = DateTime.Now.AddMinutes(-30);
+                    isModified = true;
+                }
+
                 if (table.DiningAreaId == null)
                 {
                     if (table.Location == "Tầng 1" || table.Name.Contains("01") || table.Name.Contains("02"))
@@ -256,6 +273,11 @@ public class TooHungryDataSeederContributor : IDataSeedContributor, ITransientDe
                     {
                         table.DiningAreaId = outdoor.Id;
                     }
+                    isModified = true;
+                }
+
+                if (isModified)
+                {
                     await _tableRepository.UpdateAsync(table);
                 }
             }

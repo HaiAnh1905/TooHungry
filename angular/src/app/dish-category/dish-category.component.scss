@@ -355,8 +355,10 @@
 
     .datatable-header-cell:first-child,
     .datatable-header-cell:last-child,
+    .datatable-header-cell.text-center-col,
     .datatable-body-cell:first-child,
-    .datatable-body-cell:last-child {
+    .datatable-body-cell:last-child,
+    .datatable-body-cell.text-center-col {
       padding: 0 0.5rem !important;
       justify-content: center !important;
       text-align: center !important;

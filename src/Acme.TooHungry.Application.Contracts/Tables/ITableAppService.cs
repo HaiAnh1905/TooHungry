@@ -20,4 +20,9 @@ public interface ITableAppService : IApplicationService
     Task DeleteAsync(Guid id);
 
     Task SetAreaTablesStatusAsync(Guid diningAreaId, TableStatus status);
+    
+    Task<TableDto> TransferTableAsync(TransferTableInputDto input);
+
+    Task<TableDto> MergeTablesAsync(MergeTablesInputDto input);
 }
+

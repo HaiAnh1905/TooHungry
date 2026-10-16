@@ -12,10 +12,10 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CoreModule, LocalizationService } from '@abp/ng.core';
 import { ConfirmationService, Confirmation, ThemeSharedModule, ToasterService } from '@abp/ng.theme.shared';
+import { forkJoin } from 'rxjs';
 import { UnitService } from '../proxy/units/unit.service';
 import { UnitDto, CreateUpdateUnitDto } from '../proxy/units/models';
 import { SharedTableComponent, ColumnItem } from '../shared/components/table/shared-table/shared-table';
-import { SharedModalComponent } from '../shared/components/modal/shared-modal/shared-modal';
 import { CustomSelectComponent, CustomSelectOption } from '../shared/components/custom-select/custom-select.component';
 
 @Component({
@@ -29,7 +29,6 @@ import { CustomSelectComponent, CustomSelectOption } from '../shared/components/
     FormsModule,
     CustomSelectComponent,
     SharedTableComponent,
-    SharedModalComponent,
   ],
   templateUrl: './unit.component.html',
   styleUrl: './unit.component.scss',
@@ -57,10 +56,18 @@ export class UnitComponent implements OnInit, AfterViewInit, OnDestroy {
   pageSize = 10;
   loading = false;
   isSaving = false;
+  isBulkProcessing = false;
 
   // Filter & Search states
   searchTerm = '';
   sortBy = 'name asc';
+  statusFilter: 'all' | 'active' | 'inactive' = 'all';
+
+  readonly statusFilterOptions: CustomSelectOption[] = [
+    { value: 'all', label: '::AllStatus', icon: 'fa-layer-group' },
+    { value: 'active', label: '::UnitStatusActiveOnly', icon: 'fa-check-circle' },
+    { value: 'inactive', label: '::UnitStatusInactiveOnly', icon: 'fa-ban' },
+  ];
 
   readonly sortOptions: CustomSelectOption[] = [
     { value: 'name asc', label: '::SortNameAsc', icon: 'fa-sort-alpha-down' },
@@ -109,18 +116,23 @@ export class UnitComponent implements OnInit, AfterViewInit, OnDestroy {
         key: 'abbreviation',
         sortFn: true,
         customTemplate: this.abbreviationTpl,
+        width: '220px',
       },
       {
         name: this.localizationService.instant('::UnitStatus'),
         key: 'isActive',
         sortFn: true,
         customTemplate: this.statusTpl,
+        align: 'center',
+        width: '160px',
       },
       {
         name: this.localizationService.instant('::Actions'),
         key: 'actions',
         sortFn: false,
         customTemplate: this.actionsTpl,
+        align: 'center',
+        width: '120px',
       },
     ];
   }
@@ -159,6 +171,13 @@ export class UnitComponent implements OnInit, AfterViewInit, OnDestroy {
       );
     }
 
+    // Status filter
+    if (this.statusFilter === 'active') {
+      result = result.filter(item => item.isActive !== false);
+    } else if (this.statusFilter === 'inactive') {
+      result = result.filter(item => item.isActive === false);
+    }
+
     // Sort
     if (this.sortBy) {
       const [field, direction] = this.sortBy.split(' ');
@@ -194,6 +213,13 @@ export class UnitComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onSearchChange() {
+    this.pageIndex = 1;
+    this.applyFilterAndPagination();
+    this.cdr.markForCheck();
+  }
+
+  onStatusFilterChange(val: any) {
+    this.statusFilter = val;
     this.pageIndex = 1;
     this.applyFilterAndPagination();
     this.cdr.markForCheck();
@@ -306,4 +332,85 @@ export class UnitComponent implements OnInit, AfterViewInit, OnDestroy {
         }
       });
   }
+
+  toggleUnitStatus(unit: UnitDto) {
+    if (!unit?.id) return;
+    const newStatus = !(unit.isActive !== false);
+
+    this.unitService
+      .update(unit.id, {
+        name: unit.name || '',
+        abbreviation: unit.abbreviation || unit.name || '',
+        isActive: newStatus,
+      })
+      .subscribe({
+        next: () => {
+          unit.isActive = newStatus;
+          this.toaster.success(
+            newStatus ? '::UnitActivatedSuccess' : '::UnitDeactivatedSuccess'
+          );
+          this.applyFilterAndPagination();
+          this.cdr.markForCheck();
+        },
+        error: (err: any) => {
+          const errorMsg = err?.error?.message || err?.message || 'Không thể cập nhật trạng thái!';
+          this.toaster.error(errorMsg);
+          this.cdr.markForCheck();
+        },
+      });
+  }
+
+  toggleAllStatus(targetStatus: boolean) {
+    const confirmKey = targetStatus
+      ? '::ConfirmActivateAllUnits'
+      : '::ConfirmDeactivateAllUnits';
+    const titleKey = targetStatus
+      ? '::ActivateAll'
+      : '::DeactivateAll';
+
+    this.confirmation
+      .warn(confirmKey, titleKey)
+      .subscribe((status: Confirmation.Status) => {
+        if (status === Confirmation.Status.confirm) {
+          this.isBulkProcessing = true;
+          const unitsToUpdate = this.rawUnits.filter(u => !!u.id && (u.isActive !== false) !== targetStatus);
+
+          if (unitsToUpdate.length === 0) {
+            this.isBulkProcessing = false;
+            this.toaster.info('::AllUnitsAlreadyInStatus');
+            this.cdr.markForCheck();
+            return;
+          }
+
+          const requests$ = unitsToUpdate.map(u =>
+            this.unitService.update(u.id!, {
+              name: u.name || '',
+              abbreviation: u.abbreviation || u.name || '',
+              isActive: targetStatus,
+            })
+          );
+
+          forkJoin(requests$).subscribe({
+            next: () => {
+              this.isBulkProcessing = false;
+              this.toaster.success(
+                targetStatus
+                  ? '::AllUnitsActivatedSuccess'
+                  : '::AllUnitsDeactivatedSuccess'
+              );
+              this.loadData();
+              this.cdr.markForCheck();
+            },
+            error: (err: any) => {
+              this.isBulkProcessing = false;
+              const errorMsg = err?.error?.message || err?.message || 'Có lỗi xảy ra!';
+              this.toaster.error(errorMsg);
+              this.loadData();
+              this.cdr.markForCheck();
+            },
+          });
+        }
+      });
+  }
 }
+

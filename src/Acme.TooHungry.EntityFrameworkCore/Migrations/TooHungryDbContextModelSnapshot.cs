@@ -489,6 +489,132 @@ namespace Acme.TooHungry.Migrations
                     b.ToTable("AppDemandForecastItems", (string)null);
                 });
 
+            modelBuilder.Entity("Acme.TooHungry.Forecasts.IngredientPlan", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)")
+                        .HasColumnName("ConcurrencyStamp");
+
+                    b.Property<DateTime>("CreationTime")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("CreationTime");
+
+                    b.Property<Guid?>("CreatorId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("CreatorId");
+
+                    b.Property<Guid?>("DeleterId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("DeleterId");
+
+                    b.Property<DateTime?>("DeletionTime")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DeletionTime");
+
+                    b.Property<Guid>("DemandForecastId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ExtraProperties")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("ExtraProperties");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false)
+                        .HasColumnName("IsDeleted");
+
+                    b.Property<DateTime?>("LastModificationTime")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("LastModificationTime");
+
+                    b.Property<Guid?>("LastModifierId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("LastModifierId");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<DateTime>("PlanDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DemandForecastId")
+                        .IsUnique();
+
+                    b.ToTable("AppIngredientPlans", (string)null);
+                });
+
+            modelBuilder.Entity("Acme.TooHungry.Forecasts.IngredientPlanItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("CreationTime");
+
+                    b.Property<Guid?>("CreatorId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("CreatorId");
+
+                    b.Property<Guid?>("DeleterId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("DeleterId");
+
+                    b.Property<DateTime?>("DeletionTime")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DeletionTime");
+
+                    b.Property<Guid>("IngredientId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("IngredientPlanId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false)
+                        .HasColumnName("IsDeleted");
+
+                    b.Property<DateTime?>("LastModificationTime")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("LastModificationTime");
+
+                    b.Property<Guid?>("LastModifierId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("LastModifierId");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<decimal>("RequiredQuantity")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IngredientId");
+
+                    b.HasIndex("IngredientPlanId");
+
+                    b.ToTable("AppIngredientPlanItems", (string)null);
+                });
+
             modelBuilder.Entity("Acme.TooHungry.Ingredients.Ingredient", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1124,6 +1250,9 @@ namespace Acme.TooHungry.Migrations
                         .IsRequired()
                         .HasMaxLength(128)
                         .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTime?>("OccupiedTime")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("ReservedCustomerName")
                         .HasMaxLength(128)
@@ -3240,6 +3369,36 @@ namespace Acme.TooHungry.Migrations
                     b.Navigation("Dish");
                 });
 
+            modelBuilder.Entity("Acme.TooHungry.Forecasts.IngredientPlan", b =>
+                {
+                    b.HasOne("Acme.TooHungry.Forecasts.DemandForecast", "DemandForecast")
+                        .WithOne()
+                        .HasForeignKey("Acme.TooHungry.Forecasts.IngredientPlan", "DemandForecastId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("DemandForecast");
+                });
+
+            modelBuilder.Entity("Acme.TooHungry.Forecasts.IngredientPlanItem", b =>
+                {
+                    b.HasOne("Acme.TooHungry.Ingredients.Ingredient", "Ingredient")
+                        .WithMany()
+                        .HasForeignKey("IngredientId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Acme.TooHungry.Forecasts.IngredientPlan", "IngredientPlan")
+                        .WithMany("Items")
+                        .HasForeignKey("IngredientPlanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Ingredient");
+
+                    b.Navigation("IngredientPlan");
+                });
+
             modelBuilder.Entity("Acme.TooHungry.Inventories.InventoryBatch", b =>
                 {
                     b.HasOne("Acme.TooHungry.Ingredients.Ingredient", "Ingredient")
@@ -3577,6 +3736,11 @@ namespace Acme.TooHungry.Migrations
                 });
 
             modelBuilder.Entity("Acme.TooHungry.Forecasts.DemandForecast", b =>
+                {
+                    b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("Acme.TooHungry.Forecasts.IngredientPlan", b =>
                 {
                     b.Navigation("Items");
                 });

@@ -282,6 +282,24 @@
                     </span>
                   </div>
                 }
+
+                @if (table.occupiedTime) {
+                  <div class="meal-duration-info mt-2 pt-2 border-top d-flex align-items-center justify-content-between">
+                    <div class="meal-start-time d-flex align-items-center gap-1 text-muted small" [title]="'::TableMealStartedAt' | abpLocalization">
+                      <i class="fas fa-clock text-warning"></i>
+                      <span>{{ '::TableSeatedAt' | abpLocalization }}:</span>
+                      <strong class="text-dark">{{ table.occupiedTime | date: 'HH:mm' }}</strong>
+                    </div>
+                    <span
+                      class="meal-duration-badge badge"
+                      [ngClass]="getMealDurationWarningClass(table.occupiedTime)"
+                      [title]="'::TableDiningDuration' | abpLocalization"
+                    >
+                      <i class="fas fa-hourglass-half me-1"></i>
+                      {{ getMealDuration(table.occupiedTime) }}
+                    </span>
+                  </div>
+                }
               </div>
             } @else if (table.status === TableStatus.Cleaning) {
               <div class="cleaning-info-box d-flex align-items-center gap-2">
@@ -303,57 +321,79 @@
 
           <!-- Card Actions Contextual Group -->
           <div class="card-actions pt-2 border-top">
-            <!-- 1. Trạng thái AVAILABLE: [Đón khách], [Đặt bàn], [Vô hiệu hóa] -->
+            <!-- 1. Trạng thái AVAILABLE: [Đón khách], [Đặt lịch], [Vô hiệu hóa] -->
             @if (table.status === TableStatus.Available) {
-              <div class="d-flex align-items-center gap-2">
+              <div class="table-actions-2rows">
                 <button
                   type="button"
-                  class="btn btn-seat-guests flex-grow-1"
+                  class="btn-action-main-full btn-seat-guests"
                   (click)="seatGuests(table)"
                   [title]="'::SeatGuestsTooltip' | abpLocalization"
                 >
-                  <i class="fas fa-user-check me-1"></i>
-                  <span>{{ '::SeatGuests' | abpLocalization }}</span>
+                  <i class="fas fa-user-check me-1.5"></i>
+                  <span>{{ getActionLabel('seatGuests') }}</span>
                 </button>
-                <button
-                  type="button"
-                  class="btn btn-outline-reserve"
-                  (click)="openReservationModal(table)"
-                  [title]="'::ReserveTable' | abpLocalization"
-                >
-                  <i class="fas fa-calendar-plus"></i>
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-outline-disable"
-                  (click)="disableTable(table)"
-                  [title]="'::DisableTable' | abpLocalization"
-                >
-                  <i class="fas fa-ban"></i>
-                </button>
+                <div class="sub-actions-row">
+                  <button
+                    type="button"
+                    class="btn-action-sub-pill btn-sub-reserve"
+                    (click)="openReservationModal(table)"
+                    [title]="'::ReserveTable' | abpLocalization"
+                  >
+                    <i class="fas fa-calendar-plus me-1.5"></i>
+                    <span>{{ getActionLabel('reserve') }}</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-action-sub-pill btn-sub-disable"
+                    (click)="disableTable(table)"
+                    [title]="'::DisableTable' | abpLocalization"
+                  >
+                    <i class="fas fa-ban me-1.5"></i>
+                    <span>{{ getActionLabel('disable') }}</span>
+                  </button>
+                </div>
               </div>
             }
 
-            <!-- 2. Trạng thái OCCUPIED: [Order], [Kết thúc bữa ăn] -->
+            <!-- 2. Trạng thái OCCUPIED: [Order], [Kết thúc bữa ăn], [Chuyển bàn], [Gộp bàn] -->
             @if (table.status === TableStatus.Occupied) {
-              <div class="d-flex align-items-center gap-2">
+              <div class="occupied-actions-grid">
                 <button
                   type="button"
-                  class="btn btn-order flex-grow-1"
+                  class="btn-grid-action btn-grid-order"
                   (click)="goToOrder(table)"
-                  [title]="'::OrderTooltip' | abpLocalization"
+                  [title]="getActionLabel('order', table.hasActiveOrder)"
                 >
-                  <i class="fas fa-utensils me-1"></i>
-                  <span>{{ '::Order' | abpLocalization }}</span>
+                  <i class="fas fa-utensils"></i>
+                  <span>{{ getActionLabel('order', table.hasActiveOrder) }}</span>
                 </button>
                 <button
                   type="button"
-                  class="btn btn-end-meal"
+                  class="btn-grid-action btn-grid-end"
                   (click)="endMeal(table)"
                   [title]="'::EndMealTooltip' | abpLocalization"
                 >
-                  <i class="fas fa-flag-checkered me-1"></i>
-                  <span>{{ '::EndMeal' | abpLocalization }}</span>
+                  <i class="fas fa-flag-checkered"></i>
+                  <span>{{ getActionLabel('endMeal') }}</span>
+                </button>
+                <button
+                  type="button"
+                  class="btn-grid-action btn-grid-transfer"
+                  (click)="openTransferModal(table)"
+                  [title]="'::TransferTable' | abpLocalization"
+                >
+                  <i class="fas fa-right-left"></i>
+                  <span>{{ getActionLabel('transfer') }}</span>
+                </button>
+                <button
+                  type="button"
+                  class="btn-grid-action btn-grid-merge"
+                  (click)="openMergeModal(table)"
+                  [title]="'::MergeTables' | abpLocalization"
+                >
+                  <i class="fas fa-object-group"></i>
+                  <span>{{ getActionLabel('merge') }}</span>
                 </button>
               </div>
             }
@@ -430,71 +470,28 @@
   (cancelled)="onReservationCancelled($event)"
 ></app-table-reservation-detail-modal>
 
-<!-- 5. DIALOG: KẾT THÚC BỮA ĂN (2 NHÁNH) -->
-<abp-modal [(visible)]="isEndMealModalOpen" [busy]="isEndingMeal">
-  <ng-template #abpHeader>
-    <div class="d-flex align-items-center gap-2">
-      <i
-        class="fas fs-5"
-        [ngClass]="endingMealHasOrder ? 'fa-credit-card text-primary' : 'fa-circle-info text-warning'"
-      ></i>
-      <h4 class="m-0">
-        {{ '::EndMealTitle' | abpLocalization }} - {{ endingMealTable?.name }}
-      </h4>
-    </div>
-  </ng-template>
+<!-- 6. DIALOG: CHUYỂN BÀN ĂN (RM-017) -->
+<app-table-transfer-modal
+  *ngIf="isTransferModalOpen"
+  [(visible)]="isTransferModalOpen"
+  [sourceTable]="selectedTransferTable"
+  [tables]="tables()"
+  (transferred)="onTableTransferred($event)"
+></app-table-transfer-modal>
 
-  <ng-template #abpBody>
-    @if (endingMealHasOrder) {
-      <!-- Case 2: Có đơn hàng liên kết -->
-      <div class="alert alert-info d-flex align-items-start gap-3 m-0">
-        <i class="fas fa-receipt fs-3 mt-1 text-primary"></i>
-        <div>
-          <h5 class="alert-heading font-weight-bold m-0 mb-1">
-            {{ '::EndMealWithOrderTitle' | abpLocalization }}
-          </h5>
-          <p class="m-0">
-            {{ '::EndMealWithOrderDesc' | abpLocalization: endingMealTable?.name }}
-          </p>
-          <div class="mt-2 text-muted small">
-            <i class="fas fa-info-circle me-1"></i>
-            {{ '::EndMealWithOrderNote' | abpLocalization }}
-          </div>
-        </div>
-      </div>
-    } @else {
-      <!-- Case 1: Khách không dùng món (Không có order) -->
-      <div class="alert alert-warning d-flex align-items-start gap-3 m-0">
-        <i class="fas fa-triangle-exclamation fs-3 mt-1 text-warning"></i>
-        <div>
-          <h5 class="alert-heading font-weight-bold m-0 mb-1">
-            {{ '::EndMealNoOrderTitle' | abpLocalization }}
-          </h5>
-          <p class="m-0">
-            {{ '::EndMealNoOrderDesc' | abpLocalization: endingMealTable?.name }}
-          </p>
-        </div>
-      </div>
-    }
-  </ng-template>
+<!-- 7. DIALOG: GỘP BÀN ĂN (RM-017) -->
+<app-table-merge-modal
+  *ngIf="isMergeModalOpen"
+  [(visible)]="isMergeModalOpen"
+  [primaryTable]="selectedPrimaryMergeTable"
+  [tables]="tables()"
+  (merged)="onTablesMerged($event)"
+></app-table-merge-modal>
 
-  <ng-template #abpFooter>
-    <button type="button" class="btn btn-secondary" (click)="closeEndMealModal()">
-      {{ '::Cancel' | abpLocalization }}
-    </button>
-    <button
-      type="button"
-      class="btn"
-      [ngClass]="endingMealHasOrder ? 'btn-primary' : 'btn-warning'"
-      (click)="confirmEndMeal()"
-    >
-      @if (endingMealHasOrder) {
-        <i class="fas fa-arrow-right me-1"></i>
-        {{ '::ProceedToPayment' | abpLocalization }}
-      } @else {
-        <i class="fas fa-check me-1"></i>
-        {{ '::ConfirmFreeTable' | abpLocalization }}
-      }
-    </button>
-  </ng-template>
-</abp-modal>
+<!-- 8. DIALOG: KẾT THÚC BỮA ĂN (RM-017) -->
+<app-table-end-meal-modal
+  *ngIf="isEndMealModalOpen"
+  [(visible)]="isEndMealModalOpen"
+  [table]="selectedEndMealTable"
+  (mealEnded)="onMealEnded($event)"
+></app-table-end-meal-modal>

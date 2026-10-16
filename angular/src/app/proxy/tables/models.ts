@@ -12,6 +12,7 @@ export interface CreateUpdateTableDto {
   reservedTime?: string | null;
   reservedGuestCount?: number | null;
   reservedNote?: string | null;
+  occupiedTime?: string | null;
 }
 
 export interface GetTablesInput extends PagedAndSortedResultRequestDto {
@@ -34,4 +35,18 @@ export interface TableDto extends FullAuditedEntityDto<string> {
   reservedNote?: string | null;
   activeOrderId?: string | null;
   hasActiveOrder?: boolean;
+  occupiedTime?: string | null;
 }
+
+export interface TransferTableInputDto {
+  sourceTableId: string;
+  targetTableId: string;
+  note?: string | null;
+}
+
+export interface MergeTablesInputDto {
+  primaryTableId: string;
+  secondaryTableId: string;
+  note?: string | null;
+}
+

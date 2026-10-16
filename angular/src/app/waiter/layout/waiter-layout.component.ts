@@ -51,6 +51,7 @@ export class WaiterLayoutComponent implements OnInit, OnDestroy {
   });
 
   private langSub?: Subscription;
+  private userSub?: Subscription;
 
   readonly userInfo = signal<WaiterUserInfo>({
     userId: '',
@@ -77,6 +78,60 @@ export class WaiterLayoutComponent implements OnInit, OnDestroy {
     return name.slice(0, 2).toUpperCase();
   });
 
+  readonly primaryRole = computed(() => {
+    const roles = this.userInfo().roles || [];
+    if (roles.includes('Administrator') || roles.includes('admin')) {
+      return 'Administrator';
+    }
+    if (roles.includes('Manager')) {
+      return 'Manager';
+    }
+    if (roles.includes('Cashier')) {
+      return 'Cashier';
+    }
+    if (roles.includes('InventoryStaff')) {
+      return 'InventoryStaff';
+    }
+    if (roles.includes('Waiter')) {
+      return 'Waiter';
+    }
+    return roles.length > 0 ? roles[0] : 'Waiter';
+  });
+
+  readonly primaryRoleLocalizationKey = computed(() => {
+    const role = this.primaryRole();
+    switch (role) {
+      case 'Administrator':
+        return '::Role:Administrator';
+      case 'Manager':
+        return '::Role:Manager';
+      case 'Cashier':
+        return '::Role:Cashier';
+      case 'InventoryStaff':
+        return '::Role:InventoryStaff';
+      case 'Waiter':
+      default:
+        return '::Role:Waiter';
+    }
+  });
+
+  readonly primaryRoleDefaultValue = computed(() => {
+    const role = this.primaryRole();
+    switch (role) {
+      case 'Administrator':
+        return 'Administrator';
+      case 'Manager':
+        return 'Manager';
+      case 'Cashier':
+        return 'Cashier';
+      case 'InventoryStaff':
+        return 'Inventory Staff';
+      case 'Waiter':
+      default:
+        return 'Waiter';
+    }
+  });
+
   ngOnInit(): void {
     this.initUserInfo();
     this.initNetworkListeners();
@@ -95,6 +150,9 @@ export class WaiterLayoutComponent implements OnInit, OnDestroy {
     if (this.langSub) {
       this.langSub.unsubscribe();
     }
+    if (this.userSub) {
+      this.userSub.unsubscribe();
+    }
     if (typeof window !== 'undefined') {
       if (this.onlineListener) window.removeEventListener('online', this.onlineListener);
       if (this.offlineListener) window.removeEventListener('offline', this.offlineListener);
@@ -102,24 +160,34 @@ export class WaiterLayoutComponent implements OnInit, OnDestroy {
   }
 
   private initUserInfo(): void {
-    const currentUser = this.configState.getOne('currentUser') as any;
-    const roles: string[] = currentUser?.roles || [];
-    const canReturnToAdmin = roles.some(
-      r => r === 'Manager' || r === 'Administrator' || r === 'admin'
-    );
-    const shift = this.calculateShift();
+    const applyUser = (currentUser: any) => {
+      if (!currentUser) return;
+      const roles: string[] = currentUser.roles || [];
+      const canReturnToAdmin = roles.some(
+        r => r === 'Manager' || r === 'Administrator' || r === 'admin'
+      );
+      const shift = this.calculateShift();
 
-    this.userInfo.set({
-      userId: currentUser?.id || '',
-      userName: currentUser?.userName || '',
-      fullName: currentUser?.name
-        ? `${currentUser.name} ${currentUser.surName || ''}`.trim()
-        : currentUser?.userName || 'Waiter',
-      roles,
-      shiftType: shift.type,
-      shiftLocalizationKey: shift.key,
-      isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
-      canReturnToAdmin,
+      this.userInfo.set({
+        userId: currentUser.id || '',
+        userName: currentUser.userName || '',
+        fullName: currentUser.name
+          ? `${currentUser.name} ${currentUser.surName || ''}`.trim()
+          : currentUser.userName || 'User',
+        roles,
+        shiftType: shift.type,
+        shiftLocalizationKey: shift.key,
+        isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
+        canReturnToAdmin,
+      });
+    };
+
+    applyUser(this.configState.getOne('currentUser'));
+
+    this.userSub = this.configState.getOne$('currentUser').subscribe(user => {
+      if (user) {
+        applyUser(user);
+      }
     });
   }
 

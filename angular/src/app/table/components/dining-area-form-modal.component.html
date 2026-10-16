@@ -1,0 +1,88 @@
+<abp-modal [(visible)]="visible" [busy]="isSaving">
+  <ng-template #abpHeader>
+    <div class="modal-header-areaform d-flex align-items-center gap-3">
+      <div class="header-icon-box">
+        <i class="fa fa-layer-group"></i>
+      </div>
+      <div>
+        <h4 class="modal-title m-0">
+          {{ '::AddNewDiningArea' | abpLocalization }}
+        </h4>
+        <p class="modal-subtitle m-0 text-muted">
+          {{ '::ManageDiningAreas' | abpLocalization }}
+        </p>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #abpBody>
+    <form id="area-form" [formGroup]="form" (ngSubmit)="save()" class="area-form-body">
+      <div class="form-field-group mb-3">
+        <label for="area-name" class="field-label">
+          <span>{{ '::DiningAreaName' | abpLocalization }}</span>
+          <span class="required-star">*</span>
+        </label>
+        <div class="input-with-icon">
+          <i class="fa fa-map-marker-alt input-icon"></i>
+          <input
+            type="text"
+            id="area-name"
+            class="form-control custom-form-input"
+            formControlName="name"
+            [placeholder]="'::EnterDiningAreaNamePlaceholder' | abpLocalization"
+            [skipValidation]="true"
+            autofocus
+          />
+        </div>
+        @if (form.get('name')?.invalid && (form.get('name')?.touched || form.get('name')?.dirty)) {
+          <div class="field-validation-error mt-1">
+            <i class="fa fa-exclamation-circle me-1"></i>
+            <span>{{ { key: '::FieldRequired', defaultValue: 'Trường này là bắt buộc.' } | abpLocalization }}</span>
+          </div>
+        }
+      </div>
+
+      <div class="form-field-group mb-2">
+        <label for="area-desc" class="field-label">
+          <span>{{ '::Description' | abpLocalization }}</span>
+        </label>
+        <div class="input-with-icon">
+          <i class="fa fa-align-left input-icon"></i>
+          <input
+            type="text"
+            id="area-desc"
+            class="form-control custom-form-input"
+            formControlName="description"
+            [placeholder]="'::AreaDescriptionPlaceholder' | abpLocalization"
+          />
+        </div>
+      </div>
+    </form>
+  </ng-template>
+
+  <ng-template #abpFooter>
+    <div class="d-flex align-items-center justify-content-end gap-2 w-100">
+      <button
+        type="button"
+        class="btn btn-outline-secondary btn-cancel"
+        (click)="close()"
+        [disabled]="isSaving"
+      >
+        {{ '::Close' | abpLocalization }}
+      </button>
+      <button
+        form="area-form"
+        type="submit"
+        class="btn btn-primary btn-save"
+        [disabled]="form.invalid || isSaving"
+      >
+        @if (isSaving) {
+          <i class="fa fa-spinner fa-spin me-1"></i>
+        } @else {
+          <i class="fa fa-save me-1"></i>
+        }
+        <span>{{ '::Save' | abpLocalization }}</span>
+      </button>
+    </div>
+  </ng-template>
+</abp-modal>

@@ -12,7 +12,6 @@ public static class TooHungryPermissions
     public static class Dishes
     {
         public const string Default = GroupName + ".Dishes";
-        public const string View = Default + ".View";        // "TooHungry.Dishes"
         public const string Create = Default + ".Create";           // "TooHungry.Dishes.Create"
         public const string Edit = Default + ".Edit";               // "TooHungry.Dishes.Edit"
         public const string Delete = Default + ".Delete";           // "TooHungry.Dishes.Delete"
@@ -157,5 +156,14 @@ public static class TooHungryPermissions
         public const string Create = Default + ".Create";
         public const string Edit = Default + ".Edit";
         public const string Delete = Default + ".Delete";
+    }
+
+    public static class Forecasts
+    {
+        public const string Default = GroupName + ".Forecasts";
+        public const string Create = Default + ".Create";
+        public const string Edit = Default + ".Edit";
+        public const string Delete = Default + ".Delete";
+        public const string Approve = Default + ".Approve";
     }
 }

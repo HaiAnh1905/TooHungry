@@ -15,4 +15,12 @@ public class DemandForecast : FullAuditedAggregateRoot<Guid>
     public string? Note { get; set; }
 
     public ICollection<DemandForecastItem> Items { get; set; } = new List<DemandForecastItem>();
+
+    public DemandForecast()
+    {
+    }
+
+    public DemandForecast(Guid id) : base(id)
+    {
+    }
 }

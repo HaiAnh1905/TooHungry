@@ -1,0 +1,171 @@
+<abp-modal [(visible)]="visible" [busy]="isSubmitting">
+  <ng-template #abpHeader>
+    <div class="modal-header-merge d-flex align-items-center gap-3">
+      <div class="header-icon-box">
+        <i class="fas fa-object-group"></i>
+      </div>
+      <div>
+        <h4 class="modal-title m-0">
+          {{ '::MergeTablesTitle' | abpLocalization }}
+        </h4>
+        <p class="modal-subtitle m-0 text-muted">
+          {{ '::MergeTablesSubtitle' | abpLocalization: (primaryTable?.name || '') }}
+        </p>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #abpBody>
+    <div class="merge-modal-body">
+      <!-- 1. THÔNG TIN BÀN CHÍNH -->
+      @if (primaryTable) {
+        <div class="primary-table-card mb-3">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2">
+              <span class="role-tag primary-tag">
+                <i class="fas fa-star me-1"></i>{{ '::PrimaryTable' | abpLocalization }}
+              </span>
+              <span class="table-name-badge">
+                <i class="fas fa-chair me-1"></i>{{ primaryTable.name }}
+              </span>
+              <span class="badge-area text-muted">
+                <i class="fas fa-layer-group me-1"></i>{{ primaryTable.diningAreaName || ('::UnassignedArea' | abpLocalization) }}
+              </span>
+              <span class="badge-seats text-muted">
+                <i class="fas fa-users me-1"></i>{{ primaryTable.capacity }} {{ '::Seats' | abpLocalization }}
+              </span>
+            </div>
+
+            <div class="order-status-pill">
+              @if (primaryTable.hasActiveOrder) {
+                <span class="pill-active-order">
+                  <i class="fas fa-receipt me-1"></i>{{ '::HasActiveOrder' | abpLocalization }}
+                </span>
+              } @else {
+                <span class="pill-no-order">
+                  <i class="fas fa-clock me-1"></i>{{ '::NoOrderYet' | abpLocalization }}
+                </span>
+              }
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- 2. CHỌN BÀN PHỤ CẦN GỘP VÀO -->
+      <div class="secondary-selection-section mb-3">
+        <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+          <label class="section-label m-0 font-weight-bold">
+            <i class="fas fa-code-merge me-1 text-primary-orange"></i>
+            {{ '::SelectSecondaryTable' | abpLocalization }}
+          </label>
+          <span class="secondary-count-badge">
+            {{ availableSecondaryTables.length }} {{ '::OccupiedTablesCount' | abpLocalization }}
+          </span>
+        </div>
+
+        @if (availableSecondaryTables.length > 0) {
+          <div class="secondary-tables-grid">
+            @for (table of availableSecondaryTables; track table.id) {
+              <div
+                class="secondary-table-card"
+                [class.selected]="selectedSecondaryTableId === table.id"
+                (click)="selectSecondary(table)"
+              >
+                <div class="card-radio-indicator">
+                  <i class="fas" [class.fa-check-circle]="selectedSecondaryTableId === table.id" [class.fa-circle]="selectedSecondaryTableId !== table.id"></i>
+                </div>
+                <div class="card-table-name font-weight-bold">
+                  {{ table.name }}
+                </div>
+                <div class="card-table-meta text-muted small">
+                  <span><i class="fas fa-users me-1"></i>{{ table.capacity }} {{ '::Seats' | abpLocalization }}</span>
+                  <span class="meta-dot">•</span>
+                  <span>{{ table.diningAreaName || ('::UnassignedArea' | abpLocalization) }}</span>
+                </div>
+                @if (table.hasActiveOrder) {
+                  <div class="card-order-mini-tag mt-1">
+                    <i class="fas fa-receipt me-1"></i>{{ '::HasActiveOrder' | abpLocalization }}
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="empty-state py-4 text-center">
+            <div class="empty-icon-circle mb-2">
+              <i class="fas fa-chair"></i>
+            </div>
+            <p class="empty-text text-muted m-0">
+              {{ '::NoOccupiedTablesToMerge' | abpLocalization }}
+            </p>
+          </div>
+        }
+      </div>
+
+      <!-- 3. SƠ ĐỒ GỘP & TÓM TẮT -->
+      @if (selectedSecondaryTable) {
+        <div class="merge-preview-flow-card mb-3">
+          <div class="flow-step secondary-step">
+            <span class="step-role">{{ '::SecondaryTable' | abpLocalization }}</span>
+            <span class="step-name">{{ selectedSecondaryTable.name }}</span>
+            <span class="step-after-status text-danger small">
+              <i class="fas fa-broom me-1"></i>{{ '::WillBecomeCleaning' | abpLocalization }}
+            </span>
+          </div>
+
+          <div class="flow-arrow">
+            <span class="arrow-pill">{{ '::MergeItemsTo' | abpLocalization }}</span>
+            <i class="fas fa-arrow-right"></i>
+          </div>
+
+          <div class="flow-step primary-step">
+            <span class="step-role">{{ '::PrimaryTable' | abpLocalization }}</span>
+            <span class="step-name">{{ primaryTable?.name }}</span>
+            <span class="step-after-status text-success small">
+              <i class="fas fa-file-invoice-dollar me-1"></i>{{ '::SingleFinalBill' | abpLocalization }}
+            </span>
+          </div>
+        </div>
+      }
+
+      <!-- 4. LƯU Ý NGHIỆP VỤ (CALLOUT ALERT) -->
+      <div class="merge-alert-callout alert alert-info d-flex align-items-start gap-2 m-0">
+        <i class="fas fa-circle-info fs-5 mt-1 text-primary"></i>
+        <div class="callout-content small">
+          <h6 class="callout-title font-weight-bold m-0 mb-1">
+            {{ '::MergePolicyTitle' | abpLocalization }}
+          </h6>
+          <p class="m-0 text-muted">
+            {{ '::MergePolicyDesc' | abpLocalization }}
+          </p>
+        </div>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #abpFooter>
+    <div class="d-flex align-items-center justify-content-end gap-2 w-100">
+      <button
+        type="button"
+        class="btn btn-outline-secondary btn-cancel"
+        (click)="close()"
+        [disabled]="isSubmitting"
+      >
+        {{ '::Cancel' | abpLocalization }}
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary btn-confirm-merge"
+        [disabled]="!selectedSecondaryTableId || isSubmitting"
+        (click)="confirmMerge()"
+      >
+        @if (isSubmitting) {
+          <i class="fas fa-spinner fa-spin me-1"></i>
+        } @else {
+          <i class="fas fa-object-group me-1"></i>
+        }
+        <span>{{ '::ConfirmMerge' | abpLocalization }}</span>
+      </button>
+    </div>
+  </ng-template>
+</abp-modal>

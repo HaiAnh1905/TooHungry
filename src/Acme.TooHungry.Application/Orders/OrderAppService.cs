@@ -149,7 +149,9 @@ public class OrderAppService : ApplicationService, IOrderAppService
             if (table != null && table.Status != TableStatus.Occupied)
             {
                 table.Status = TableStatus.Occupied;
+                if (!table.OccupiedTime.HasValue) table.OccupiedTime = DateTime.Now;
                 await _tableRepository.UpdateAsync(table, autoSave: true);
+                await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name, table.DiningAreaId, table.OccupiedTime);
             }
         }
 
@@ -218,13 +220,14 @@ public class OrderAppService : ApplicationService, IOrderAppService
                 if (table != null)
                 {
                     table.Status = TableStatus.Cleaning;
+                    table.OccupiedTime = null;
                     table.ReservedCustomerName = null;
                     table.ReservedCustomerPhone = null;
                     table.ReservedGuestCount = null;
                     table.ReservedTime = null;
                     table.ReservedNote = null;
                     await _tableRepository.UpdateAsync(table, autoSave: true);
-                    await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name);
+                    await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name, table.DiningAreaId, table.OccupiedTime);
                 }
             }
         }
@@ -234,8 +237,9 @@ public class OrderAppService : ApplicationService, IOrderAppService
             if (table != null && table.Status != TableStatus.Occupied)
             {
                 table.Status = TableStatus.Occupied;
+                if (!table.OccupiedTime.HasValue) table.OccupiedTime = DateTime.Now;
                 await _tableRepository.UpdateAsync(table, autoSave: true);
-                await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name);
+                await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name, table.DiningAreaId, table.OccupiedTime);
             }
         }
 
@@ -596,8 +600,9 @@ public class OrderAppService : ApplicationService, IOrderAppService
         if (table.Status != TableStatus.Occupied)
         {
             table.Status = TableStatus.Occupied;
+            if (!table.OccupiedTime.HasValue) table.OccupiedTime = DateTime.Now;
             await _tableRepository.UpdateAsync(table, autoSave: true);
-            await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name);
+            await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name, table.DiningAreaId, table.OccupiedTime);
         }
 
         // Phát tín hiệu Realtime SignalR
@@ -683,13 +688,14 @@ public class OrderAppService : ApplicationService, IOrderAppService
             if (table != null)
             {
                 table.Status = TableStatus.Cleaning;
+                table.OccupiedTime = null;
                 table.ReservedCustomerName = null;
                 table.ReservedCustomerPhone = null;
                 table.ReservedGuestCount = null;
                 table.ReservedTime = null;
                 table.ReservedNote = null;
                 await _tableRepository.UpdateAsync(table, autoSave: true);
-                await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name);
+                await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name, table.DiningAreaId, table.OccupiedTime);
             }
         }
 

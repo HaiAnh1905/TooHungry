@@ -105,14 +105,24 @@ public partial class TooHungryCreateUpdateOrderItemDtoToOrderItemMapper : Mapper
 [Mapper(RequiredMappingStrategy = RequiredMappingStrategy.Target)]
 public partial class TooHungryDemandForecastToDemandForecastDtoMapper : MapperBase<DemandForecast, DemandForecastDto>
 {
+    [MapperIgnoreTarget(nameof(DemandForecastDto.ProjectedRevenue))]
+    [MapperIgnoreTarget(nameof(DemandForecastDto.IngredientPlanId))]
+    [MapperIgnoreTarget(nameof(DemandForecastDto.IngredientPlanStatus))]
     public override partial DemandForecastDto Map(DemandForecast source);
+
+    [MapperIgnoreTarget(nameof(DemandForecastDto.ProjectedRevenue))]
+    [MapperIgnoreTarget(nameof(DemandForecastDto.IngredientPlanId))]
+    [MapperIgnoreTarget(nameof(DemandForecastDto.IngredientPlanStatus))]
     public override partial void Map(DemandForecast source, DemandForecastDto destination);
 }
 
 [Mapper(RequiredMappingStrategy = RequiredMappingStrategy.Target)]
 public partial class TooHungryCreateUpdateDemandForecastDtoToDemandForecastMapper : MapperBase<CreateUpdateDemandForecastDto, DemandForecast>
 {
+    [MapperIgnoreTarget(nameof(DemandForecast.Items))]
     public override partial DemandForecast Map(CreateUpdateDemandForecastDto source);
+
+    [MapperIgnoreTarget(nameof(DemandForecast.Items))]
     public override partial void Map(CreateUpdateDemandForecastDto source, DemandForecast destination);
 }
 
@@ -120,17 +130,57 @@ public partial class TooHungryCreateUpdateDemandForecastDtoToDemandForecastMappe
 public partial class TooHungryDemandForecastItemToDemandForecastItemDtoMapper : MapperBase<DemandForecastItem, DemandForecastItemDto>
 {
     [MapProperty(nameof(DemandForecastItem.Dish.Name), nameof(DemandForecastItemDto.DishName))]
+    [MapProperty(nameof(DemandForecastItem.Dish.ImageUrl), nameof(DemandForecastItemDto.DishImageUrl))]
+    [MapProperty(nameof(DemandForecastItem.Dish.Price), nameof(DemandForecastItemDto.DishPrice))]
+    [MapperIgnoreTarget(nameof(DemandForecastItemDto.HasRecipe))]
     public override partial DemandForecastItemDto Map(DemandForecastItem source);
 
     [MapProperty(nameof(DemandForecastItem.Dish.Name), nameof(DemandForecastItemDto.DishName))]
+    [MapProperty(nameof(DemandForecastItem.Dish.ImageUrl), nameof(DemandForecastItemDto.DishImageUrl))]
+    [MapProperty(nameof(DemandForecastItem.Dish.Price), nameof(DemandForecastItemDto.DishPrice))]
+    [MapperIgnoreTarget(nameof(DemandForecastItemDto.HasRecipe))]
     public override partial void Map(DemandForecastItem source, DemandForecastItemDto destination);
 }
 
 [Mapper(RequiredMappingStrategy = RequiredMappingStrategy.Target)]
 public partial class TooHungryCreateUpdateDemandForecastItemDtoToDemandForecastItemMapper : MapperBase<CreateUpdateDemandForecastItemDto, DemandForecastItem>
 {
+    [MapperIgnoreTarget(nameof(DemandForecastItem.DemandForecastId))]
+    [MapperIgnoreTarget(nameof(DemandForecastItem.DemandForecast))]
+    [MapperIgnoreTarget(nameof(DemandForecastItem.Dish))]
     public override partial DemandForecastItem Map(CreateUpdateDemandForecastItemDto source);
+
+    [MapperIgnoreTarget(nameof(DemandForecastItem.DemandForecastId))]
+    [MapperIgnoreTarget(nameof(DemandForecastItem.DemandForecast))]
+    [MapperIgnoreTarget(nameof(DemandForecastItem.Dish))]
     public override partial void Map(CreateUpdateDemandForecastItemDto source, DemandForecastItem destination);
+}
+
+[Mapper(RequiredMappingStrategy = RequiredMappingStrategy.Target)]
+public partial class TooHungryIngredientPlanToIngredientPlanDtoMapper : MapperBase<IngredientPlan, IngredientPlanDto>
+{
+    public override partial IngredientPlanDto Map(IngredientPlan source);
+    public override partial void Map(IngredientPlan source, IngredientPlanDto destination);
+}
+
+[Mapper(RequiredMappingStrategy = RequiredMappingStrategy.Target)]
+public partial class TooHungryIngredientPlanItemToIngredientPlanItemDtoMapper : MapperBase<IngredientPlanItem, IngredientPlanItemDto>
+{
+    [MapProperty(nameof(IngredientPlanItem.Ingredient.Name), nameof(IngredientPlanItemDto.IngredientName))]
+    [MapProperty(nameof(IngredientPlanItem.Ingredient.BaseUnit), nameof(IngredientPlanItemDto.BaseUnit))]
+    [MapProperty(nameof(IngredientPlanItem.Ingredient.EstimatedPrice), nameof(IngredientPlanItemDto.EstimatedPrice))]
+    [MapperIgnoreTarget(nameof(IngredientPlanItemDto.CurrentStock))]
+    [MapperIgnoreTarget(nameof(IngredientPlanItemDto.SuggestedPurchaseQuantity))]
+    [MapperIgnoreTarget(nameof(IngredientPlanItemDto.EstimatedCost))]
+    public override partial IngredientPlanItemDto Map(IngredientPlanItem source);
+
+    [MapProperty(nameof(IngredientPlanItem.Ingredient.Name), nameof(IngredientPlanItemDto.IngredientName))]
+    [MapProperty(nameof(IngredientPlanItem.Ingredient.BaseUnit), nameof(IngredientPlanItemDto.BaseUnit))]
+    [MapProperty(nameof(IngredientPlanItem.Ingredient.EstimatedPrice), nameof(IngredientPlanItemDto.EstimatedPrice))]
+    [MapperIgnoreTarget(nameof(IngredientPlanItemDto.CurrentStock))]
+    [MapperIgnoreTarget(nameof(IngredientPlanItemDto.SuggestedPurchaseQuantity))]
+    [MapperIgnoreTarget(nameof(IngredientPlanItemDto.EstimatedCost))]
+    public override partial void Map(IngredientPlanItem source, IngredientPlanItemDto destination);
 }
 #endregion
 

@@ -19,11 +19,35 @@ export class AppComponent {
   private oauthService = inject(OAuthService);
   private configState = inject(ConfigStateService);
   private router = inject(Router);
+  private hasInitialNavigated = false;
 
   constructor() {
     this.oauthService.events.subscribe((event: OAuthEvent) => {
-      if (event.type === 'token_received') {
-        // Fetch current user and redirect based on role
+      if (event.type === 'logout') {
+        this.hasInitialNavigated = false;
+        return;
+      }
+
+      // Chỉ điều hướng 1 lần duy nhất khi vừa đăng nhập thành công từ trang Login,
+      // tuyệt đối KHÔNG điều hướng khi token được tự động làm mới ngầm (Silent Refresh) định kỳ!
+      if (event.type === 'token_received' && !this.hasInitialNavigated) {
+        const currentUrl = this.router.url;
+        const isAtLoginOrRoot = !currentUrl || currentUrl === '/' || currentUrl.startsWith('/account/login');
+
+        // Nếu người dùng đang đứng ở bất kỳ trang làm việc nào khác, giữ nguyên trang đó
+        if (!isAtLoginOrRoot) {
+          this.hasInitialNavigated = true;
+          return;
+        }
+
+        // Bỏ qua nếu đây là sự kiện silent refresh ngầm trong nền
+        if ((event as any).info === 'silent') {
+          return;
+        }
+
+        this.hasInitialNavigated = true;
+
+        // Fetch current user and redirect based on role CHỈ KHI vừa login xong
         this.configState.getOne$('currentUser').subscribe(user => {
           if (user?.isAuthenticated) {
             const roles = user.roles || [];
@@ -61,6 +85,17 @@ export class AppComponent {
           }
         }
       });
+
+      // Hỗ trợ kích hoạt dropdown ngôn ngữ khi click vào bất cứ vị trí nào trên nút
+      document.addEventListener('click', (event: MouseEvent) => {
+        const target = event.target as HTMLElement;
+        const langContainer = target?.closest('.lpx-language-selection');
+        if (langContainer && target === langContainer) {
+          const toggle = langContainer.querySelector('[ngbDropdownToggle]') as HTMLElement;
+          toggle?.click();
+        }
+      });
     }
   }
 }
+

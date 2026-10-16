@@ -17,7 +17,7 @@ public class TableRealtimeNotifier : ITableRealtimeNotifier, ITransientDependenc
         _hubContext = hubContext;
     }
 
-    public async Task NotifyTableStatusChangedAsync(Guid tableId, TableStatus newStatus, string? tableName = null, Guid? diningAreaId = null)
+    public async Task NotifyTableStatusChangedAsync(Guid tableId, TableStatus newStatus, string? tableName = null, Guid? diningAreaId = null, DateTime? occupiedTime = null)
     {
         await _hubContext.Clients.All.SendAsync("TableStatusChanged", new TableStatusChangedDto
         {
@@ -26,6 +26,7 @@ public class TableRealtimeNotifier : ITableRealtimeNotifier, ITransientDependenc
             DiningAreaId = diningAreaId,
             Status = newStatus,
             StatusName = newStatus.ToString(),
+            OccupiedTime = occupiedTime,
             UpdatedTime = DateTime.UtcNow
         });
     }

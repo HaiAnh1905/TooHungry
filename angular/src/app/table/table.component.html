@@ -1,11 +1,9 @@
 <div class="table-management-page">
   <!-- 1. TOP HEADER: Tiêu đề, Toggle View & Nút Thêm mới -->
-  <div
-    class="page-header-row d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4"
-  >
+  <div class="page-header-row d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
     <div>
       <h2 class="page-title m-0 d-flex align-items-center gap-2">
-        <i class="fa fa-chair text-primary"></i>
+        <i class="fa fa-chair text-primary-orange"></i>
         <span>{{ '::ManageTables' | abpLocalization }}</span>
       </h2>
       <p class="page-subtitle m-0 mt-1">
@@ -14,7 +12,7 @@
     </div>
 
     <div class="d-flex align-items-center gap-3 flex-wrap">
-      <!-- Nút Toggle Chế độ xem: Sơ đồ bàn / Danh sách -->
+      <!-- Toggle Chế độ xem: Sơ đồ bàn / Danh sách -->
       <div class="view-mode-toggle-group">
         <button
           type="button"
@@ -23,7 +21,7 @@
           (click)="setViewMode('grid')"
           [title]="'::GridView' | abpLocalization"
         >
-          <i class="fa fa-th-large"></i>
+          <i class="fa fa-th-large me-1"></i>
           <span>{{ '::FloorPlan' | abpLocalization }}</span>
         </button>
         <button
@@ -33,7 +31,7 @@
           (click)="setViewMode('table')"
           [title]="'::ListView' | abpLocalization"
         >
-          <i class="fa fa-list"></i>
+          <i class="fa fa-list me-1"></i>
           <span>{{ '::ListView' | abpLocalization }}</span>
         </button>
       </div>
@@ -45,13 +43,13 @@
         type="button"
         (click)="createTable()"
       >
-        <i class="fa fa-plus-circle"></i>
+        <i class="fa fa-plus-circle me-1"></i>
         <span>{{ '::AddNewTable' | abpLocalization }}</span>
       </button>
     </div>
   </div>
 
-  <!-- 2. THỐNG KÊ NHANH MẶT BẰNG (FLOOR SUMMARY INDICATORS) -->
+  <!-- 2. THỐNG KÊ NHANH MẶT BẰNG (FLOOR SUMMARY INDICATORS - 6 THẺ) -->
   <div class="floor-summary-row row g-3 mb-4">
     <!-- Tổng số bàn -->
     <div class="col-6 col-md">
@@ -138,7 +136,7 @@
       </div>
     </div>
 
-    <!-- Bàn tạm ngưng / Bị hỏng (Disabled) -->
+    <!-- Bàn tạm ngưng (Disabled) -->
     <div class="col-6 col-md">
       <div
         class="summary-card card-disabled-status"
@@ -156,11 +154,10 @@
     </div>
   </div>
 
-  <!-- 3. FLOOR & AREA NAVIGATOR BAR (Tầng / Khu vực & Tìm kiếm) -->
+  <!-- 3. FLOOR & AREA NAVIGATOR BAR (Tìm kiếm, Khóa khu vực & Tabs tầng) -->
   <div class="area-navigator-card mb-4">
-    <!-- Hàng trên: Ô tìm kiếm (trái), Nút khóa khu vực & Lựa chọn hiển thị (phải) -->
     <div class="navigator-top-row d-flex align-items-center justify-content-between flex-wrap gap-3">
-      <!-- 1. Ô tìm kiếm (Search Box) - đặt bên trái -->
+      <!-- Search Box -->
       <div class="search-box-compact">
         <i class="fa fa-search search-icon"></i>
         <input
@@ -177,9 +174,8 @@
         }
       </div>
 
-      <!-- Cụm bên phải: Nút khóa/mở khu vực & Lựa chọn hiển thị -->
+      <!-- Action toolbar: Nút khóa khu vực & Page size -->
       <div class="d-flex align-items-center gap-2 flex-wrap ms-auto">
-        <!-- Nút Khóa / Mở bàn khu vực -->
         <button
           type="button"
           class="btn-area-disable-toggle"
@@ -195,15 +191,14 @@
           "
         >
           @if (isCurrentAreaAllDisabled()) {
-            <i class="fa fa-check-circle"></i>
+            <i class="fa fa-check-circle me-1"></i>
             <span>{{ '::EnableAreaTables' | abpLocalization }}</span>
           } @else {
-            <i class="fa fa-ban"></i>
+            <i class="fa fa-ban me-1"></i>
             <span>{{ '::DisableAreaTables' | abpLocalization }}</span>
           }
         </button>
 
-        <!-- Lựa chọn hiển thị (bội số của 4) - đã đảo vị trí sang bên phải -->
         @if (viewMode() === 'grid') {
           <div class="display-pagesize-toolbar d-flex align-items-center gap-2">
             <span class="toolbar-pagesize-label">
@@ -222,15 +217,15 @@
       </div>
     </div>
 
-    <!-- Hàng dưới: Tabs Khu vực (Tầng 1, Tầng 2, Sân vườn, VIP...) -->
-    <div class="area-pills-list d-flex align-items-center flex-wrap gap-2">
+    <!-- Tabs Khu vực -->
+    <div class="area-pills-list d-flex align-items-center flex-wrap gap-2 mt-3">
       <button
         type="button"
         class="area-pill-btn"
         [class.active]="selectedAreaId() === null"
         (click)="selectArea(null)"
       >
-        <i class="fa fa-layer-group"></i>
+        <i class="fa fa-layer-group me-1"></i>
         <span>{{ '::AllLocations' | abpLocalization }}</span>
       </button>
 
@@ -241,14 +236,14 @@
           [class.active]="selectedAreaId() === area.id"
           (click)="selectArea(area.id)"
         >
-          <i class="fa fa-map-marker-alt"></i>
+          <i class="fa fa-map-marker-alt me-1"></i>
           <span>{{ area.name }}</span>
         </button>
       }
     </div>
   </div>
 
-  <!-- 4. VIEW MODE 1: SƠ ĐỒ BÀN ĂN TRỰC QUAN (FLOOR PLAN / VISUAL TABLE CARDS GRID) -->
+  <!-- 4. VIEW MODE 1: SƠ ĐỒ BÀN ĂN TRỰC QUAN (FLOOR PLAN GRID) -->
   @if (viewMode() === 'grid') {
     <div class="visual-floor-plan-container">
       @if (filteredGridTables().length === 0) {
@@ -259,7 +254,7 @@
           <h4 class="empty-title">{{ '::NoDataAvailable' | abpLocalization }}</h4>
           <p class="empty-desc text-muted">{{ '::ManageTablesSubtitle' | abpLocalization }}</p>
           <button type="button" class="btn btn-primary btn-add-theme mt-2" (click)="createTable()">
-            <i class="fa fa-plus-circle"></i>
+            <i class="fa fa-plus-circle me-1"></i>
             <span>{{ '::AddNewTable' | abpLocalization }}</span>
           </button>
         </div>
@@ -275,7 +270,7 @@
                 [class.table-cleaning]="t.status === TableStatus.Cleaning"
                 [class.table-disabled]="t.status === TableStatus.Disabled"
               >
-                <!-- 1. Card Top: Tên bàn & Vị trí (Trái) + Badge trạng thái (Phải) -->
+                <!-- 1. Card Top: Tên bàn & Status badge -->
                 <div class="card-header-row d-flex align-items-center justify-content-between mb-2">
                   <div class="table-identity">
                     <div class="d-flex align-items-center gap-2">
@@ -283,249 +278,237 @@
                       <h4 class="table-name-text m-0" [title]="t.name">{{ t.name }}</h4>
                     </div>
                     @if (t.diningAreaName || t.location) {
-                      <span
-                        class="table-location-sub text-truncate"
-                        [title]="t.diningAreaName || t.location"
-                      >
-                        <i class="fa fa-map-marker-alt"></i>
+                      <span class="table-location-sub text-truncate" [title]="t.diningAreaName || t.location">
+                        <i class="fa fa-map-marker-alt me-1"></i>
                         <span>{{ t.diningAreaName || t.location }}</span>
                       </span>
                     }
                   </div>
 
-                  <!-- Status Chip góc trên bên phải -->
-                  <div
-                    class="table-status-group d-flex flex-column align-items-end justify-content-center gap-1"
-                  >
+                  <!-- Status Chip góc trên bên phải & Timer cảnh báo 2 tầng -->
+                  <div class="table-status-group d-flex flex-column align-items-end justify-content-center gap-1">
                     <span class="status-pill-badge" [ngClass]="getStatusBadgeClass(t.status)">
                       {{ getStatusLabel(t.status) | abpLocalization }}
                     </span>
-                    @if (
-                      t.status !== TableStatus.Available &&
-                      t.status !== TableStatus.Disabled &&
-                      getElapsedTime(t)
-                    ) {
-                      <span class="time-elapsed-tag" [title]="getElapsedTimeTooltip(t)">
-                        <i class="fa fa-clock"></i>
+                    @if (t.status === TableStatus.Occupied && t.occupiedTime) {
+                      <span
+                        class="time-elapsed-tag"
+                        [ngClass]="getMealDurationWarningClass(t.occupiedTime)"
+                        [title]="getElapsedTimeTooltip(t)"
+                      >
+                        <i class="fa fa-hourglass-half me-1"></i>
                         <span>{{ getElapsedTime(t) }}</span>
+                      </span>
+                    } @else if (t.status === TableStatus.Reserved && t.reservedTime) {
+                      <span class="time-elapsed-tag" [title]="t.reservedTime | date: 'HH:mm dd/MM'">
+                        <i class="fa fa-clock me-1"></i>
+                        <span>{{ t.reservedTime | date: 'HH:mm' }}</span>
                       </span>
                     }
                   </div>
                 </div>
 
-                <!-- 2. Visual Table Plate: Minh họa bàn ăn phẳng & Ghế ngồi thanh lịch -->
+                <!-- 2. Visual Table Plate: Mô phỏng hình học bàn & ghế ngồi -->
                 <div class="table-visual-plate my-2">
                   <div class="furnishing-assembly">
-                    <!-- Ghế phía trên -->
                     <div class="chairs-row chairs-top">
                       <span class="chair-pill"></span>
-                      @if ((t.capacity || 0) >= 4) {
-                        <span class="chair-pill"></span>
-                      }
-                      @if ((t.capacity || 0) >= 8) {
-                        <span class="chair-pill"></span>
-                      }
+                      @if ((t.capacity || 0) >= 4) { <span class="chair-pill"></span> }
+                      @if ((t.capacity || 0) >= 8) { <span class="chair-pill"></span> }
                     </div>
-
-                    <!-- Mặt bàn chính với số chỗ ngồi -->
                     <div class="table-surface-board">
                       <i class="fa fa-utensils surface-icon"></i>
-                      <span class="capacity-seats-label"
-                        >{{ t.capacity }} {{ '::Seats' | abpLocalization }}</span
-                      >
+                      <span class="capacity-seats-label">{{ t.capacity }} {{ '::Seats' | abpLocalization }}</span>
                     </div>
-
-                    <!-- Ghế phía dưới -->
                     <div class="chairs-row chairs-bottom">
                       <span class="chair-pill"></span>
-                      @if ((t.capacity || 0) >= 4) {
-                        <span class="chair-pill"></span>
-                      }
-                      @if ((t.capacity || 0) >= 8) {
-                        <span class="chair-pill"></span>
-                      }
+                      @if ((t.capacity || 0) >= 4) { <span class="chair-pill"></span> }
+                      @if ((t.capacity || 0) >= 8) { <span class="chair-pill"></span> }
                     </div>
                   </div>
                 </div>
 
-                <!-- 3 & 4. Card Bottom: Cụm Ô thông tin trạng thái & Nút thao tác đi liền nhau -->
+                <!-- 3. Cụm thông tin trạng thái & Nút thao tác thẻ bàn -->
                 <div class="card-bottom-section mt-auto">
-                  <!-- Ô thông tin trạng thái -->
                   <div class="table-info-slot">
                     @if (t.status === TableStatus.Disabled) {
                       <div class="info-slot-box info-disabled-box w-100 text-center">
                         <div class="primary-info-line">
-                          <i class="fa fa-wrench text-secondary"></i>
+                          <i class="fa fa-wrench text-secondary me-1"></i>
                           <span>{{ '::TableStatusDisabled' | abpLocalization }}</span>
-                        </div>
-                        <div class="secondary-info-line mt-0.5">
-                          <span>{{ '::TableUnderMaintenance' | abpLocalization }}</span>
                         </div>
                       </div>
                     } @else if (t.status === TableStatus.Cleaning) {
                       <div class="info-slot-box info-cleaning-box w-100 text-center">
                         <div class="primary-info-line">
-                          <i class="fa fa-broom text-info"></i>
+                          <i class="fa fa-broom text-info me-1"></i>
                           <span>{{ '::TableStatusCleaning' | abpLocalization }}</span>
                         </div>
-                        <div class="secondary-info-line mt-0.5">
-                          <span>{{ '::TableUnderCleaning' | abpLocalization }}</span>
-                        </div>
                       </div>
-                    } @else if (
-                      t.status === TableStatus.Reserved &&
-                      (t.reservedCustomerName || t.reservedTime)
-                    ) {
+                    } @else if (t.status === TableStatus.Reserved) {
                       <div
-                        class="info-slot-box info-reserved-box w-100 text-center"
+                        class="info-slot-box info-reserved-box w-100 text-center cursor-pointer"
                         (click)="openReservationDetailModal(t, $event)"
                         [title]="'::ReservationDetails' | abpLocalization"
                       >
                         <div class="primary-info-line text-truncate">
-                          <i class="fa fa-user-tag text-warning"></i>
-                          <span class="guest-name-text">{{
-                            t.reservedCustomerName || ('::TableStatusReserved' | abpLocalization)
-                          }}</span>
-                          @if (t.reservedCustomerPhone) {
-                            <span class="guest-phone-text">({{ t.reservedCustomerPhone }})</span>
-                          }
+                          <i class="fa fa-user-tag text-warning me-1"></i>
+                          <span class="guest-name-text">{{ t.reservedCustomerName || ('::TableStatusReserved' | abpLocalization) }}</span>
                         </div>
                         <div class="secondary-info-line mt-0.5">
-                          <i class="fa fa-clock text-warning"></i>
-                          <span
-                            >{{ '::ExpectedArrival' | abpLocalization }}:
-                            {{
-                              t.reservedTime ? (t.reservedTime | date: 'HH:mm (dd/MM)') : '--:--'
-                            }}</span
-                          >
+                          <i class="fa fa-clock text-warning me-1"></i>
+                          <span>{{ t.reservedTime ? (t.reservedTime | date: 'HH:mm (dd/MM)') : '--:--' }}</span>
                         </div>
                       </div>
                     } @else if (t.status === TableStatus.Occupied) {
                       <div class="info-slot-box info-occupied-box w-100 text-center">
-                        <div class="primary-info-line">
+                        <div class="primary-info-line d-flex align-items-center justify-content-center gap-1">
                           <i class="fa fa-utensils text-danger"></i>
-                          <span>{{ '::TableStatusOccupied' | abpLocalization }}</span>
-                        </div>
-                        <div class="secondary-info-line mt-0.5">
-                          <i class="fa fa-clock text-danger"></i>
-                          <span>{{
-                            getElapsedTime(t) || ('::CurrentlyServing' | abpLocalization)
-                          }}</span>
+                          <span>{{ t.hasActiveOrder ? ('::TableHasOpenOrder' | abpLocalization) : ('::TableWaitingForOrder' | abpLocalization) }}</span>
                         </div>
                       </div>
                     } @else {
                       <div class="info-slot-box info-available-box w-100 text-center">
                         <div class="primary-info-line">
-                          <i class="fa fa-check-circle text-success"></i>
-                          <span>{{ '::TableStatusAvailable' | abpLocalization }}</span>
-                        </div>
-                        <div class="secondary-info-line mt-0.5">
+                          <i class="fa fa-check-circle text-success me-1"></i>
                           <span>{{ '::ReadyToServe' | abpLocalization }}</span>
                         </div>
                       </div>
                     }
                   </div>
 
-                  <!-- Hàng nút thao tác nhanh 1 chạm -->
-                  <div class="table-actions-footer">
+                  <!-- Hàng nút thao tác theo ngữ cảnh trạng thái -->
+                  <div class="table-actions-footer pt-2">
                     @if (t.status === TableStatus.Available) {
-                      <!-- Bàn trống -> Nhận khách, Đặt trước hoặc Báo hỏng -->
-                      <div class="d-flex gap-2">
+                      <div class="table-actions-2rows">
                         <button
                           type="button"
-                          class="btn btn-action-main btn-occupy flex-grow-1"
+                          class="btn btn-action-main-full btn-occupy"
                           (click)="quickUpdateStatus(t, TableStatus.Occupied)"
-                          [disabled]="!isRestaurantOpen()"
+                          [title]="'::SeatGuestsTooltip' | abpLocalization"
                         >
-                          <i class="fa fa-user-check"></i>
-                          <span>{{ '::QuickCheckIn' | abpLocalization }}</span>
+                          <i class="fa fa-user-check me-1.5"></i>
+                          <span>{{ getActionLabel('seatGuests') }}</span>
                         </button>
-                        <button
-                          type="button"
-                          class="btn btn-action-sub btn-reserve"
-                          (click)="openReserveModal(t)"
-                          [title]="'::ReserveTable' | abpLocalization"
-                        >
-                          <i class="fa fa-calendar-plus"></i>
-                        </button>
-                        <button
-                          type="button"
-                          class="btn btn-action-sub btn-disable"
-                          (click)="toggleDisableTable(t)"
-                          [title]="'::DisableTable' | abpLocalization"
-                        >
-                          <i class="fa fa-ban"></i>
-                        </button>
+                        <div class="sub-actions-row">
+                          <button
+                            type="button"
+                            class="btn btn-action-sub-pill btn-sub-reserve"
+                            (click)="openReserveModal(t)"
+                            [title]="'::ReserveTable' | abpLocalization"
+                          >
+                            <i class="fa fa-calendar-plus me-1.5"></i>
+                            <span>{{ getActionLabel('reserve') }}</span>
+                          </button>
+                          <button
+                            type="button"
+                            class="btn btn-action-sub-pill btn-sub-disable"
+                            (click)="toggleDisableTable(t)"
+                            [title]="'::DisableTable' | abpLocalization"
+                          >
+                            <i class="fa fa-ban me-1.5"></i>
+                            <span>{{ getActionLabel('disable') }}</span>
+                          </button>
+                        </div>
                       </div>
                     } @else if (t.status === TableStatus.Occupied) {
-                      <!-- Đang có khách -> Trả bàn / Gọi món (Order) -->
-                      <div class="d-flex gap-2">
+                      <div class="occupied-actions-grid">
                         <button
                           type="button"
-                          class="btn btn-action-main btn-checkout flex-grow-1"
-                          (click)="onEndMeal(t)"
+                          class="btn-grid-action btn-grid-order"
+                          (click)="goToOrder(t)"
+                          [title]="getActionLabel('order', t.hasActiveOrder)"
                         >
-                          <i class="fa fa-flag-checkered"></i>
-                          <span>{{ '::QuickCheckOut' | abpLocalization }}</span>
+                          <i class="fa fa-utensils"></i>
+                          <span>{{ getActionLabel('order', t.hasActiveOrder) }}</span>
                         </button>
                         <button
                           type="button"
-                          class="btn btn-action-sub btn-order"
-                          (click)="openOrderModal(t)"
-                          [title]="'::Order' | abpLocalization"
+                          class="btn-grid-action btn-grid-end"
+                          (click)="onEndMeal(t)"
+                          [title]="'::EndMealTooltip' | abpLocalization"
                         >
-                          <i class="fa fa-utensils"></i>
+                          <i class="fa fa-flag-checkered"></i>
+                          <span>{{ getActionLabel('endMeal') }}</span>
+                        </button>
+                        <button
+                          type="button"
+                          class="btn-grid-action btn-grid-transfer"
+                          (click)="openTransferModal(t)"
+                          [title]="'::TransferTable' | abpLocalization"
+                        >
+                          <i class="fa fa-right-left"></i>
+                          <span>{{ getActionLabel('transfer') }}</span>
+                        </button>
+                        <button
+                          type="button"
+                          class="btn-grid-action btn-grid-merge"
+                          (click)="openMergeModal(t)"
+                          [title]="'::MergeTables' | abpLocalization"
+                        >
+                          <i class="fa fa-object-group"></i>
+                          <span>{{ getActionLabel('merge') }}</span>
                         </button>
                       </div>
                     } @else if (t.status === TableStatus.Reserved) {
-                      <!-- Đã đặt trước -> Nhận khách, Hủy đặt hoặc Báo hỏng -->
-                      <div class="d-flex gap-2">
+                      <div class="table-actions-2rows">
                         <button
                           type="button"
-                          class="btn btn-action-main btn-occupy flex-grow-1"
+                          class="btn btn-action-main-full btn-occupy"
                           (click)="quickUpdateStatus(t, TableStatus.Occupied)"
-                          [disabled]="!isRestaurantOpen()"
                         >
-                          <i class="fa fa-user-check"></i>
-                          <span>{{ '::QuickCheckIn' | abpLocalization }}</span>
+                          <i class="fa fa-user-check me-1.5"></i>
+                          <span>{{ getActionLabel('checkIn') }}</span>
                         </button>
-                        <button
-                          type="button"
-                          class="btn btn-action-sub btn-cancel-reserve"
-                          (click)="cancelReservation(t)"
-                          [title]="'::CancelReservation' | abpLocalization"
-                        >
-                          <i class="fa fa-times"></i>
-                        </button>
-                        <button
-                          type="button"
-                          class="btn btn-action-sub btn-disable"
-                          (click)="toggleDisableTable(t)"
-                          [title]="'::DisableTable' | abpLocalization"
-                        >
-                          <i class="fa fa-ban"></i>
-                        </button>
+                        <div class="sub-actions-row">
+                          <button
+                            type="button"
+                            class="btn btn-action-sub-pill btn-sub-detail"
+                            (click)="openReservationDetailModal(t, $event)"
+                            [title]="'::ReservationDetails' | abpLocalization"
+                          >
+                            <i class="fa fa-eye me-1.5"></i>
+                            <span>{{ getActionLabel('reservationDetails') }}</span>
+                          </button>
+                          <button
+                            type="button"
+                            class="btn btn-action-sub-pill btn-sub-disable"
+                            (click)="toggleDisableTable(t)"
+                            [title]="'::DisableTable' | abpLocalization"
+                          >
+                            <i class="fa fa-ban me-1.5"></i>
+                            <span>{{ getActionLabel('disable') }}</span>
+                          </button>
+                        </div>
                       </div>
                     } @else if (t.status === TableStatus.Cleaning) {
-                      <!-- Bàn đang dọn dẹp -> Nút Dọn xong (Hoàn tất dọn dẹp -> Sẵn sàng phục vụ) -->
                       <button
                         type="button"
                         class="btn btn-action-main btn-enable w-100"
                         (click)="quickUpdateStatus(t, TableStatus.Available)"
                       >
-                        <i class="fa fa-check"></i>
-                        <span>{{ '::DoneCleaning' | abpLocalization }}</span>
+                        <i class="fa fa-broom me-1"></i>
+                        <span>{{ '::FinishCleaning' | abpLocalization }}</span>
                       </button>
                     } @else {
-                      <!-- Bàn tạm ngưng / Bị hỏng -> Nút Mở lại bàn hoạt động -->
-                      <button
-                        type="button"
-                        class="btn btn-action-main btn-enable w-100"
-                        (click)="toggleDisableTable(t)"
-                      >
-                        <i class="fa fa-check-circle"></i>
-                        <span>{{ '::EnableTable' | abpLocalization }}</span>
-                      </button>
+                      <div class="d-flex gap-1.5 flex-wrap w-100">
+                        <button
+                          type="button"
+                          class="btn btn-action-main btn-enable flex-grow-1"
+                          (click)="toggleDisableTable(t)"
+                        >
+                          <i class="fa fa-check-circle me-1"></i>
+                          <span>{{ '::EnableTable' | abpLocalization }}</span>
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-action-sub btn-delete"
+                          (click)="delete(t.id)"
+                          [title]="'::Delete' | abpLocalization"
+                        >
+                          <i class="fa fa-trash-alt"></i>
+                        </button>
+                      </div>
                     }
                   </div>
                 </div>
@@ -534,32 +517,16 @@
           }
         </div>
 
-        <!-- Floor Plan Custom Footer Pagination -->
+        <!-- Floor Plan Pagination -->
         @if (filteredTableList().length > 0) {
-          <div
-            class="custom-table-footer custom-floorplan-footer d-flex align-items-center justify-content-between flex-wrap gap-3 mt-4"
-          >
-            <div class="d-flex align-items-center flex-wrap gap-3">
-              <span class="records-summary-text">
-                {{ '::ShowingRecords' | abpLocalization }}
-                <strong>{{ gridFromRecord() }} - {{ gridToRecord() }}</strong>
-                {{ '::OfTotal' | abpLocalization }}
-                <strong>{{ filteredTableList().length }}</strong>
-                {{ '::TableCount' | abpLocalization }}
-              </span>
-
-              <div class="d-flex align-items-center gap-2 page-size-box">
-                <span class="page-size-label">{{ '::Display' | abpLocalization }}:</span>
-                <app-custom-select
-                  [options]="gridPageSizeOptions"
-                  [ngModel]="gridPageSize()"
-                  (selectionChange)="changeGridPageSize($event)"
-                  size="sm"
-                  placement="top"
-                  minWidth="140px"
-                ></app-custom-select>
-              </div>
-            </div>
+          <div class="custom-table-footer d-flex align-items-center justify-content-between flex-wrap gap-3 mt-4">
+            <span class="records-summary-text">
+              {{ '::ShowingRecords' | abpLocalization }}
+              <strong>{{ gridFromRecord() }} - {{ gridToRecord() }}</strong>
+              {{ '::OfTotal' | abpLocalization }}
+              <strong>{{ filteredTableList().length }}</strong>
+              {{ '::TableCount' | abpLocalization }}
+            </span>
 
             <div class="d-flex align-items-center gap-2 pagination-btn-group">
               <button
@@ -606,7 +573,7 @@
     </div>
   }
 
-  <!-- 5. VIEW MODE 2: BẢNG DANH SÁCH (COMPACT LIST VIEW) -->
+  <!-- 5. VIEW MODE 2: BẢNG DANH SÁCH (LIST VIEW - NGX-DATATABLE) -->
   @if (viewMode() === 'table') {
     <div class="data-card-wrapper" #tableWrapper>
       <ngx-datatable
@@ -624,213 +591,136 @@
           emptyMessage: '::NoDataAvailable' | abpLocalization,
           totalMessage: '::TableCount' | abpLocalization,
         }"
-        [rowHeight]="52"
+        [rowHeight]="56"
       >
         <!-- Cột 1: STT -->
-        <ngx-datatable-column
-          [width]="70"
-          [minWidth]="60"
-          [maxWidth]="75"
-          [canAutoResize]="false"
-          [sortable]="false"
-        >
+        <ngx-datatable-column [width]="65" [minWidth]="55" [maxWidth]="75" [canAutoResize]="false" [sortable]="false">
           <ng-template ngx-datatable-header-template>
-            <span class="w-100 text-center header-title-centered">{{
-              '::Index' | abpLocalization
-            }}</span>
+            <span class="w-100 text-center header-title-centered">{{ '::Index' | abpLocalization }}</span>
           </ng-template>
           <ng-template let-rowIndex="rowIndex" ngx-datatable-cell-template>
             <span class="stt-text">{{ list.page * list.maxResultCount + rowIndex + 1 }}</span>
           </ng-template>
         </ngx-datatable-column>
 
-        <!-- Cột 2: Tên bàn (Name) - Rộng vừa vặn 200-270px, không bị phình to và không cắt chữ -->
-        <ngx-datatable-column
-          [name]="'::TableName' | abpLocalization"
-          prop="name"
-          [width]="200"
-          [minWidth]="190"
-          [maxWidth]="270"
-          [canAutoResize]="true"
-        >
+        <!-- Cột 2: Tên bàn -->
+        <ngx-datatable-column [name]="'::TableName' | abpLocalization" prop="name" [width]="180" [minWidth]="160">
           <ng-template let-row="row" ngx-datatable-cell-template>
-            <div class="d-flex align-items-center text-truncate">
+            <div class="d-flex align-items-center gap-2 text-truncate">
               <div class="theme-avatar-icon">
                 <i class="fa fa-chair"></i>
               </div>
-              <span class="main-name-text text-truncate" [title]="row.name">{{ row.name }}</span>
+              <span class="main-name-text text-truncate font-weight-bold" [title]="row.name">{{ row.name }}</span>
             </div>
           </ng-template>
         </ngx-datatable-column>
 
-        <!-- Cột 3: Sức chứa (Capacity) - Thu nhỏ & Căn giữa -->
-        <ngx-datatable-column
-          [name]="'::TableCapacity' | abpLocalization"
-          prop="capacity"
-          [width]="110"
-          [minWidth]="95"
-          [maxWidth]="130"
-          [flexGrow]="0.6"
-          [canAutoResize]="true"
-          headerClass="text-center-col"
-          cellClass="text-center-col"
-        >
+        <!-- Cột 3: Sức chứa -->
+        <ngx-datatable-column [name]="'::TableCapacity' | abpLocalization" prop="capacity" [width]="110" [minWidth]="95">
+          <ng-template let-row="row" ngx-datatable-cell-template>
+            <span class="badge-tag">
+              <i class="fa fa-users text-muted me-1"></i>
+              <strong>{{ row.capacity }}</strong> {{ '::Seats' | abpLocalization }}
+            </span>
+          </ng-template>
+        </ngx-datatable-column>
+
+        <!-- Cột 4: Khu vực -->
+        <ngx-datatable-column [name]="'::DiningArea' | abpLocalization" prop="diningAreaName" [width]="220" [minWidth]="180">
+          <ng-template let-row="row" ngx-datatable-cell-template>
+            <div class="d-flex align-items-center gap-1.5 text-truncate">
+              <i class="fa fa-layer-group text-primary-orange"></i>
+              <span class="text-truncate">{{ row.diningAreaName || row.location || ('::AllLocations' | abpLocalization) }}</span>
+            </div>
+          </ng-template>
+        </ngx-datatable-column>
+
+        <!-- Cột 5: Trạng thái -->
+        <ngx-datatable-column [name]="'::TableStatus' | abpLocalization" prop="status" [width]="140" [minWidth]="120">
+          <ng-template let-row="row" ngx-datatable-cell-template>
+            <span class="status-pill-badge" [ngClass]="getStatusBadgeClass(row.status)">
+              {{ getStatusLabel(row.status) | abpLocalization }}
+            </span>
+          </ng-template>
+        </ngx-datatable-column>
+
+        <!-- Cột 6: Thao tác -->
+        <ngx-datatable-column [width]="180" [minWidth]="170" [canAutoResize]="false" [sortable]="false">
           <ng-template ngx-datatable-header-template>
-            <span class="w-100 text-center header-title-centered">{{
-              '::TableCapacity' | abpLocalization
-            }}</span>
+            <span class="w-100 text-center header-title-centered">{{ '::Actions' | abpLocalization }}</span>
           </ng-template>
           <ng-template let-row="row" ngx-datatable-cell-template>
-            <div class="w-100 d-flex justify-content-center">
-              <span class="badge-tag">
-                <i class="fa fa-users text-muted"></i>
-                <strong>{{ row.capacity }}</strong> {{ '::Seats' | abpLocalization }}
-              </span>
-            </div>
-          </ng-template>
-        </ngx-datatable-column>
-
-        <!-- Cột 4: Vị trí / Khu vực (DiningArea) - Chiếm toàn bộ không gian còn lại, dài nhất bảng -->
-        <ngx-datatable-column
-          [name]="'::DiningArea' | abpLocalization"
-          prop="diningAreaName"
-          [width]="420"
-          [minWidth]="260"
-          [canAutoResize]="true"
-        >
-          <ng-template let-row="row" ngx-datatable-cell-template>
-            <div class="d-flex align-items-center text-truncate dining-area-cell">
-              <i class="fa fa-utensils area-table-icon"></i>
-              <span
-                class="location-text text-truncate"
-                [title]="row.diningAreaName || row.location || ''"
-              >
-                {{ row.diningAreaName || row.location || ('::AllLocations' | abpLocalization) }}
-              </span>
-            </div>
-          </ng-template>
-        </ngx-datatable-column>
-
-        <!-- Cột 5: Trạng thái bàn (Status) - Thu nhỏ & Căn giữa -->
-        <ngx-datatable-column
-          [name]="'::TableStatus' | abpLocalization"
-          prop="status"
-          [width]="130"
-          [minWidth]="115"
-          [maxWidth]="150"
-          [flexGrow]="0.7"
-          [canAutoResize]="true"
-          headerClass="text-center-col"
-          cellClass="text-center-col"
-        >
-          <ng-template ngx-datatable-header-template>
-            <span class="w-100 text-center header-title-centered">{{
-              '::TableStatus' | abpLocalization
-            }}</span>
-          </ng-template>
-          <ng-template let-row="row" ngx-datatable-cell-template>
-            <div class="w-100 d-flex justify-content-center">
-              <span
-                class="status-pill"
-                [ngClass]="getStatusBadgeClass(row.status)"
-                [style.cursor]="row.status === TableStatus.Reserved ? 'pointer' : 'default'"
-                (click)="row.status === TableStatus.Reserved ? openReservationDetailModal(row, $event) : null"
-                [title]="row.status === TableStatus.Reserved ? ('::ReservationDetails' | abpLocalization) : ''"
-              >
-                {{ getStatusLabel(row.status) | abpLocalization }}
-                @if (row.status === TableStatus.Reserved) {
-                  <i class="fa fa-info-circle ms-1"></i>
-                }
-              </span>
-            </div>
-          </ng-template>
-        </ngx-datatable-column>
-
-        <!-- Cột 6: Thao tác (Actions) -->
-        <ngx-datatable-column
-          [width]="145"
-          [minWidth]="135"
-          [maxWidth]="160"
-          [canAutoResize]="false"
-          [sortable]="false"
-        >
-          <ng-template ngx-datatable-header-template>
-            <span class="w-100 text-center header-title-centered">{{
-              '::Actions' | abpLocalization
-            }}</span>
-          </ng-template>
-          <ng-template let-row="row" ngx-datatable-cell-template>
-            <div class="actions-container">
+            <div class="actions-container d-flex align-items-center justify-content-center gap-1">
               @if (row.status === TableStatus.Occupied) {
                 <button
                   type="button"
                   class="icon-action-btn btn-checkout-inline"
                   (click)="onEndMeal(row)"
-                  [title]="'::QuickCheckOut' | abpLocalization"
+                  [title]="'::EndMeal' | abpLocalization"
                 >
                   <i class="fa fa-flag-checkered"></i>
                 </button>
                 <button
                   type="button"
                   class="icon-action-btn btn-order-inline"
-                  (click)="openOrderModal(row)"
+                  (click)="goToOrder(row)"
                   [title]="'::Order' | abpLocalization"
                 >
                   <i class="fa fa-utensils"></i>
+                </button>
+                <button
+                  type="button"
+                  class="icon-action-btn btn-transfer-inline"
+                  (click)="openTransferModal(row)"
+                  [title]="'::TransferTable' | abpLocalization"
+                >
+                  <i class="fa fa-right-left"></i>
+                </button>
+                <button
+                  type="button"
+                  class="icon-action-btn btn-merge-inline"
+                  (click)="openMergeModal(row)"
+                  [title]="'::MergeTables' | abpLocalization"
+                >
+                  <i class="fa fa-object-group"></i>
                 </button>
               } @else if (row.status === TableStatus.Cleaning) {
                 <button
                   type="button"
                   class="icon-action-btn btn-enable-inline"
                   (click)="quickUpdateStatus(row, TableStatus.Available)"
-                  [title]="'::DoneCleaning' | abpLocalization"
+                  [title]="'::FinishCleaning' | abpLocalization"
                 >
-                  <i class="fa fa-check"></i>
+                  <i class="fa fa-broom"></i>
                 </button>
               } @else {
                 <button
                   type="button"
                   class="icon-action-btn"
-                  [ngClass]="
-                    row.status === TableStatus.Disabled ? 'btn-enable-inline' : 'btn-disable-inline'
-                  "
+                  [ngClass]="row.status === TableStatus.Disabled ? 'btn-enable-inline' : 'btn-disable-inline'"
                   (click)="toggleDisableTable(row)"
-                  [title]="
-                    (row.status === TableStatus.Disabled ? '::EnableTable' : '::DisableTable')
-                      | abpLocalization
-                  "
+                  [title]="(row.status === TableStatus.Disabled ? '::EnableTable' : '::DisableTable') | abpLocalization"
                 >
-                  <i
-                    class="fa"
-                    [ngClass]="row.status === TableStatus.Disabled ? 'fa-check-circle' : 'fa-ban'"
-                  ></i>
+                  <i class="fa" [ngClass]="row.status === TableStatus.Disabled ? 'fa-check-circle' : 'fa-ban'"></i>
                 </button>
               }
+
               <button
                 type="button"
                 class="icon-action-btn btn-edit"
                 [disabled]="row.status === TableStatus.Occupied"
-                [class.btn-action-disabled]="row.status === TableStatus.Occupied"
                 (click)="editTable(row.id)"
-                [title]="
-                  (row.status === TableStatus.Occupied
-                    ? '::CannotEditOccupiedTable'
-                    : '::Edit') | abpLocalization
-                "
+                [title]="'::Edit' | abpLocalization"
               >
                 <i class="fa fa-pen"></i>
               </button>
+
               <button
                 type="button"
                 class="icon-action-btn btn-delete"
                 [disabled]="row.status === TableStatus.Occupied"
-                [class.btn-action-disabled]="row.status === TableStatus.Occupied"
                 (click)="delete(row.id)"
-                [title]="
-                  (row.status === TableStatus.Occupied
-                    ? '::CannotDeleteOccupiedTable'
-                    : '::DeleteTable') | abpLocalization
-                "
+                [title]="'::Delete' | abpLocalization"
               >
                 <i class="fa fa-trash-alt"></i>
               </button>
@@ -839,68 +729,28 @@
         </ngx-datatable-column>
       </ngx-datatable>
 
-      <!-- Custom Footer Pagination -->
-      <div
-        class="custom-table-footer d-flex align-items-center justify-content-between flex-wrap gap-3"
-      >
-        <div class="d-flex align-items-center flex-wrap gap-3">
-          <span class="records-summary-text">
-            {{ '::ShowingRecords' | abpLocalization }}
-            <strong>{{ fromRecord }} - {{ toRecord }}</strong>
-            {{ '::OfTotal' | abpLocalization }}
-            <strong>{{ data.totalCount }}</strong>
-            {{ '::TableCount' | abpLocalization }}
-          </span>
-
-          <div class="d-flex align-items-center gap-2 page-size-box">
-            <span class="page-size-label">{{ '::Display' | abpLocalization }}:</span>
-            <app-custom-select
-              [options]="listPageSizeOptions"
-              [ngModel]="list.maxResultCount"
-              (selectionChange)="changePageSize($event)"
-              size="sm"
-              placement="top"
-              minWidth="140px"
-            ></app-custom-select>
-          </div>
-        </div>
+      <!-- Custom Datatable Footer -->
+      <div class="custom-table-footer d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <span class="records-summary-text">
+          {{ '::ShowingRecords' | abpLocalization }}
+          <strong>{{ fromRecord }} - {{ toRecord }}</strong>
+          {{ '::OfTotal' | abpLocalization }}
+          <strong>{{ data.totalCount }}</strong>
+          {{ '::TableCount' | abpLocalization }}
+        </span>
 
         <div class="d-flex align-items-center gap-2 pagination-btn-group">
-          <button
-            type="button"
-            class="btn-page-nav"
-            [disabled]="currentPage === 1"
-            (click)="firstPage()"
-            [title]="'::FirstPage' | abpLocalization"
-          >
+          <button type="button" class="btn-page-nav" [disabled]="currentPage === 1" (click)="firstPage()">
             <i class="fa fa-angle-double-left"></i>
           </button>
-          <button
-            type="button"
-            class="btn-page-nav"
-            [disabled]="currentPage === 1"
-            (click)="prevPage()"
-            [title]="'::PreviousPage' | abpLocalization"
-          >
+          <button type="button" class="btn-page-nav" [disabled]="currentPage === 1" (click)="prevPage()">
             <i class="fa fa-angle-left"></i>
           </button>
           <span class="page-indicator-pill">{{ currentPage }} / {{ totalPages }}</span>
-          <button
-            type="button"
-            class="btn-page-nav"
-            [disabled]="currentPage === totalPages"
-            (click)="nextPage()"
-            [title]="'::NextPage' | abpLocalization"
-          >
+          <button type="button" class="btn-page-nav" [disabled]="currentPage === totalPages" (click)="nextPage()">
             <i class="fa fa-angle-right"></i>
           </button>
-          <button
-            type="button"
-            class="btn-page-nav"
-            [disabled]="currentPage === totalPages"
-            (click)="lastPage()"
-            [title]="'::LastPage' | abpLocalization"
-          >
+          <button type="button" class="btn-page-nav" [disabled]="currentPage === totalPages" (click)="lastPage()">
             <i class="fa fa-angle-double-right"></i>
           </button>
         </div>
@@ -909,1354 +759,67 @@
   }
 </div>
 
-<!-- Modal Thêm/Sửa Bàn ăn -->
-<abp-modal [(visible)]="isModalOpen">
-  <ng-template #abpHeader>
-    <div class="d-flex align-items-center gap-3 modal-header-content">
-      <div class="modal-header-icon">
-        <i class="fa fa-utensils"></i>
-      </div>
-      <div class="d-flex flex-column justify-content-center">
-        <h5 class="m-0 modal-title-text">
-          {{ (selectedItem.id ? '::EditTable' : '::NewTable') | abpLocalization }}
-        </h5>
-        <span class="modal-subtitle-text">
-          {{ (selectedItem.id ? '::EditTableSubtitle' : '::NewTableSubtitle') | abpLocalization }}
-        </span>
-      </div>
-    </div>
-  </ng-template>
-
-  <ng-template #abpBody>
-    <form id="table-form" [formGroup]="form" (ngSubmit)="save()" class="theme-modal-form">
-      <!-- 1. Tên / Số bàn -->
-      <div class="form-field-group mb-3">
-        <label for="table-name" class="field-label">
-          <span>{{ '::TableName' | abpLocalization }}</span>
-          <span class="required-star">*</span>
-        </label>
-        <div class="input-with-icon">
-          <i class="fa fa-chair input-icon"></i>
-          <input
-            type="text"
-            id="table-name"
-            class="form-control custom-form-input"
-            formControlName="name"
-            [placeholder]="'::EnterTableNamePlaceholder' | abpLocalization"
-            [skipValidation]="true"
-            autofocus
-          />
-        </div>
-        @if (form.get('name')?.invalid && (form.get('name')?.touched || form.get('name')?.dirty)) {
-          <div class="field-validation-error">
-            <i class="fa fa-exclamation-circle"></i>
-            <span>{{
-              { key: '::FieldRequired', defaultValue: 'This field is required.' } | abpLocalization
-            }}</span>
-          </div>
-        }
-      </div>
-
-      <!-- 2. Sức chứa & Trạng thái -->
-      <div class="row g-3 mb-3">
-        <div class="col-md-6">
-          <div class="form-field-group">
-            <label for="table-capacity" class="field-label">
-              <span>{{ '::TableCapacity' | abpLocalization }}</span>
-              <span class="required-star">*</span>
-            </label>
-            <div class="input-with-icon">
-              <i class="fa fa-users input-icon"></i>
-              <input
-                type="number"
-                id="table-capacity"
-                class="form-control custom-form-input"
-                formControlName="capacity"
-                min="1"
-                [skipValidation]="true"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div class="col-md-6">
-          <div class="form-field-group">
-            <label class="field-label">
-              <span>{{ '::TableStatus' | abpLocalization }}</span>
-              <span class="required-star">*</span>
-            </label>
-            <div class="custom-area-dropdown-container custom-status-dropdown-container">
-              <input type="hidden" formControlName="status" />
-
-              <div
-                class="custom-dropdown-trigger"
-                [class.is-open]="isStatusDropdownOpen"
-                (click)="toggleStatusDropdown($event)"
-                tabindex="0"
-                (keydown.enter)="toggleStatusDropdown($event)"
-                (keydown.space)="toggleStatusDropdown($event)"
-              >
-                <div class="d-flex align-items-center text-truncate flex-grow-1" style="gap: 8px;">
-                  <div class="trigger-status-badge status-{{ form.get('status')?.value }}">
-                    <i class="fa" [ngClass]="getSelectedStatusIcon(form.get('status')?.value)"></i>
-                  </div>
-                  <span class="selected-value-text text-truncate">{{ getSelectedStatusLabel(form.get('status')?.value) }}</span>
-                </div>
-                <div class="d-flex align-items-center flex-shrink-0" style="gap: 5px;">
-                  <i class="fa fa-chevron-down chevron-arrow" [class.rotate]="isStatusDropdownOpen"></i>
-                </div>
-              </div>
-
-              @if (isStatusDropdownOpen) {
-                <div class="custom-dropdown-panel" (click)="$event.stopPropagation()">
-                  <div class="dropdown-items-scroll">
-                    @for (opt of statusOptionsList; track opt.value) {
-                      <div
-                        class="dropdown-option-item status-option"
-                        [class.is-selected]="form.get('status')?.value === opt.value"
-                        (click)="selectTableStatus(opt.value)"
-                      >
-                        <div class="d-flex align-items-center flex-grow-1 text-truncate" style="gap: 8px;">
-                          <span class="option-icon-box status-{{ opt.value }}">
-                            <i class="fa" [ngClass]="opt.icon"></i>
-                          </span>
-                          <div class="d-flex flex-column text-truncate">
-                            <span class="option-name text-truncate">{{ opt.key | abpLocalization }}</span>
-                            <span class="option-desc text-truncate">{{ opt.descKey | abpLocalization }}</span>
-                          </div>
-                        </div>
-                        @if (form.get('status')?.value === opt.value) {
-                          <i class="fa fa-check selected-check-icon"></i>
-                        }
-                      </div>
-                    }
-                  </div>
-                </div>
-              }
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 3. Khu vực bàn ăn (Dining Area Selection) -->
-      <div class="form-field-group mb-2">
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <label class="field-label m-0">
-            <span>{{ '::DiningArea' | abpLocalization }}</span>
-          </label>
-          <!-- Nút tạo nhanh khu vực mới kiểu pill badge sang trọng -->
-          <button
-            type="button"
-            class="btn-quick-add-area"
-            (click)="openQuickAreaModal()"
-          >
-            <span class="add-icon-circle"><i class="fa fa-plus"></i></span>
-            <span>{{ '::AddNewDiningArea' | abpLocalization }}</span>
-          </button>
-        </div>
-
-        <div class="custom-area-dropdown-container position-relative">
-          <!-- Hidden input keeping formControlName synchronization -->
-          <input type="hidden" formControlName="diningAreaId" />
-
-          <!-- Custom Trigger Button -->
-          <div
-            class="custom-dropdown-trigger"
-            [class.is-open]="isAreaDropdownOpen"
-            [class.has-selection]="!!form.get('diningAreaId')?.value"
-            (click)="toggleAreaDropdown($event)"
-            tabindex="0"
-            (keydown.enter)="toggleAreaDropdown($event)"
-            (keydown.space)="toggleAreaDropdown($event)"
-          >
-            <div class="d-flex align-items-center text-truncate flex-grow-1" style="gap: 5px;">
-              <div class="trigger-icon-badge" [class.active]="!!form.get('diningAreaId')?.value">
-                <i class="fa fa-layer-group"></i>
-              </div>
-              @if (getSelectedAreaName(); as areaName) {
-                <span class="selected-value-text text-truncate">{{ areaName }}</span>
-              } @else {
-                <span class="placeholder-text">{{ '::NoDiningArea' | abpLocalization }}</span>
-              }
-            </div>
-            <div class="d-flex align-items-center flex-shrink-0" style="gap: 5px;">
-              @if (form.get('diningAreaId')?.value) {
-                <button
-                  type="button"
-                  class="btn-clear-area-selection"
-                  (click)="clearSelectedArea($event)"
-                  [title]="'::Clear' | abpLocalization"
-                >
-                  <i class="fa fa-times"></i>
-                </button>
-              }
-              <i class="fa fa-chevron-down chevron-arrow" [class.rotate]="isAreaDropdownOpen"></i>
-            </div>
-          </div>
-
-          <!-- Custom Dropdown Menu Panel -->
-          @if (isAreaDropdownOpen) {
-            <div class="custom-dropdown-panel" (click)="$event.stopPropagation()">
-              @if (diningAreas().length > 4) {
-                <div class="dropdown-search-box">
-                  <i class="fa fa-search search-icon"></i>
-                  <input
-                    type="text"
-                    class="dropdown-search-input"
-                    [(ngModel)]="areaDropdownSearch"
-                    [ngModelOptions]="{ standalone: true }"
-                    [placeholder]="'::SearchTablePlaceholder' | abpLocalization"
-                    (click)="$event.stopPropagation()"
-                  />
-                  @if (areaDropdownSearch) {
-                    <button
-                      type="button"
-                      class="btn-clear-search-text"
-                      (click)="areaDropdownSearch = ''"
-                    >
-                      <i class="fa fa-times-circle"></i>
-                    </button>
-                  }
-                </div>
-              }
-
-              <div class="dropdown-items-scroll">
-                <!-- Option: Không gán khu vực -->
-                <div
-                  class="dropdown-option-item unassigned-option"
-                  [class.is-selected]="!form.get('diningAreaId')?.value"
-                  (click)="selectDiningArea(null)"
-                >
-                  <div class="d-flex align-items-center flex-grow-1 text-truncate" style="gap: 5px;">
-                    <span class="option-icon-box unassigned">
-                      <i class="fa fa-minus-circle"></i>
-                    </span>
-                    <span class="option-name">{{ '::NoDiningArea' | abpLocalization }}</span>
-                  </div>
-                  @if (!form.get('diningAreaId')?.value) {
-                    <i class="fa fa-check selected-check-icon"></i>
-                  }
-                </div>
-
-                <div class="dropdown-separator"></div>
-
-                <!-- Danh sách các khu vực thực tế -->
-                @for (area of getFilteredDiningAreas(); track area.id) {
-                  <div
-                    class="dropdown-option-item"
-                    [class.is-selected]="form.get('diningAreaId')?.value === area.id"
-                    (click)="selectDiningArea(area.id)"
-                  >
-                    <div class="d-flex align-items-center flex-grow-1 text-truncate" style="gap: 5px;">
-                      <span class="option-icon-box">
-                        <i class="fa fa-map-marker-alt"></i>
-                      </span>
-                      <div class="d-flex flex-column text-truncate">
-                        <span class="option-name text-truncate">{{ area.name }}</span>
-                        @if (area.description) {
-                          <span class="option-desc text-truncate">{{ area.description }}</span>
-                        }
-                      </div>
-                    </div>
-                    @if (form.get('diningAreaId')?.value === area.id) {
-                      <i class="fa fa-check selected-check-icon"></i>
-                    }
-                  </div>
-                } @empty {
-                  <div class="dropdown-empty-row">
-                    <i class="fa fa-layer-group text-muted mb-1 d-block" style="font-size: 1.25rem;"></i>
-                    <span>{{ '::NoAreasFound' | abpLocalization }}</span>
-                  </div>
-                }
-              </div>
-            </div>
-          }
-        </div>
-      </div>
-    </form>
-  </ng-template>
-
-  <ng-template #abpFooter>
-    <div class="modal-footer-actions">
-      <button type="button" class="btn btn-secondary btn-modal-close" abpClose>
-        <i class="fa fa-times me-2"></i>
-        {{ '::Close' | abpLocalization }}
-      </button>
-      <button form="table-form" class="btn btn-primary btn-modal-save" [disabled]="form?.invalid">
-        <i class="fa fa-check me-2"></i>
-        {{ '::Save' | abpLocalization }}
-      </button>
-    </div>
-  </ng-template>
-</abp-modal>
-
-<!-- Modal Tạo nhanh Khu vực bàn ăn mới -->
-<abp-modal [(visible)]="isAreaModalOpen">
-  <ng-template #abpHeader>
-    <div class="d-flex align-items-center gap-3 modal-header-content">
-      <div class="modal-header-icon" style="background: #e0f2fe; color: #0284c7">
-        <i class="fa fa-layer-group"></i>
-      </div>
-      <div class="d-flex flex-column justify-content-center">
-        <h5 class="m-0 modal-title-text">
-          {{ '::AddNewDiningArea' | abpLocalization }}
-        </h5>
-        <span class="modal-subtitle-text">
-          {{ '::ManageDiningAreas' | abpLocalization }}
-        </span>
-      </div>
-    </div>
-  </ng-template>
-
-  <ng-template #abpBody>
-    @if (areaForm) {
-      <form
-        id="area-form"
-        [formGroup]="areaForm"
-        (ngSubmit)="saveQuickArea()"
-        class="theme-modal-form"
-      >
-        <div class="form-field-group mb-3">
-          <label for="area-name" class="field-label">
-            <span>{{ '::DiningAreaName' | abpLocalization }}</span>
-            <span class="required-star">*</span>
-          </label>
-          <div class="input-with-icon">
-            <i class="fa fa-map-marker-alt input-icon"></i>
-            <input
-              type="text"
-              id="area-name"
-              class="form-control custom-form-input"
-              formControlName="name"
-              [placeholder]="'::EnterDiningAreaNamePlaceholder' | abpLocalization"
-              [skipValidation]="true"
-              autofocus
-            />
-          </div>
-          @if (
-            areaForm.get('name')?.invalid &&
-            (areaForm.get('name')?.touched || areaForm.get('name')?.dirty)
-          ) {
-            <div class="field-validation-error">
-              <i class="fa fa-exclamation-circle"></i>
-              <span>{{
-                { key: '::FieldRequired', defaultValue: 'This field is required.' }
-                  | abpLocalization
-              }}</span>
-            </div>
-          }
-        </div>
-
-        <div class="form-field-group mb-2">
-          <label for="area-desc" class="field-label">
-            <span>{{ '::Description' | abpLocalization }}</span>
-          </label>
-          <div class="input-with-icon">
-            <i class="fa fa-align-left input-icon"></i>
-            <input
-              type="text"
-              id="area-desc"
-              class="form-control custom-form-input"
-              formControlName="description"
-              [placeholder]="'::AreaDescriptionPlaceholder' | abpLocalization"
-            />
-          </div>
-        </div>
-      </form>
-    }
-  </ng-template>
-
-  <ng-template #abpFooter>
-    <div class="modal-footer-actions">
-      <button type="button" class="btn btn-secondary btn-modal-close" abpClose>
-        <i class="fa fa-times me-2"></i>
-        {{ '::Close' | abpLocalization }}
-      </button>
-      <button
-        form="area-form"
-        class="btn btn-primary btn-modal-save"
-        [disabled]="areaForm?.invalid"
-      >
-        <i class="fa fa-check me-2"></i>
-        {{ '::Save' | abpLocalization }}
-      </button>
-    </div>
-  </ng-template>
-</abp-modal>
-
-<!-- Modal Đặt bàn (Reservation) -->
-<abp-modal [(visible)]="isReserveModalOpen">
-  <ng-template #abpHeader>
-    <div class="d-flex align-items-center gap-3 modal-header-content">
-      <div class="modal-header-icon" style="background: #fef3c7; color: #d97706">
-        <i class="fa fa-calendar-check"></i>
-      </div>
-      <div class="d-flex flex-column justify-content-center">
-        <h5 class="m-0 modal-title-text">
-          {{ '::ReserveTable' | abpLocalization }} - {{ reservingTable?.name }}
-        </h5>
-        <span class="modal-subtitle-text">
-          {{ '::ReserveTableSubtitle' | abpLocalization }}
-        </span>
-      </div>
-    </div>
-  </ng-template>
-
-  <ng-template #abpBody>
-    @if (reserveForm) {
-      <form
-        id="reserve-form"
-        [formGroup]="reserveForm"
-        (ngSubmit)="saveReservation()"
-        class="theme-modal-form"
-      >
-        <!-- 1. Tên khách hàng & SĐT -->
-        <div class="row g-3 mb-3">
-          <div class="col-md-7">
-            <div class="form-field-group">
-              <label for="reserve-customer-name" class="field-label">
-                <span>{{ '::CustomerName' | abpLocalization }}</span>
-                <span class="required-star">*</span>
-              </label>
-              <div class="input-with-icon">
-                <i class="fa fa-user input-icon"></i>
-                <input
-                  type="text"
-                  id="reserve-customer-name"
-                  class="form-control custom-form-input"
-                  formControlName="customerName"
-                  [placeholder]="'::EnterCustomerNamePlaceholder' | abpLocalization"
-                  [skipValidation]="true"
-                  autofocus
-                />
-              </div>
-              @if (
-                reserveForm.get('customerName')?.invalid &&
-                (reserveForm.get('customerName')?.touched || reserveForm.get('customerName')?.dirty)
-              ) {
-                <div class="field-validation-error">
-                  <i class="fa fa-exclamation-circle"></i>
-                  <span>{{
-                    { key: '::FieldRequired', defaultValue: 'This field is required.' }
-                      | abpLocalization
-                  }}</span>
-                </div>
-              }
-            </div>
-          </div>
-
-          <div class="col-md-5">
-            <div class="form-field-group">
-              <label for="reserve-customer-phone" class="field-label">
-                <span>{{ '::CustomerPhone' | abpLocalization }}</span>
-                <span class="required-star">*</span>
-              </label>
-              <div class="input-with-icon">
-                <i class="fa fa-phone input-icon"></i>
-                <input
-                  type="tel"
-                  id="reserve-customer-phone"
-                  class="form-control custom-form-input"
-                  formControlName="customerPhone"
-                  [placeholder]="'::EnterCustomerPhonePlaceholder' | abpLocalization"
-                  [skipValidation]="true"
-                />
-              </div>
-              @if (
-                reserveForm.get('customerPhone')?.invalid &&
-                (reserveForm.get('customerPhone')?.touched ||
-                  reserveForm.get('customerPhone')?.dirty)
-              ) {
-                <div class="field-validation-error">
-                  <i class="fa fa-exclamation-circle"></i>
-                  <span>
-                    @if (reserveForm.get('customerPhone')?.hasError('required')) {
-                      {{
-                        { key: '::FieldRequired', defaultValue: 'This field is required.' }
-                          | abpLocalization
-                      }}
-                    } @else {
-                      {{ '::InvalidPhoneFormat' | abpLocalization }}
-                    }
-                  </span>
-                </div>
-              }
-            </div>
-          </div>
-        </div>
-
-        <!-- 2. Giờ khách đến & Số lượng khách -->
-        <div class="row g-3 mb-3">
-          <div class="col-md-7">
-            <div class="form-field-group">
-              <label for="reserve-time" class="field-label">
-                <span>{{ '::ReservedTime' | abpLocalization }}</span>
-                <span class="required-star">*</span>
-              </label>
-              <div class="input-with-icon">
-                <i class="fa fa-clock input-icon"></i>
-                <input
-                  type="datetime-local"
-                  id="reserve-time"
-                  class="form-control custom-form-input"
-                  formControlName="reservedTime"
-                  [min]="minReservationTime"
-                  [skipValidation]="true"
-                />
-              </div>
-              <span class="form-text-hint mt-1 d-block" style="font-size: 0.76rem; color: #8c7e72;">
-                <i class="fa fa-info-circle me-1"></i>
-                {{ '::RestaurantOperatingHoursHint' | abpLocalization }}
-              </span>
-              @if (
-                reserveForm.get('reservedTime')?.invalid &&
-                (reserveForm.get('reservedTime')?.touched || reserveForm.get('reservedTime')?.dirty)
-              ) {
-                <div class="field-validation-error mt-1">
-                  <i class="fa fa-exclamation-circle"></i>
-                  @if (reserveForm.get('reservedTime')?.hasError('required')) {
-                    <span>{{ '::FieldRequired' | abpLocalization }}</span>
-                  } @else if (reserveForm.get('reservedTime')?.hasError('pastTime')) {
-                    <span>{{ '::ReservationTimeCannotBeInPast' | abpLocalization }}</span>
-                  } @else if (reserveForm.get('reservedTime')?.hasError('outsideOperatingHours')) {
-                    <span>{{ '::ReservationOutsideOperatingHours' | abpLocalization }}</span>
-                  }
-                </div>
-              }
-            </div>
-          </div>
-
-          <div class="col-md-5">
-            <div class="form-field-group">
-              <label for="reserve-guest-count" class="field-label">
-                <span>{{ '::ReservedGuestCount' | abpLocalization }}</span>
-                <span class="required-star">*</span>
-              </label>
-
-              <!-- Ô input số khách hiển thị theo kiểu ô input / n seats -->
-              <div
-                class="guest-capacity-input-wrapper"
-                [class.has-warning]="isGuestCountExceeded"
-                (click)="guestInput.focus()"
-              >
-                <i class="fa fa-users input-icon" [class.text-warning]="isGuestCountExceeded"></i>
-                <input
-                  #guestInput
-                  type="number"
-                  id="reserve-guest-count"
-                  class="guest-count-field"
-                  formControlName="guestCount"
-                  min="1"
-                  [skipValidation]="true"
-                />
-                <div class="capacity-suffix-label" [title]="'::TableCapacity' | abpLocalization">
-                  <span class="suffix-slash">/</span>
-                  <span class="suffix-count">{{ reservingTable?.capacity }}</span>
-                  <span class="suffix-unit">{{ '::Seats' | abpLocalization }}</span>
-                </div>
-              </div>
-
-              <!-- Cảnh báo nếu số lượng khách vượt mức chỗ ngồi -->
-              @if (isGuestCountExceeded) {
-                <div class="capacity-warning-box mt-2 d-flex align-items-center gap-2">
-                  <i class="fa fa-exclamation-triangle"></i>
-                  <span>{{ capacityWarningMessage }}</span>
-                </div>
-              }
-            </div>
-          </div>
-        </div>
-
-        <!-- 3. Ghi chú yêu cầu của khách -->
-        <div class="form-field-group mb-2">
-          <label for="reserve-note" class="field-label">
-            <span>{{ '::ReservedNote' | abpLocalization }}</span>
-          </label>
-          <div class="input-with-icon">
-            <i class="fa fa-sticky-note input-icon"></i>
-            <input
-              type="text"
-              id="reserve-note"
-              class="form-control custom-form-input"
-              formControlName="note"
-              [placeholder]="'::EnterReservedNotePlaceholder' | abpLocalization"
-            />
-          </div>
-        </div>
-      </form>
-    }
-  </ng-template>
-
-  <ng-template #abpFooter>
-    <div class="modal-footer-actions">
-      <button type="button" class="btn btn-secondary btn-modal-close" abpClose>
-        <i class="fa fa-times me-2"></i>
-        {{ '::Close' | abpLocalization }}
-      </button>
-      <button
-        form="reserve-form"
-        class="btn btn-primary btn-modal-save"
-        [disabled]="reserveForm?.invalid"
-      >
-        <i class="fa fa-check me-2"></i>
-        {{ '::ConfirmReservation' | abpLocalization }}
-      </button>
-    </div>
-  </ng-template>
-</abp-modal>
-
-<!-- Modal Chi Tiết Đặt Bàn (Reservation Details Modal) -->
-<abp-modal [(visible)]="isReservationDetailModalOpen">
-  <ng-template #abpHeader>
-    <div class="d-flex align-items-center gap-3 modal-header-content">
-      <div class="modal-header-icon res-modal-head-icon">
-        <i class="fa fa-calendar-check"></i>
-      </div>
-      <div class="d-flex flex-column justify-content-center">
-        <h5 class="m-0 modal-title-text">
-          {{ '::ReservationDetails' | abpLocalization }}
-        </h5>
-        <span class="modal-subtitle-text">
-          {{ selectedReservedTable?.name }} • {{
-            selectedReservedTable?.diningAreaName ||
-              selectedReservedTable?.location ||
-              ('::AllLocations' | abpLocalization)
-          }}
-        </span>
-      </div>
-    </div>
-  </ng-template>
-
-  <ng-template #abpBody>
-    @if (selectedReservedTable) {
-      <div class="res-card-dialog">
-        <!-- 1. Customer Profile Banner -->
-        <div class="res-profile-header d-flex align-items-center justify-content-between flex-wrap gap-3">
-          <div class="d-flex align-items-center gap-3">
-            <div class="res-avatar-box">
-              {{ (selectedReservedTable.reservedCustomerName || 'G').charAt(0).toUpperCase() }}
-            </div>
-            <div>
-              <h4 class="res-name m-0">
-                {{ selectedReservedTable.reservedCustomerName || ('::TableStatusReserved' | abpLocalization) }}
-              </h4>
-              <div class="res-phone-line d-flex align-items-center gap-2 mt-1">
-                <i class="fa fa-phone-alt"></i>
-                <span class="phone-number">{{ selectedReservedTable.reservedCustomerPhone || '--' }}</span>
-                @if (selectedReservedTable.reservedCustomerPhone) {
-                  <button
-                    type="button"
-                    class="btn-copy-mini"
-                    (click)="copyPhoneNumber(selectedReservedTable.reservedCustomerPhone, $event)"
-                    title="Sao chép số điện thoại"
-                  >
-                    <i class="fa fa-copy"></i>
-                  </button>
-                }
-              </div>
-            </div>
-          </div>
-
-          <div class="d-flex flex-column align-items-end gap-1">
-            <span class="status-pill-badge" [ngClass]="getStatusBadgeClass(selectedReservedTable.status)">
-              {{ getStatusLabel(selectedReservedTable.status) | abpLocalization }}
-            </span>
-            @if (getElapsedTime(selectedReservedTable)) {
-              <span class="res-countdown-chip" [title]="getElapsedTimeTooltip(selectedReservedTable)">
-                <i class="fa fa-clock"></i>
-                <span>{{ getElapsedTime(selectedReservedTable) }}</span>
-              </span>
-            }
-          </div>
-        </div>
-
-        <!-- 2. Detail Rows Info List -->
-        <div class="res-details-panel">
-          <!-- Giờ đến -->
-          <div class="res-detail-item">
-            <div class="item-icon-wrapper time-icon">
-              <i class="fa fa-clock"></i>
-            </div>
-            <div class="item-content flex-grow-1">
-              <span class="item-label">{{ '::ExpectedArrival' | abpLocalization }}</span>
-              <span class="item-val highlight-orange">
-                {{
-                  selectedReservedTable.reservedTime
-                    ? (selectedReservedTable.reservedTime | date: 'HH:mm • EEEE, dd/MM/yyyy')
-                    : '--:--'
-                }}
-              </span>
-            </div>
-          </div>
-
-          <!-- Bàn & Vị trí -->
-          <div class="res-detail-item">
-            <div class="item-icon-wrapper table-icon">
-              <i class="fa fa-chair"></i>
-            </div>
-            <div class="item-content flex-grow-1">
-              <span class="item-label">{{ '::Table' | abpLocalization }}</span>
-              <span class="item-val">
-                {{ selectedReservedTable.name }}
-                <span class="area-tag">{{
-                  selectedReservedTable.diningAreaName ||
-                    selectedReservedTable.location ||
-                    ('::AllLocations' | abpLocalization)
-                }}</span>
-              </span>
-            </div>
-          </div>
-
-          <!-- Số lượng khách -->
-          <div class="res-detail-item">
-            <div class="item-icon-wrapper guests-icon">
-              <i class="fa fa-users"></i>
-            </div>
-            <div class="item-content flex-grow-1">
-              <span class="item-label">{{ '::ReservedGuestCount' | abpLocalization }}</span>
-              <span class="item-val">
-                {{ selectedReservedTable.reservedGuestCount || selectedReservedTable.capacity }} {{ '::Seats' | abpLocalization }}
-                <span class="capacity-hint">({{ '::Capacity' | abpLocalization }}: {{ selectedReservedTable.capacity }})</span>
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 3. Special Request / Note -->
-        <div class="res-note-panel">
-          <div class="note-label-row d-flex align-items-center gap-2 mb-1">
-            <i class="fa fa-sticky-note text-warning"></i>
-            <span class="fw-bold">{{ '::ReservedNote' | abpLocalization }}</span>
-          </div>
-          <div class="note-text-box" [class.no-note]="!selectedReservedTable.reservedNote">
-            {{ selectedReservedTable.reservedNote || ('::NoReservationNote' | abpLocalization) }}
-          </div>
-        </div>
-      </div>
-    }
-  </ng-template>
-
-  <ng-template #abpFooter>
-    <div class="modal-footer-actions d-flex align-items-center justify-content-between w-100 flex-wrap gap-2">
-      <!-- Nút phụ bên trái -->
-      <div class="d-flex align-items-center gap-2">
-        <button
-          type="button"
-          class="btn btn-outline-danger btn-action-pill"
-          (click)="cancelReservation(selectedReservedTable!); isReservationDetailModalOpen = false"
-        >
-          <i class="fa fa-trash-alt me-1"></i>
-          <span>{{ '::CancelReservation' | abpLocalization }}</span>
-        </button>
-
-        <button
-          type="button"
-          class="btn btn-outline-secondary btn-action-pill"
-          (click)="openReserveModal(selectedReservedTable!); isReservationDetailModalOpen = false"
-        >
-          <i class="fa fa-pen me-1"></i>
-          <span>{{ '::Edit' | abpLocalization }}</span>
-        </button>
-      </div>
-
-      <!-- Nút chính bên phải -->
-      <div class="d-flex align-items-center gap-2 ms-auto">
-        <button
-          type="button"
-          class="btn btn-secondary btn-modal-close"
-          (click)="isReservationDetailModalOpen = false"
-        >
-          {{ '::Close' | abpLocalization }}
-        </button>
-
-        <button
-          type="button"
-          class="btn btn-primary btn-modal-checkin-theme"
-          (click)="
-            quickUpdateStatus(selectedReservedTable!, TableStatus.Occupied);
-            isReservationDetailModalOpen = false
-          "
-        >
-          <i class="fa fa-user-check me-1"></i>
-          <span>{{ '::QuickCheckIn' | abpLocalization }}</span>
-        </button>
-      </div>
-    </div>
-  </ng-template>
-</abp-modal>
-
-<!-- Modal Cảnh báo Chuyển bàn khi Disable bàn có lịch đặt trước -->
-<abp-modal [(visible)]="isDisableConfirmModalOpen">
-  <ng-template #abpHeader>
-    <div class="d-flex align-items-center gap-3 modal-header-content">
-      <div
-        class="modal-header-icon"
-        style="background: #fff7ed; color: #ea580c; border: 1.5px solid #fed7aa"
-      >
-        <i class="fa fa-exclamation-triangle"></i>
-      </div>
-      <div class="d-flex flex-column justify-content-center">
-        <h5 class="m-0 modal-title-text text-danger" style="font-weight: 800; font-size: 1.15rem">
-          {{ '::DisableReservedTableWarningTitle' | abpLocalization }}
-        </h5>
-        <span class="modal-subtitle-text" style="color: #6b7280; font-size: 0.84rem">
-          {{ '::DisableReservedTableWarningSubtitle' | abpLocalization }}
-        </span>
-      </div>
-    </div>
-  </ng-template>
-
-  <ng-template #abpBody>
-    @if (pendingDisableTable) {
-      <div class="disable-warning-modal-body">
-        <!-- 1. Card thông tin tóm tắt lịch đặt bàn được Highlight nổi bật -->
-        <div class="reservation-highlight-card mb-2">
-          <div class="card-top-bar">
-            <div class="d-flex align-items-center gap-2">
-              <span class="badge-table-highlight">
-                <i class="fa fa-chair"></i>
-                <span>{{ pendingDisableTable.name }}</span>
-              </span>
-              @if (pendingDisableTable.diningAreaName || pendingDisableTable.location) {
-                <span class="badge-area-sub">
-                  <i class="fa fa-map-marker-alt"></i>
-                  <span>{{
-                    pendingDisableTable.diningAreaName || pendingDisableTable.location
-                  }}</span>
-                </span>
-              }
-            </div>
-            <span class="badge-status-tag">
-              <i class="fa fa-calendar-check text-warning"></i>
-              <span>{{ '::TableHasUpcomingReservation' | abpLocalization }}</span>
-            </span>
-          </div>
-
-          <div class="row g-2 text-dark info-details-grid">
-            <div class="col-sm-6">
-              <div class="detail-item">
-                <span class="detail-label"
-                  ><i class="fa fa-user text-primary"></i
-                  ><span>{{ '::CustomerLabel' | abpLocalization }}</span></span
-                >
-                <strong class="detail-value text-primary font-bold">{{
-                  pendingDisableTable.reservedCustomerName || ('::NoCustomerName' | abpLocalization)
-                }}</strong>
-              </div>
-            </div>
-            <div class="col-sm-6">
-              <div class="detail-item">
-                <span class="detail-label"
-                  ><i class="fa fa-phone text-success"></i
-                  ><span>{{ '::CustomerPhoneLabel' | abpLocalization }}</span></span
-                >
-                <strong class="detail-value text-success font-bold">{{
-                  pendingDisableTable.reservedCustomerPhone || ('::NotUpdated' | abpLocalization)
-                }}</strong>
-              </div>
-            </div>
-            <div class="col-sm-6">
-              <div class="detail-item">
-                <span class="detail-label"
-                  ><i class="fa fa-clock text-danger"></i
-                  ><span>{{ '::ExpectedArrivalLabel' | abpLocalization }}</span></span
-                >
-                <strong class="detail-value text-danger font-bold">
-                  {{
-                    pendingDisableTable.reservedTime
-                      ? (pendingDisableTable.reservedTime | date: 'HH:mm (dd/MM/yyyy)')
-                      : '--:--'
-                  }}
-                </strong>
-              </div>
-            </div>
-            <div class="col-sm-6">
-              <div class="detail-item">
-                <span class="detail-label"
-                  ><i class="fa fa-users text-muted"></i
-                  ><span>{{ '::GuestsAndCapacityLabel' | abpLocalization }}</span></span
-                >
-                <strong class="detail-value font-bold">
-                  {{ pendingDisableTable.reservedGuestCount || pendingDisableTable.capacity }} /
-                  {{ pendingDisableTable.capacity }} {{ '::Seats' | abpLocalization }}
-                </strong>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 2. Khối câu hỏi nhắc nhở hành động nổi bật -->
-        <div class="transfer-alert-callout">
-          <div class="callout-icon">
-            <i class="fa fa-question-circle"></i>
-          </div>
-          <div class="callout-text">
-            <h6 class="callout-title">{{ '::DisableReservedTablePromptTitle' | abpLocalization }}</h6>
-            <p class="callout-desc m-0">
-              {{ '::DisableReservedTablePromptDesc' | abpLocalization }}
-            </p>
-          </div>
-        </div>
-      </div>
-    }
-  </ng-template>
-
-  <ng-template #abpFooter>
-    <div class="disable-modal-footer w-100 d-flex flex-column align-items-end gap-2">
-      <button
-        type="button"
-        class="btn btn-outline-secondary btn-cancel-disable"
-        (click)="isDisableConfirmModalOpen = false"
-      >
-        <i class="fa fa-arrow-left"></i>
-        <span>{{ '::CancelDisableBack' | abpLocalization }}</span>
-      </button>
-      <button
-        type="button"
-        class="btn btn-danger btn-confirm-disable"
-        (click)="confirmDisableReservedTable()"
-      >
-        <i class="fa fa-check-circle"></i>
-        <span>{{ '::ConfirmDisableReserved' | abpLocalization }}</span>
-      </button>
-    </div>
-  </ng-template>
-</abp-modal>
-
-<!-- Modal Cảnh báo khi Khóa cả Khu vực có bàn đang đặt trước -->
-<abp-modal [(visible)]="isDisableAreaConfirmModalOpen">
-  <ng-template #abpHeader>
-    <div class="d-flex align-items-center gap-3 modal-header-content">
-      <div
-        class="modal-header-icon"
-        style="background: #fff7ed; color: #ea580c; border: 1.5px solid #fed7aa"
-      >
-        <i class="fa fa-layer-group"></i>
-      </div>
-      <div class="d-flex flex-column justify-content-center">
-        <h5 class="m-0 modal-title-text text-danger" style="font-weight: 800; font-size: 1.15rem">
-          {{ '::DisableAreaHasReservedWarningTitle' | abpLocalization: pendingDisableAreaTables.length.toString() }}
-        </h5>
-        <span class="modal-subtitle-text" style="color: #6b7280; font-size: 0.84rem">
-          {{ '::DisableAreaHasReservedWarningSubtitle' | abpLocalization: pendingDisableAreaName }}
-        </span>
-      </div>
-    </div>
-  </ng-template>
-
-  <ng-template #abpBody>
-    <div class="disable-warning-modal-body">
-      <!-- Danh sách các bàn đang đặt trước trong khu vực -->
-      <div class="area-reserved-tables-list mb-3">
-        <span
-          class="list-heading text-muted mb-2 d-block"
-          style="font-size: 0.82rem; font-weight: 700; text-transform: uppercase"
-        >
-          {{ '::ReservedTablesNeedTransferList' | abpLocalization }}
-        </span>
-        <div class="d-flex flex-column gap-2" style="max-height: 200px; overflow-y: auto">
-          @for (table of pendingDisableAreaTables; track table.id) {
-            <div
-              class="table-reservation-mini-row d-flex align-items-center justify-content-between p-2.5 rounded-3"
-              style="background: #faf7f4; border: 1px solid #ede4d6"
-            >
-              <div class="d-flex align-items-center gap-2">
-                <span class="badge-table-highlight">
-                  <i class="fa fa-chair"></i>
-                  <span>{{ table.name }}</span>
-                </span>
-                <span
-                  class="guest-info"
-                  style="font-size: 0.86rem; font-weight: 700; color: #221d18"
-                >
-                  {{ table.reservedCustomerName }}
-                  @if (table.reservedCustomerPhone) {
-                    ({{ table.reservedCustomerPhone }})
-                  }
-                </span>
-              </div>
-              <span
-                class="badge-time text-danger"
-                style="
-                  font-size: 0.82rem;
-                  font-weight: 700;
-                  display: inline-flex;
-                  align-items: center;
-                "
-              >
-                <i class="fa fa-clock"></i>
-                <span>{{
-                  table.reservedTime ? (table.reservedTime | date: 'HH:mm (dd/MM)') : '--:--'
-                }}</span>
-              </span>
-            </div>
-          }
-        </div>
-      </div>
-
-      <!-- Khối nhắc nhở -->
-      <div class="transfer-alert-callout">
-        <div class="callout-icon">
-          <i class="fa fa-question-circle"></i>
-        </div>
-        <div class="callout-text">
-          <h6 class="callout-title">{{ '::DisableAreaPromptTitle' | abpLocalization }}</h6>
-          <p class="callout-desc m-0">
-            {{ '::DisableAreaPromptDesc' | abpLocalization: pendingDisableAreaName }}
-          </p>
-        </div>
-      </div>
-    </div>
-  </ng-template>
-
-  <ng-template #abpFooter>
-    <div class="disable-modal-footer w-100 d-flex flex-column align-items-end gap-2">
-      <button
-        type="button"
-        class="btn btn-outline-secondary btn-cancel-disable"
-        (click)="isDisableAreaConfirmModalOpen = false"
-      >
-        <i class="fa fa-arrow-left"></i>
-        <span>{{ '::CancelDisableBack' | abpLocalization }}</span>
-      </button>
-      <button
-        type="button"
-        class="btn btn-danger btn-confirm-disable"
-        (click)="confirmDisableAreaWithReserved()"
-      >
-        <i class="fa fa-check-circle"></i>
-        <span>{{ '::ConfirmDisableAreaReserved' | abpLocalization }}</span>
-      </button>
-    </div>
-  </ng-template>
-</abp-modal>
-
-<!-- Modal Gọi món cho Bàn đang sử dụng (Layout POS 60/40) -->
-<abp-modal [(visible)]="isOrderModalOpen">
-  <ng-template #abpHeader>
-    <div class="d-flex align-items-center gap-3 modal-header-content">
-      <div class="modal-header-icon order-modal-icon">
-        <i class="fa fa-utensils"></i>
-      </div>
-      <div class="d-flex flex-column justify-content-center">
-        <h5 class="m-0 modal-title-text" style="color: #ea580c; font-weight: 800; font-size: 1.15rem">
-          @if (activeOrderId) {
-            {{ '::UpdateOrderForTable' | abpLocalization: (selectedTableForOrder?.name || '') }}
-          } @else {
-            {{ '::OrderForTable' | abpLocalization: (selectedTableForOrder?.name || '') }}
-          }
-        </h5>
-        <span class="modal-subtitle-text" style="color: #6b7280; font-size: 0.84rem">
-          {{ '::OrderModalSubtitle' | abpLocalization }}
-        </span>
-      </div>
-    </div>
-  </ng-template>
-
-  <ng-template #abpBody>
-    @if (selectedTableForOrder && orderForm) {
-      <form id="table-order-form" [formGroup]="orderForm" (ngSubmit)="saveOrderForTable()" class="order-pos-modal-body">
-        <div class="order-pos-layout">
-          <!-- CỘT TRÁI (60%): MENU DANH SÁCH MÓN ĂN -->
-          <div class="pos-menu-column">
-            <div class="menu-column-header">
-              <div class="d-flex align-items-center justify-content-between mb-2">
-                <div class="d-flex align-items-center gap-2">
-                  <span class="column-title">
-                    <i class="fa fa-book-open"></i>
-                    <span>{{ '::MenuDishes' | abpLocalization }}</span>
-                  </span>
-                  <span class="column-count-badge">{{ filteredDishes.length }}</span>
-                </div>
-              </div>
-
-              <!-- Ô tìm kiếm món ăn -->
-              <div class="pos-search-wrapper mb-2">
-                <i class="fa fa-search pos-search-icon"></i>
-                <input
-                  type="text"
-                  class="form-control pos-search-input"
-                  [value]="dishSearchTerm"
-                  (input)="dishSearchTerm = $any($event.target).value"
-                  [placeholder]="'::SearchDishPlaceholder' | abpLocalization"
-                />
-                @if (dishSearchTerm) {
-                  <button
-                    type="button"
-                    class="btn-clear-search"
-                    (click)="dishSearchTerm = ''"
-                    title="Xóa tìm kiếm"
-                  >
-                    <i class="fa fa-times-circle"></i>
-                  </button>
-                }
-              </div>
-            </div>
-
-            <!-- Danh sách món ăn phân theo Course / Category dạng dropdown Accordion -->
-            <div class="pos-dish-list-scroll">
-              @for (group of groupedDishes; track group.categoryName) {
-                <div class="pos-category-section mb-2">
-                  <!-- Header của Course / Category (Nhấn để mở / ẩn) -->
-                  <div
-                    class="category-accordion-header"
-                    (click)="toggleCategory(group.categoryName)"
-                    [class.is-collapsed]="!isCategoryExpanded(group.categoryName)"
-                  >
-                    <div class="category-header-left">
-                      <i class="fa fa-utensils category-icon"></i>
-                      <span class="category-name-text">{{ group.categoryName }}</span>
-                      <span class="category-dish-count-badge">
-                        {{ '::DishesCount' | abpLocalization: ('' + group.dishes.length) }}
-                      </span>
-                    </div>
-                    <div class="category-header-right">
-                      <i
-                        class="fa category-toggle-icon"
-                        [class.fa-chevron-down]="isCategoryExpanded(group.categoryName)"
-                        [class.fa-chevron-right]="!isCategoryExpanded(group.categoryName)"
-                      ></i>
-                    </div>
-                  </div>
-
-                  <!-- Danh sách món ăn bên trong category (Hiện khi mở, ẩn khi đóng) -->
-                  @if (isCategoryExpanded(group.categoryName)) {
-                    <div class="category-dishes-wrapper">
-                      @for (dish of group.dishes; track dish.id) {
-                        <div
-                          class="pos-dish-card"
-                          [class.is-selected]="getItemQuantityInOrder(dish.id) > 0"
-                          [class.is-out-of-stock]="isDishOutOfStock(dish.id)"
-                        >
-                          <!-- Thumbnail ảnh món ăn -->
-                          <div class="pos-dish-thumb-box">
-                            @if (dish.imageUrl) {
-                              <img
-                                [src]="dish.imageUrl"
-                                [alt]="dish.name"
-                                class="pos-dish-thumb-img"
-                                (error)="onImgError($event)"
-                              />
-                            } @else {
-                              <div class="pos-dish-fallback-icon">
-                                <i class="fa fa-utensils"></i>
-                              </div>
-                            }
-                          </div>
-
-                          <div class="dish-card-info">
-                            <div class="dish-name-row">
-                              <span class="dish-title">{{ dish.name }}</span>
-                              @if (isDishOutOfStock(dish.id)) {
-                                <span class="dish-stock-pill-out">
-                                  <i class="fa fa-triangle-exclamation"></i>
-                                  <span>{{ '::OutOfStock' | abpLocalization }}</span>
-                                </span>
-                              }
-                            </div>
-                            <div class="dish-price-row">
-                              <span class="dish-price-val">{{ dish.price | number: '1.0-0' }}</span>
-                              <span class="dish-price-curr">đ</span>
-                            </div>
-                          </div>
-
-                          <div class="dish-card-action">
-                            @if (getItemQuantityInOrder(dish.id) > 0) {
-                              <span class="dish-order-badge">
-                                x{{ getItemQuantityInOrder(dish.id) }}
-                              </span>
-                            }
-                            <button
-                              type="button"
-                              class="btn btn-sm btn-order-dish"
-                              [class.btn-dish-out-of-stock]="isDishOutOfStock(dish.id)"
-                              (click)="addDishToOrder(dish)"
-                            >
-                              <i class="fa fa-cart-plus"></i>
-                              <span>{{ '::OrderDishBtn' | abpLocalization }}</span>
-                            </button>
-                          </div>
-                        </div>
-                      }
-                    </div>
-                  }
-                </div>
-              }
-
-              @if (groupedDishes.length === 0) {
-                <div class="empty-menu-state py-4 text-center">
-                  <div class="empty-icon-circle mb-2">
-                    <i class="fa fa-search"></i>
-                  </div>
-                  <p class="empty-text m-0 text-muted">
-                    {{ '::DishNotFound' | abpLocalization }}
-                  </p>
-                </div>
-              }
-            </div>
-          </div>
-
-          <!-- CỘT PHẢI (40%): ĐƠN GỌI MÓN (ORDER CỦA BÀN) -->
-          <div class="pos-cart-column">
-            <div class="cart-column-header d-flex align-items-center justify-content-between mb-2">
-              <div class="d-flex align-items-center gap-2">
-                <span class="column-title">
-                  <i class="fa fa-receipt"></i>
-                  <span>{{ '::CurrentOrder' | abpLocalization }}</span>
-                </span>
-                <span class="cart-count-badge">{{ orderItemsArray.length }}</span>
-              </div>
-              @if (orderItemsArray.length > 0) {
-                <button
-                  type="button"
-                  class="btn btn-sm btn-clear-order"
-                  (click)="clearAllOrderItems()"
-                >
-                  <i class="fa fa-trash-alt"></i>
-                  <span>{{ '::ClearOrder' | abpLocalization }}</span>
-                </button>
-              }
-            </div>
-
-            <!-- Danh sách món đã đặt trong formArray items -->
-            <div formArrayName="items" class="cart-items-scroll mb-2">
-              @for (itemGroup of orderItemsArray.controls; track $index) {
-                <div
-                  [formGroupName]="$index"
-                  class="pos-cart-item-row"
-                  [class.has-stock-warning]="getDishStockWarning(itemGroup.get('dishId')?.value, itemGroup.get('quantity')?.value)"
-                >
-                  <div class="cart-item-main">
-                    <div class="cart-item-info">
-                      <div class="cart-item-name">
-                        {{ getDishName(itemGroup.get('dishId')?.value) }}
-                      </div>
-                      <div class="cart-item-unit-price">
-                        {{ itemGroup.get('unitPrice')?.value | number: '1.0-0' }} đ
-                      </div>
-                    </div>
-
-                    <!-- Stepper tăng giảm số lượng [-] [qty] [+] -->
-                    <div class="quantity-stepper-wrap">
-                      <button
-                        type="button"
-                        class="stepper-btn btn-minus"
-                        (click)="decreaseQuantity($index)"
-                        title="Giảm"
-                      >
-                        <i class="fa fa-minus"></i>
-                      </button>
-                      <input
-                        type="number"
-                        min="1"
-                        class="stepper-input"
-                        formControlName="quantity"
-                        (input)="calculateOrderTotal()"
-                      />
-                      <button
-                        type="button"
-                        class="stepper-btn btn-plus"
-                        (click)="increaseQuantity($index)"
-                        title="Tăng"
-                      >
-                        <i class="fa fa-plus"></i>
-                      </button>
-                    </div>
-
-                    <!-- Thành tiền của dòng món -->
-                    <div class="cart-item-total">
-                      <span class="total-num">
-                        {{ (itemGroup.get('unitPrice')?.value * itemGroup.get('quantity')?.value) | number: '1.0-0' }}
-                      </span>
-                      <span class="total-curr">đ</span>
-                    </div>
-
-                    <!-- Nút xóa món -->
-                    <button
-                      type="button"
-                      class="btn-remove-cart-item"
-                      (click)="removeOrderItem($index)"
-                      [title]="'::Delete' | abpLocalization"
-                    >
-                      <i class="fa fa-times"></i>
-                    </button>
-                  </div>
-
-                  <!-- Banner cảnh báo hết / thiếu nguyên liệu trong kho -->
-                  @if (getDishStockWarning(itemGroup.get('dishId')?.value, itemGroup.get('quantity')?.value); as warning) {
-                    <div class="cart-item-stock-warning">
-                      <i class="fa fa-triangle-exclamation"></i>
-                      <span [innerHTML]="warning"></span>
-                    </div>
-                  }
-                </div>
-              }
-
-              @if (orderItemsArray.length === 0) {
-                <div class="empty-cart-state py-4 px-3 text-center">
-                  <div class="empty-cart-icon mb-2">
-                    <i class="fa fa-shopping-basket"></i>
-                  </div>
-                  <p class="empty-cart-text m-0 text-muted">
-                    {{ '::EmptyOrderPrompt' | abpLocalization }}
-                  </p>
-                </div>
-              }
-            </div>
-
-            <!-- Khối Tổng thanh toán (Bill Summary Card) -->
-            <div class="order-bill-summary-card mb-2">
-              <div class="summary-left">
-                <span class="summary-label">{{ '::SubtotalSummaryLabel' | abpLocalization }}</span>
-                <span class="summary-sub">{{ '::SubtotalSummaryDesc' | abpLocalization }}</span>
-              </div>
-              <div class="summary-right">
-                <span class="grand-total-val">
-                  {{ orderForm.get('totalAmount')?.value | number: '1.0-0' }}
-                </span>
-                <span class="grand-total-currency">VND</span>
-              </div>
-            </div>
-
-            <!-- Ghi chú cho đơn hàng -->
-            <div class="order-note-group">
-              <label for="table-order-note" class="note-label mb-1">
-                <i class="fa fa-edit"></i>
-                <span>{{ '::Note' | abpLocalization }}</span>
-              </label>
-              <textarea
-                id="table-order-note"
-                rows="2"
-                class="form-control custom-note-textarea"
-                formControlName="note"
-                [placeholder]="'::EnterNotePlaceholder' | abpLocalization"
-              ></textarea>
-            </div>
-          </div>
-        </div>
-      </form>
-    }
-  </ng-template>
-
-  <ng-template #abpFooter>
-    <div class="order-modal-footer d-flex align-items-center justify-content-end gap-2 w-100">
-      <button type="button" class="btn btn-order-modal-close" abpClose>
-        <i class="fa fa-times"></i>
-        <span>{{ '::Close' | abpLocalization }}</span>
-      </button>
-      <button
-        form="table-order-form"
-        class="btn btn-order-modal-submit"
-        [disabled]="orderForm?.invalid || orderItemsArray.length === 0 || !hasOrderChanged"
-      >
-        @if (activeOrderId) {
-          <i class="fa fa-save"></i>
-          <span>{{ '::UpdateOrder' | abpLocalization }}</span>
-        } @else {
-          <i class="fa fa-check-circle"></i>
-          <span>{{ '::ConfirmOrder' | abpLocalization }}</span>
-        }
-      </button>
-    </div>
-  </ng-template>
-</abp-modal>
+<!-- ========================================================================= -->
+<!-- BỘ MODAL DÙNG CHUNG ĐỘC LẬP (MODULAR SUB-COMPONENTS)                       -->
+<!-- ========================================================================= -->
+
+<!-- 1. Modal Thêm / Sửa Bàn ăn -->
+<app-table-form-modal
+  *ngIf="isModalOpen"
+  [(visible)]="isModalOpen"
+  [selectedTable]="selectedItem"
+  [diningAreas]="diningAreas()"
+  (saved)="list.get()"
+  (openCreateArea)="openQuickAreaModal()"
+></app-table-form-modal>
+
+<!-- 2. Modal Tạo nhanh Khu vực -->
+<app-dining-area-form-modal
+  *ngIf="isAreaModalOpen"
+  [(visible)]="isAreaModalOpen"
+  (areaCreated)="onAreaCreated($event)"
+></app-dining-area-form-modal>
+
+<!-- 3. Modal Đặt bàn mới (RM-009) -->
+<app-table-reservation-modal
+  *ngIf="isReservationModalOpen"
+  [(visible)]="isReservationModalOpen"
+  [table]="reservingTable"
+  (reservationCreated)="list.get()"
+></app-table-reservation-modal>
+
+<!-- 4. Modal Chi tiết Đặt bàn (RM-009) -->
+<app-table-reservation-detail-modal
+  *ngIf="isReservationDetailModalOpen"
+  [(visible)]="isReservationDetailModalOpen"
+  [table]="selectedReservedTable"
+  (updated)="list.get()"
+  (checkedIn)="list.get()"
+  (cancelled)="list.get()"
+></app-table-reservation-detail-modal>
+
+<!-- 5. Modal Chuyển bàn ăn (RM-017) -->
+<app-table-transfer-modal
+  *ngIf="isTransferModalOpen"
+  [(visible)]="isTransferModalOpen"
+  [sourceTable]="selectedTransferTable"
+  [tables]="allTables()"
+  (transferred)="list.get()"
+></app-table-transfer-modal>
+
+<!-- 6. Modal Gộp bàn ăn (RM-017) -->
+<app-table-merge-modal
+  *ngIf="isMergeModalOpen"
+  [(visible)]="isMergeModalOpen"
+  [primaryTable]="selectedPrimaryMergeTable"
+  [tables]="allTables()"
+  (merged)="list.get()"
+></app-table-merge-modal>
+
+<!-- 7. Modal Kết thúc bữa ăn 3 mốc thời gian (RM-017) -->
+<app-table-end-meal-modal
+  *ngIf="isEndMealModalOpen"
+  [(visible)]="isEndMealModalOpen"
+  [table]="selectedEndMealTable"
+  (mealEnded)="list.get()"
+></app-table-end-meal-modal>

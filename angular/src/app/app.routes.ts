@@ -151,6 +151,21 @@ export const APP_ROUTES: Routes = [
     canActivate: [authGuard, smartPermissionGuard],
     data: { requiredPolicy: 'TooHungry.Inventories' },
   },
+  {
+    path: 'forecasts',
+    loadComponent: () => import('./forecast/forecast.component').then(c => c.ForecastComponent),
+    canActivate: [authGuard, smartPermissionGuard],
+    data: { requiredPolicy: 'TooHungry.Forecasts' },
+  },
+  {
+    path: 'forecasts/detail/:id',
+    loadComponent: () =>
+      import('./forecast/forecast-detail/forecast-detail.component').then(
+        c => c.ForecastDetailComponent
+      ),
+    canActivate: [authGuard, smartPermissionGuard],
+    data: { requiredPolicy: 'TooHungry.Forecasts' },
+  },
 ];
 
 

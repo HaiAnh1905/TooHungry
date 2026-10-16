@@ -45,7 +45,7 @@ export class CustomSelectComponent implements ControlValueAccessor {
   @Input() searchable: boolean = false;
   @Input() disabled: boolean = false;
   @Input() searchPlaceholder: string = 'Tìm kiếm...';
-  @Input() maxHeight: string = '360px';
+  @Input() maxHeight: string = '200px';
 
   @Output() selectionChange = new EventEmitter<any>();
 
@@ -58,6 +58,16 @@ export class CustomSelectComponent implements ControlValueAccessor {
   @HostBinding('style.display')
   get hostDisplay(): string {
     return this.minWidth === '100%' ? 'block' : 'inline-block';
+  }
+
+  @HostBinding('class.is-open')
+  get hostIsOpen(): boolean {
+    return this.isOpen;
+  }
+
+  @HostBinding('style.z-index')
+  get hostZIndex(): string {
+    return this.isOpen ? '1060' : 'auto';
   }
 
   isOpen = false;
@@ -121,10 +131,22 @@ export class CustomSelectComponent implements ControlValueAccessor {
 
     if (this.placement === 'auto') {
       const rect = this.el.nativeElement.getBoundingClientRect();
+      const modalDialog = (this.el.nativeElement as HTMLElement).closest(
+        '.modal-content, .modal-dialog, .ant-modal-content, .abp-modal-content'
+      );
       const spaceBelow = window.innerHeight - rect.bottom;
       const spaceAbove = rect.top;
-      // Nếu bên dưới còn dưới 250px và bên trên rộng rãi hơn thì lật lên trên
-      if (spaceBelow < 250 && spaceAbove > spaceBelow) {
+
+      if (modalDialog) {
+        const modalRect = modalDialog.getBoundingClientRect();
+        const spaceBelowInModal = modalRect.bottom - rect.bottom;
+        const spaceAboveInModal = rect.top - modalRect.top;
+        if (spaceBelowInModal < 220 && spaceAboveInModal > spaceBelowInModal) {
+          this.calculatedPlacement = 'top';
+        } else {
+          this.calculatedPlacement = 'bottom';
+        }
+      } else if (spaceBelow < 250 && spaceAbove > spaceBelow) {
         this.calculatedPlacement = 'top';
       } else {
         this.calculatedPlacement = 'bottom';
@@ -155,6 +177,28 @@ export class CustomSelectComponent implements ControlValueAccessor {
     if (
       (opt.value === '' || opt.value === null || opt.value === undefined) &&
       (this.value === '' || this.value === null || this.value === undefined)
+    ) {
+      return true;
+    }
+    if (
+      typeof opt.value === 'string' &&
+      typeof this.value === 'string' &&
+      opt.value &&
+      this.value &&
+      opt.value.toLowerCase() === this.value.toLowerCase()
+    ) {
+      return true;
+    }
+    if (
+      opt.value !== null &&
+      opt.value !== undefined &&
+      opt.value !== '' &&
+      this.value !== null &&
+      this.value !== undefined &&
+      this.value !== '' &&
+      !isNaN(Number(opt.value)) &&
+      !isNaN(Number(this.value)) &&
+      Number(opt.value) === Number(this.value)
     ) {
       return true;
     }

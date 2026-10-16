@@ -1,0 +1,192 @@
+<div class="modal-backdrop-custom" *ngIf="isVisible">
+  <div class="modal-dialog-custom">
+    <!-- Header -->
+    <div class="modal-header-custom">
+      <div class="modal-title-group">
+        <div class="icon-bubble">
+          <i class="fas fa-chart-line"></i>
+        </div>
+        <div>
+          <h3 class="modal-title">{{ '::CreateForecast' | abpLocalization }}</h3>
+          <p class="modal-subtitle">{{ '::AutoGeneratePrompt' | abpLocalization }}</p>
+        </div>
+      </div>
+      <button type="button" class="btn-close-custom" (click)="close()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="modal-body-custom">
+      <!-- Controls Bar -->
+      <div class="controls-panel">
+        <div class="control-group">
+          <label class="control-label">
+            <i class="far fa-calendar-alt"></i> {{ '::StartDate' | abpLocalization }}
+          </label>
+          <input type="date" class="form-control-custom" [(ngModel)]="startDate" />
+        </div>
+
+        <div class="control-group">
+          <label class="control-label">
+            <i class="far fa-calendar-check"></i> {{ '::EndDate' | abpLocalization }}
+          </label>
+          <input type="date" class="form-control-custom" [(ngModel)]="endDate" />
+        </div>
+
+        <div class="control-group">
+          <label class="control-label">
+            <i class="fas fa-history"></i> {{ '::AnalysisWindow' | abpLocalization }}
+          </label>
+          <select class="form-control-custom" [(ngModel)]="historyDays">
+            <option *ngFor="let opt of historyOptions" [value]="opt.value">
+              {{ opt.label | abpLocalization }}
+            </option>
+          </select>
+        </div>
+
+        <div class="control-action">
+          <button
+            type="button"
+            class="btn-magic"
+            (click)="generateSMA()"
+            [disabled]="isGenerating"
+          >
+            <i class="fas" [ngClass]="isGenerating ? 'fa-spinner fa-spin' : 'fa-bolt'"></i>
+            <span>{{ '::AutoGenerate' | abpLocalization }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Note input -->
+      <div class="note-box">
+        <input
+          type="text"
+          class="form-control-custom note-input"
+          [(ngModel)]="note"
+          [placeholder]="'::ForecastNotePlaceholder' | abpLocalization"
+        />
+      </div>
+
+      <!-- Dishes Table -->
+      <div class="table-container">
+        <table class="forecast-table">
+          <thead>
+            <tr>
+              <th style="width: 50px" class="text-center">#</th>
+              <th>{{ '::Dish' | abpLocalization }}</th>
+              <th style="width: 140px">{{ '::Price' | abpLocalization }}</th>
+              <th style="width: 160px" class="text-center">{{ '::ForecastQuantity' | abpLocalization }}</th>
+              <th style="width: 150px" class="text-end">{{ '::TotalPrice' | abpLocalization }}</th>
+              <th style="width: 220px">{{ '::OrderNote' | abpLocalization }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of items; let idx = index" [class.has-qty]="item.forecastQuantity > 0">
+              <td class="text-center font-mono">{{ idx + 1 }}</td>
+              <td>
+                <div class="dish-cell">
+                  <img
+                    [src]="item.dishImageUrl || 'assets/images/default-dish.png'"
+                    class="dish-thumb"
+                    alt="{{ item.dishName }}"
+                    onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&auto=format&fit=crop&q=80'"
+                  />
+                  <div class="dish-meta">
+                    <span class="dish-name">{{ item.dishName }}</span>
+                    <span
+                      class="recipe-badge"
+                      [ngClass]="item.hasRecipe ? 'badge-recipe-ok' : 'badge-recipe-none'"
+                    >
+                      <i class="fas" [ngClass]="item.hasRecipe ? 'fa-check-circle' : 'fa-exclamation-triangle'"></i>
+                      {{ (item.hasRecipe ? '::HasRecipe' : '::NoRecipeWarning') | abpLocalization }}
+                    </span>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span class="price-text">{{ item.dishPrice | number }} đ</span>
+              </td>
+              <td class="text-center">
+                <div class="qty-stepper">
+                  <button
+                    type="button"
+                    class="btn-step"
+                    (click)="onQuantityChange(item, item.forecastQuantity - 1)"
+                    [disabled]="item.forecastQuantity <= 0"
+                  >
+                    <i class="fas fa-minus"></i>
+                  </button>
+                  <input
+                    type="number"
+                    min="0"
+                    class="qty-input"
+                    [ngModel]="item.forecastQuantity"
+                    (ngModelChange)="onQuantityChange(item, $event)"
+                  />
+                  <button
+                    type="button"
+                    class="btn-step"
+                    (click)="onQuantityChange(item, item.forecastQuantity + 1)"
+                  >
+                    <i class="fas fa-plus"></i>
+                  </button>
+                </div>
+              </td>
+              <td class="text-end">
+                <strong class="amount-text">{{ item.forecastQuantity * item.dishPrice | number }} đ</strong>
+              </td>
+              <td>
+                <input
+                  type="text"
+                  class="form-control-custom item-note-input"
+                  [(ngModel)]="item.note"
+                  [placeholder]="'::AdjustmentNotePlaceholder' | abpLocalization"
+                />
+              </td>
+            </tr>
+
+            <tr *ngIf="items.length === 0">
+              <td colspan="6" class="text-center py-5 text-muted">
+                <i class="fas fa-inbox fa-3x mb-3 text-secondary"></i>
+                <p>{{ '::NoDishesInCategory' | abpLocalization }}</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Live Summary Bar -->
+      <div class="live-summary-bar">
+        <div class="summary-item">
+          <span class="summary-label">{{ '::ForecastDishesCount' | abpLocalization }}</span>
+          <span class="summary-val">{{ activeDishesCount }} {{ '::DishesUnit' | abpLocalization }}</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">{{ '::TotalPortions' | abpLocalization }}</span>
+          <span class="summary-val text-brand">{{ totalPortions | number }} {{ '::PortionsUnit' | abpLocalization }}</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">{{ '::ProjectedRevenue' | abpLocalization }}</span>
+          <span class="summary-val text-success">{{ financialSummary.projectedRevenue | number }} đ</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="modal-footer-custom">
+      <button type="button" class="btn-secondary-custom" (click)="close()">
+        {{ '::Close' | abpLocalization }}
+      </button>
+      <button
+        type="button"
+        class="btn-primary-custom"
+        (click)="save()"
+        [disabled]="isSaving"
+      >
+        <i class="fas" [ngClass]="isSaving ? 'fa-spinner fa-spin' : 'fa-check'"></i>
+        <span>{{ '::Save' | abpLocalization }}</span>
+      </button>
+    </div>
+  </div>
+</div>

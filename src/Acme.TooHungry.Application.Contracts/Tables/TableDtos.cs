@@ -27,6 +27,11 @@ public class TableDto : FullAuditedEntityDto<Guid>
     // Active order info
     public Guid? ActiveOrderId { get; set; }
     public bool HasActiveOrder { get; set; }
+
+    /// <summary>
+    /// Thời điểm bàn bắt đầu chuyển sang Occupied (có khách)
+    /// </summary>
+    public DateTime? OccupiedTime { get; set; }
 }
 
 public class CreateUpdateTableDto
@@ -47,6 +52,8 @@ public class CreateUpdateTableDto
     public DateTime? ReservedTime { get; set; }
     public int? ReservedGuestCount { get; set; }
     public string? ReservedNote { get; set; }
+
+    public DateTime? OccupiedTime { get; set; }
 }
 
 public class GetTablesInput : PagedAndSortedResultRequestDto
@@ -60,3 +67,18 @@ public class ChangeTableStatusDto
 {
     public TableStatus Status { get; set; }
 }
+
+public class TransferTableInputDto
+{
+    public Guid SourceTableId { get; set; }
+    public Guid TargetTableId { get; set; }
+    public string? Note { get; set; }
+}
+
+public class MergeTablesInputDto
+{
+    public Guid PrimaryTableId { get; set; }
+    public Guid SecondaryTableId { get; set; }
+    public string? Note { get; set; }
+}
+

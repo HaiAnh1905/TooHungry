@@ -390,3 +390,23 @@ $theme-bg-surface: #ffffff;
     }
   }
 }
+
+.highlighted-alert-row {
+  background-color: #fff9e6 !important;
+  box-shadow: inset 4px 0 0 #ff9800;
+  animation: alertRowPulse 2s ease-in-out infinite alternate;
+
+  td {
+    background-color: transparent !important;
+  }
+}
+
+@keyframes alertRowPulse {
+  0% {
+    background-color: #fff9e6;
+  }
+  100% {
+    background-color: #fff0c2;
+  }
+}
+

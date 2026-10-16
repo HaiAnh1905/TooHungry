@@ -2,11 +2,10 @@ import { ChangeDetectorRef, Component, OnInit, ViewChild, inject } from '@angula
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { IdentityRoleService, IdentityRoleDto } from '@abp/ng.identity/proxy';
-import { RestService } from '@abp/ng.core';
+import { RestService, ConfigStateService, CoreModule } from '@abp/ng.core';
 import { DatatableComponent, NgxDatatableModule } from '@swimlane/ngx-datatable';
 import { ThemeSharedModule, ToasterService } from '@abp/ng.theme.shared';
 import { CustomSelectComponent, CustomSelectOption } from '../../shared/components/custom-select/custom-select.component';
-import { CoreModule } from '@abp/ng.core';
 
 @Component({
   selector: 'app-roles',
@@ -45,6 +44,7 @@ export class Roles implements OnInit {
   
   permissionGroups: any[] = [];
   private toaster = inject(ToasterService);
+  private configState = inject(ConfigStateService);
   
   constructor(
     private roleService: IdentityRoleService,
@@ -138,11 +138,16 @@ export class Roles implements OnInit {
         // Chỉ giữ lại nhóm phân quyền nghiệp vụ của nhà hàng (TooHungry) và phân quyền hệ thống cơ bản (AbpIdentity)
         this.permissionGroups = res.groups.filter((g: any) => g.name === 'TooHungry' || g.name === 'AbpIdentity').map((g: any) => {
           const parents = g.permissions.filter((p: any) => !p.parentName);
-          const formattedPermissions = parents.map((parent: any) => ({
-            ...parent,
-            isExpanded: false,
-            children: g.permissions.filter((p: any) => p.parentName === parent.name)
-          }));
+          const formattedPermissions = parents.map((parent: any) => {
+            const children = g.permissions.filter((p: any) => p.name !== parent.name && p.name.startsWith(parent.name + '.'));
+            const isAnyChildGranted = children.some((c: any) => c.isGranted);
+            return {
+              ...parent,
+              isGranted: parent.isGranted || isAnyChildGranted,
+              isExpanded: false,
+              children
+            };
+          });
           return {
             ...g,
             formattedPermissions
@@ -159,45 +164,27 @@ export class Roles implements OnInit {
 
   toggleParent(group: any, parent: any) {
     const isGranted = parent.isGranted;
-    // Đồng bộ trạng thái cấp quyền cho tất cả các quyền con
     if (parent.children) {
       parent.children.forEach((c: any) => {
         c.isGranted = isGranted;
-        const flatChild = group.permissions.find((p: any) => p.name === c.name);
-        if (flatChild) flatChild.isGranted = isGranted;
       });
     }
-    
-    // Cập nhật quyền cha trong mảng phẳng
-    const flatParent = group.permissions.find((p: any) => p.name === parent.name);
-    if (flatParent) flatParent.isGranted = isGranted;
   }
 
   childChanged(group: any, parent: any, child: any) {
-    const flatChild = group.permissions.find((p: any) => p.name === child.name);
-    if (flatChild) flatChild.isGranted = child.isGranted;
-
     if (child.isGranted) {
       // Nếu bất kỳ quyền con nào được bật -> quyền cha (module) phải được bật
       parent.isGranted = true;
-      const flatParent = group.permissions.find((p: any) => p.name === parent.name);
-      if (flatParent) flatParent.isGranted = true;
     }
-    // Không tự động tắt cha khi con tắt, vì cha đại diện cho quyền Xem danh sách
   }
 
   selectAll(granted: boolean) {
     for (const group of this.permissionGroups) {
       for (const parent of group.formattedPermissions) {
         parent.isGranted = granted;
-        const flatParent = group.permissions.find((p: any) => p.name === parent.name);
-        if (flatParent) flatParent.isGranted = granted;
-        
         if (parent.children) {
           parent.children.forEach((c: any) => {
             c.isGranted = granted;
-            const flatChild = group.permissions.find((p: any) => p.name === c.name);
-            if (flatChild) flatChild.isGranted = granted;
           });
         }
       }
@@ -216,14 +203,32 @@ export class Roles implements OnInit {
 
   get isAllSelected(): boolean {
     if (!this.permissionGroups.length) return false;
-    return this.permissionGroups.every(g => g.permissions.every((p: any) => p.isGranted));
+    for (const group of this.permissionGroups) {
+      for (const parent of group.formattedPermissions) {
+        if (!parent.isGranted) return false;
+        if (parent.children && parent.children.some((c: any) => !c.isGranted)) return false;
+      }
+    }
+    return true;
   }
 
   get isMasterIndeterminate(): boolean {
     if (!this.permissionGroups.length) return false;
-    const all = this.permissionGroups.flatMap(g => g.permissions);
-    const grantedCount = all.filter((p: any) => p.isGranted).length;
-    return grantedCount > 0 && !this.isAllSelected;
+    let anyGranted = false;
+    let anyNotGranted = false;
+    for (const group of this.permissionGroups) {
+      for (const parent of group.formattedPermissions) {
+        if (parent.isGranted) anyGranted = true;
+        else anyNotGranted = true;
+        if (parent.children) {
+          for (const c of parent.children) {
+            if (c.isGranted) anyGranted = true;
+            else anyNotGranted = true;
+          }
+        }
+      }
+    }
+    return anyGranted && anyNotGranted;
   }
 
   isIndeterminate(parent: any): boolean {
@@ -237,11 +242,19 @@ export class Roles implements OnInit {
     const permissionsToUpdate: any[] = [];
     
     for (const group of this.permissionGroups) {
-      for (const perm of group.permissions) {
+      for (const parent of group.formattedPermissions) {
         permissionsToUpdate.push({
-          name: perm.name,
-          isGranted: perm.isGranted
+          name: parent.name,
+          isGranted: !!parent.isGranted
         });
+        if (parent.children) {
+          for (const child of parent.children) {
+            permissionsToUpdate.push({
+              name: child.name,
+              isGranted: !!child.isGranted
+            });
+          }
+        }
       }
     }
 
@@ -254,6 +267,7 @@ export class Roles implements OnInit {
         this.modalLoading = false;
         this.isPermissionModalVisible = false;
         this.toaster.success('::PermissionsUpdatedSuccessfully');
+        this.configState.refreshAppState().subscribe();
         this.cdr.detectChanges();
       },
       error: (err) => {

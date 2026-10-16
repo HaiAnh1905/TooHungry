@@ -19,7 +19,6 @@ import { UnitService } from '../proxy/units/unit.service';
 import { UnitDto } from '../proxy/units/models';
 import { RouterModule } from '@angular/router';
 import { SharedTableComponent, ColumnItem } from '../shared/components/table/shared-table/shared-table';
-import { SharedModalComponent } from '../shared/components/modal/shared-modal/shared-modal';
 import { CustomSelectComponent, CustomSelectOption } from '../shared/components/custom-select/custom-select.component';
 
 @Component({
@@ -34,7 +33,6 @@ import { CustomSelectComponent, CustomSelectOption } from '../shared/components/
     RouterModule,
     CustomSelectComponent,
     SharedTableComponent,
-    SharedModalComponent,
   ],
   templateUrl: './ingredient.component.html',
   styleUrl: './ingredient.component.scss',
@@ -52,6 +50,7 @@ export class IngredientComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('unitTpl', { static: true }) unitTpl!: TemplateRef<any>;
   @ViewChild('storageTpl', { static: true }) storageTpl!: TemplateRef<any>;
   @ViewChild('consumptionTpl', { static: true }) consumptionTpl!: TemplateRef<any>;
+  @ViewChild('minStockTpl', { static: true }) minStockTpl!: TemplateRef<any>;
   @ViewChild('stockTpl', { static: true }) stockTpl!: TemplateRef<any>;
   @ViewChild('priceTpl', { static: true }) priceTpl!: TemplateRef<any>;
   @ViewChild('statusTpl', { static: true }) statusTpl!: TemplateRef<any>;
@@ -90,22 +89,22 @@ export class IngredientComponent implements OnInit, AfterViewInit, OnDestroy {
   ];
 
   readonly storageOptions: CustomSelectOption[] = [
-    { value: 'all', label: '::AllStorage' },
-    { value: '1', label: '::StorageType_FRESH' },
-    { value: '2', label: '::StorageType_SHORT_TERM' },
-    { value: '3', label: '::StorageType_LONG_TERM' },
+    { value: 'all', label: '::AllStorage', icon: 'fa-layer-group' },
+    { value: '0', label: '::StorageType_FRESH', icon: 'fa-leaf' },
+    { value: '1', label: '::StorageType_SHORT_TERM', icon: 'fa-snowflake' },
+    { value: '2', label: '::StorageType_LONG_TERM', icon: 'fa-box-archive' },
   ];
 
   readonly storageSelectOptions: CustomSelectOption[] = [
-    { value: 1, label: '::StorageType_FRESH' },
-    { value: 2, label: '::StorageType_SHORT_TERM' },
-    { value: 3, label: '::StorageType_LONG_TERM' },
+    { value: 0, label: '::StorageType_FRESH', icon: 'fa-leaf' },
+    { value: 1, label: '::StorageType_SHORT_TERM', icon: 'fa-snowflake' },
+    { value: 2, label: '::StorageType_LONG_TERM', icon: 'fa-box-archive' },
   ];
 
   readonly consumptionSelectOptions: CustomSelectOption[] = [
-    { value: 1, label: '::ConsumptionMethod_RECIPE' },
-    { value: 2, label: '::ConsumptionMethod_MANUAL' },
-    { value: 3, label: '::ConsumptionMethod_HYBRID' },
+    { value: 1, label: '::ConsumptionMethod_RECIPE', icon: 'fa-book-open' },
+    { value: 2, label: '::ConsumptionMethod_MANUAL', icon: 'fa-hand-pointer' },
+    { value: 3, label: '::ConsumptionMethod_HYBRID', icon: 'fa-shuffle' },
   ];
 
   readonly pageSizeOptions: CustomSelectOption[] = [
@@ -184,53 +183,69 @@ export class IngredientComponent implements OnInit, AfterViewInit, OnDestroy {
         key: 'name',
         sortFn: true,
         customTemplate: this.nameTpl,
+        width: '160px',
       },
       {
         name: this.localizationService.instant('::IngredientUnit'),
         key: 'baseUnit',
         sortFn: true,
         customTemplate: this.unitTpl,
+        align: 'center',
+        width: '85px',
       },
       {
         name: this.localizationService.instant('::StorageType'),
         key: 'storageType',
         sortFn: false,
         customTemplate: this.storageTpl,
+        width: '125px',
       },
       {
         name: this.localizationService.instant('::ConsumptionMethod'),
         key: 'consumptionMethod',
         sortFn: false,
         customTemplate: this.consumptionTpl,
+        width: '120px',
       },
       {
         name: this.localizationService.instant('::MinStock'),
         key: 'minStock',
         sortFn: true,
+        customTemplate: this.minStockTpl,
+        align: 'right',
+        width: '85px',
       },
       {
         name: this.localizationService.instant('::EstimatedPrice'),
         key: 'estimatedPrice',
         sortFn: true,
         customTemplate: this.priceTpl,
+        align: 'right',
+        width: '95px',
       },
       {
         name: this.localizationService.instant('::CurrentStock'),
         key: 'currentStock',
         sortFn: true,
         customTemplate: this.stockTpl,
+        align: 'right',
+        width: '120px',
       },
       {
         name: this.localizationService.instant('::IngredientStatus'),
         key: 'isActive',
         sortFn: true,
         customTemplate: this.statusTpl,
+        align: 'center',
+        width: '105px',
       },
       {
         name: this.localizationService.instant('::Actions'),
         key: 'actions',
         sortFn: false,
         customTemplate: this.actionsTpl,
+        align: 'center',
+        width: '95px',
       },
     ];
   }
@@ -244,6 +259,7 @@ export class IngredientComponent implements OnInit, AfterViewInit, OnDestroy {
           this.unitOptions = this.availableUnits.map(u => ({
             value: u.id,
             label: `${u.name} (${u.abbreviation || u.name})`,
+            icon: 'fa-scale-balanced',
           }));
           this.cdr.markForCheck();
         },
@@ -260,7 +276,10 @@ export class IngredientComponent implements OnInit, AfterViewInit, OnDestroy {
       })
       .subscribe({
         next: res => {
-          this.rawIngredients = res.items || [];
+          this.rawIngredients = (res.items || []).map(item => ({
+            ...item,
+            storageType: Number(item.storageType) === 3 ? StorageType.LONG_TERM : item.storageType,
+          }));
           this.applyFilterAndPagination();
           this.loading = false;
           this.cdr.markForCheck();
@@ -383,17 +402,58 @@ export class IngredientComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isModalOpen = true;
   }
 
+  get currentUnitSuffix(): string {
+    const unitId = this.form?.get('unitId')?.value;
+    const found = this.availableUnits.find(u => u.id === unitId);
+    if (found) return found.abbreviation || found.name || '';
+    if (this.selectedItem?.baseUnit) return this.selectedItem.baseUnit;
+    return '';
+  }
+
   editIngredient(row: IngredientDto) {
     this.isEditMode = true;
     this.selectedItem = row;
 
-    let matchedUnitId = row.unitId;
-    if (!matchedUnitId && row.baseUnit) {
-      const match = this.availableUnits.find(
-        u => u.name?.toLowerCase() === row.baseUnit?.toLowerCase() ||
-             u.abbreviation?.toLowerCase() === row.baseUnit?.toLowerCase()
+    // 1. Try to find unit by unitId first
+    let foundUnit = row.unitId
+      ? this.availableUnits.find(u => u.id?.toLowerCase() === row.unitId?.toLowerCase())
+      : null;
+
+    // 2. If not found by ID, match by baseUnit name or abbreviation
+    if (!foundUnit && row.baseUnit) {
+      foundUnit = this.availableUnits.find(
+        u => u.name?.trim().toLowerCase() === row.baseUnit?.trim().toLowerCase() ||
+             u.abbreviation?.trim().toLowerCase() === row.baseUnit?.trim().toLowerCase()
       );
-      if (match) matchedUnitId = match.id;
+    }
+
+    let matchedUnitId: string | null = null;
+    if (foundUnit) {
+      matchedUnitId = foundUnit.id || null;
+    } else if (row.unitId) {
+      matchedUnitId = row.unitId;
+      const label = row.baseUnit || 'Đơn vị';
+      if (!this.unitOptions.some(o => o.value?.toLowerCase?.() === matchedUnitId?.toLowerCase())) {
+        this.unitOptions = [
+          { value: matchedUnitId, label, icon: 'fa-scale-balanced' },
+          ...this.unitOptions,
+        ];
+      }
+    } else if (row.baseUnit) {
+      matchedUnitId = `legacy-${row.baseUnit}`;
+      if (!this.unitOptions.some(o => o.value === matchedUnitId)) {
+        this.unitOptions = [
+          { value: matchedUnitId, label: row.baseUnit, icon: 'fa-scale-balanced' },
+          ...this.unitOptions,
+        ];
+      }
+    }
+
+    let storageVal = Number(row.storageType);
+    if (storageVal === 3 || storageVal > 2) {
+      storageVal = StorageType.LONG_TERM;
+    } else if (storageVal < 0 || isNaN(storageVal)) {
+      storageVal = StorageType.SHORT_TERM;
     }
 
     this.form.patchValue({
@@ -401,7 +461,7 @@ export class IngredientComponent implements OnInit, AfterViewInit, OnDestroy {
       unitId: matchedUnitId,
       minStock: row.minStock,
       estimatedPrice: row.estimatedPrice || 0,
-      storageType: row.storageType,
+      storageType: storageVal,
       consumptionMethod: row.consumptionMethod,
     });
 
@@ -412,6 +472,7 @@ export class IngredientComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     this.isModalOpen = true;
+    this.cdr.markForCheck();
   }
 
   save() {
@@ -423,7 +484,20 @@ export class IngredientComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isSaving = true;
     const formVal = this.form.getRawValue();
     const selectedUnit = this.availableUnits.find(u => u.id === formVal.unitId);
-    const baseUnitName = selectedUnit ? (selectedUnit.abbreviation || selectedUnit.name) : '';
+    let baseUnitName = '';
+    if (this.isEditMode && this.selectedItem?.baseUnit) {
+      if (
+        this.selectedItem.canEditUnit === false ||
+        (selectedUnit &&
+          (selectedUnit.name?.trim().toLowerCase() === this.selectedItem.baseUnit.trim().toLowerCase() ||
+           selectedUnit.abbreviation?.trim().toLowerCase() === this.selectedItem.baseUnit.trim().toLowerCase()))
+      ) {
+        baseUnitName = this.selectedItem.baseUnit;
+      }
+    }
+    if (!baseUnitName) {
+      baseUnitName = selectedUnit ? (selectedUnit.name || selectedUnit.abbreviation || '') : (this.selectedItem?.baseUnit || '');
+    }
 
     if (this.isEditMode && this.selectedItem) {
       const updateDto: UpdateIngredientDto = {

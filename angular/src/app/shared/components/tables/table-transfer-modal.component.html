@@ -1,0 +1,193 @@
+<abp-modal [(visible)]="visible" [busy]="isSubmitting">
+  <ng-template #abpHeader>
+    <div class="modal-header-transfer d-flex align-items-center gap-3">
+      <div class="header-icon-box">
+        <i class="fas fa-right-left"></i>
+      </div>
+      <div>
+        <h4 class="modal-title m-0">
+          {{ '::TransferTableTitle' | abpLocalization }}
+        </h4>
+        <p class="modal-subtitle m-0 text-muted">
+          {{ '::TransferTableSubtitle' | abpLocalization: (sourceTable?.name || '') }}
+        </p>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #abpBody>
+    <div class="transfer-modal-body">
+      <!-- 1. THẺ TÓM TẮT BÀN NGUỒN -->
+      @if (sourceTable) {
+        <div class="source-table-card mb-3">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2">
+              <span class="source-badge">
+                <i class="fas fa-chair"></i>
+                <span class="ms-1">{{ sourceTable.name }}</span>
+              </span>
+              <span class="badge-area text-muted">
+                <i class="fas fa-layer-group me-1"></i>{{ sourceTable.diningAreaName || ('::UnassignedArea' | abpLocalization) }}
+              </span>
+              <span class="badge-seats text-muted">
+                <i class="fas fa-users me-1"></i>{{ sourceTable.capacity }} {{ '::Seats' | abpLocalization }}
+              </span>
+            </div>
+
+            <div class="order-status-pill">
+              @if (sourceTable.hasActiveOrder) {
+                <span class="pill-active-order">
+                  <i class="fas fa-receipt me-1"></i>
+                  {{ '::HasActiveOrder' | abpLocalization }}
+                </span>
+              } @else {
+                <span class="pill-no-order">
+                  <i class="fas fa-clock me-1"></i>
+                  {{ '::NoOrderYet' | abpLocalization }}
+                </span>
+              }
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- 2. BỘ LỌC KHU VỰC VÀ TÌM KIẾM BÀN ĐÍCH -->
+      <div class="target-selection-header mb-3">
+        <div class="d-flex align-items-center justify-content-between gap-2 mb-2 flex-wrap">
+          <label class="section-label m-0 font-weight-bold">
+            <i class="fas fa-bullseye me-1 text-primary-orange"></i>
+            {{ '::SelectTargetTable' | abpLocalization }}
+          </label>
+          <span class="available-count-badge">
+            {{ availableTargetTables.length }} {{ '::AvailableTablesCount' | abpLocalization }}
+          </span>
+        </div>
+
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <!-- Area Pills -->
+          <div class="area-filter-pills d-flex align-items-center gap-1 flex-wrap">
+            <button
+              type="button"
+              class="pill-btn"
+              [class.active]="selectedAreaFilter === null"
+              (click)="selectedAreaFilter = null"
+            >
+              {{ '::AllAreas' | abpLocalization }}
+            </button>
+            @for (area of availableAreas; track area.id) {
+              <button
+                type="button"
+                class="pill-btn"
+                [class.active]="selectedAreaFilter === area.id"
+                (click)="selectedAreaFilter = area.id"
+              >
+                {{ area.name }}
+              </button>
+            }
+          </div>
+
+          <!-- Search Input -->
+          <div class="search-target-box ms-auto">
+            <i class="fas fa-search search-icon"></i>
+            <input
+              type="text"
+              class="form-control form-control-sm search-input"
+              [(ngModel)]="searchQuery"
+              [placeholder]="'::SearchTablePlaceholder' | abpLocalization"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. DANH SÁCH BÀN TRỐNG (GRID VIEW) -->
+      <div class="target-tables-grid-wrap mb-3">
+        @if (availableTargetTables.length > 0) {
+          <div class="target-tables-grid">
+            @for (table of availableTargetTables; track table.id) {
+              <div
+                class="target-table-card"
+                [class.selected]="selectedTargetTableId === table.id"
+                (click)="selectTarget(table)"
+              >
+                <div class="card-radio-indicator">
+                  <i class="fas" [class.fa-check-circle]="selectedTargetTableId === table.id" [class.fa-circle]="selectedTargetTableId !== table.id"></i>
+                </div>
+                <div class="card-table-name font-weight-bold">
+                  {{ table.name }}
+                </div>
+                <div class="card-table-meta text-muted small">
+                  <span><i class="fas fa-users me-1"></i>{{ table.capacity }} {{ '::Seats' | abpLocalization }}</span>
+                  <span class="meta-dot">•</span>
+                  <span>{{ table.diningAreaName || ('::UnassignedArea' | abpLocalization) }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="empty-state py-4 text-center">
+            <div class="empty-icon-circle mb-2">
+              <i class="fas fa-chair"></i>
+            </div>
+            <p class="empty-text text-muted m-0">
+              {{ '::NoAvailableTablesFound' | abpLocalization }}
+            </p>
+          </div>
+        }
+      </div>
+
+      <!-- 4. CẢNH BÁO SỨC CHỨA (NẾU BÀN ĐÍCH NHỎ HƠN) -->
+      @if (isCapacityWarning) {
+        <div class="alert alert-warning capacity-warning-alert d-flex align-items-center gap-2 mb-3">
+          <i class="fas fa-triangle-exclamation fs-5 text-warning"></i>
+          <div>
+            <strong>{{ '::CapacityWarningTitle' | abpLocalization }}</strong>
+            <span class="ms-1">
+              {{ '::CapacityWarningDesc' | abpLocalization: (selectedTargetTable?.capacity || 0).toString(): (sourceTable?.capacity || 0).toString() }}
+            </span>
+          </div>
+        </div>
+      }
+
+      <!-- 5. GHI CHÚ CHUYỂN BÀN -->
+      <div class="transfer-note-group">
+        <label for="transfer-note" class="form-label small font-weight-bold">
+          <i class="fas fa-comment-dots me-1 text-muted"></i>
+          {{ '::TransferNoteLabel' | abpLocalization }}
+        </label>
+        <textarea
+          id="transfer-note"
+          class="form-control"
+          rows="2"
+          [(ngModel)]="note"
+          [placeholder]="'::TransferNotePlaceholder' | abpLocalization"
+        ></textarea>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #abpFooter>
+    <div class="d-flex align-items-center justify-content-end gap-2 w-100">
+      <button
+        type="button"
+        class="btn btn-outline-secondary btn-cancel"
+        (click)="close()"
+        [disabled]="isSubmitting"
+      >
+        {{ '::Cancel' | abpLocalization }}
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary btn-confirm-transfer"
+        [disabled]="!selectedTargetTableId || isSubmitting"
+        (click)="confirmTransfer()"
+      >
+        @if (isSubmitting) {
+          <i class="fas fa-spinner fa-spin me-1"></i>
+        } @else {
+          <i class="fas fa-right-left me-1"></i>
+        }
+        <span>{{ '::ConfirmTransfer' | abpLocalization }}</span>
+      </button>
+    </div>
+  </ng-template>
+</abp-modal>
