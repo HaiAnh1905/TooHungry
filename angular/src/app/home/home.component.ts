@@ -28,6 +28,7 @@ import {
 } from '../proxy/dashboard/models';
 import { InventoryAlertDto } from '../proxy/inventories/models';
 import { TableSignalrService } from '../shared/services/table-signalr.service';
+import { UserRoleNavigationService } from '../shared/services/user-role-navigation.service';
 
 Chart.register(...registerables);
 
@@ -41,6 +42,7 @@ Chart.register(...registerables);
 export class HomeComponent implements OnInit, OnDestroy {
   public authService = inject(AuthService);
   public permissionService = inject(PermissionService);
+  private userRoleNav = inject(UserRoleNavigationService);
   private configState = inject(ConfigStateService);
   private router = inject(Router);
   private dashboardService = inject(DashboardService);
@@ -98,14 +100,13 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     if (this.hasLoggedIn) {
-      const currentUser = this.configState.getOne('currentUser') as any;
-      const roles: string[] = currentUser?.roles || [];
-      const isManagerOrAdmin = roles.some(r =>
-        ['Manager', 'Administrator', 'admin'].includes(r)
-      );
-
-      if (roles.includes('Waiter') && !isManagerOrAdmin) {
-        this.router.navigate(['/waiter/tables']);
+      if (!this.permissionService.getGrantedPolicy('TooHungry.Dashboard')) {
+        const targetRoute = this.userRoleNav.getDefaultHomeRoute();
+        if (targetRoute && targetRoute !== '/') {
+          this.router.navigate([targetRoute]);
+        } else {
+          this.router.navigate(['/error/403']);
+        }
         return;
       }
 
@@ -208,6 +209,12 @@ export class HomeComponent implements OnInit, OnDestroy {
         console.error('Failed to load dashboard data:', err);
         this.isLoading.set(false);
         this.cdr.markForCheck();
+        if (err?.status === 403) {
+          this.router.navigate(['/error/403']);
+        } else if (err?.status === 500) {
+          const traceId = err?.headers?.get?.('x-correlation-id') || err?.error?.error?.data?.traceId || '';
+          this.router.navigate(['/error/500'], { queryParams: traceId ? { traceId } : undefined });
+        }
       },
     });
   }
