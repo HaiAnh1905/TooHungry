@@ -1,12 +1,12 @@
 # Roadmap Build — Acme.TooHungry (Restaurant Management)
 
 **Mục tiêu**: thứ tự build/hoàn thiện từng màn/chức năng.
-**Cập nhật**: 2026-10-16
+**Cập nhật**: 2026-10-19
 **Trạng thái item**: `chưa` (mặc định) / `đang` / `xong`.
 
 > **Nguồn liệt-kê-được**: File Entities trong thư mục `src/Acme.TooHungry.Domain` kết hợp với thư mục `specs`.
 > Đơn vị "màn/chức năng" = Quản lý (CRUD) một Entity hoặc một chức năng dùng chung.
-> Tổng 18 item sau khi gộp và ánh xạ với các đặc tả hiện có (từ RM-001 đến RM-018; bổ sung RM-017 Làm lại trang quản lý bàn, RM-018 Làm mới trang Dashboard).
+> Tổng 19 item sau khi gộp và ánh xạ với các đặc tả hiện có (từ RM-001 đến RM-019; bổ sung RM-017 Làm lại trang quản lý bàn, RM-018 Làm mới trang Dashboard, RM-019 Trang báo lỗi hệ thống và điều hướng phục hồi).
 >
 > **Chiến lược đã chốt (interview 2026-10-06 & cập nhật 2026-10-08)**:
 > 1. **Granularity**: 1 màn cho 1 Entity hoặc cụm tính năng liên quan chặt chẽ.
@@ -49,7 +49,7 @@
 > - Settings, Data, OpenIddict — phụ trợ hệ thống, không làm màn hình riêng hoặc gộp vào Identity.
 > - DailyMenus — thực đơn theo ngày (loại khỏi roadmap do gọi món POS lấy trực tiếp từ Master Data món ăn RM-006).
 >
-> **Cột `Spec`** = thư mục đặc tả SỞ HỮU item trong `specs/`, `—` = chưa có. Hiện **18/18 item có spec (100% độ phủ)**.
+> **Cột `Spec`** = thư mục đặc tả SỞ HỮU item trong `specs/`, `—` = chưa có. Hiện **19/19 item có spec (100% độ phủ)**.
 
 ## Bảng tổng (thứ tự build)
 
@@ -73,6 +73,7 @@
 | RM-016 | Thanh toán đơn hàng (Payment Page) | operations | 3 | RM-010 | [016-rm-016-payment-page](../specs/016-rm-016-payment-page/spec.md) | xong |
 | RM-017 | Làm lại trang Quản lý bàn (Table Management Redesign) | setup | 2 | RM-008, RM-015 | [017-rm-017-table-management-redesign](../specs/017-rm-017-table-management-redesign/spec.md) | xong |
 | RM-018 | Làm mới trang Dashboard (Dashboard Redesign) | dashboard | 4 | RM-002, RM-006, RM-008, RM-010, RM-011 | [018-rm-018-dashboard-redesign](../specs/018-rm-018-dashboard-redesign/spec.md) | xong |
+| RM-019 | Trang báo lỗi & Phục hồi điều hướng (404, 403, 500/505) | shared | 4 | RM-001, RM-002, RM-003, RM-015 | [019-rm-019-error-pages-and-recovery](../specs/019-rm-019-error-pages-and-recovery/spec.md) | xong |
 
 ## Chi tiết
 
@@ -392,4 +393,44 @@
 - **Trạng thái**: xong
 - **Nợ phát sinh**:
   - (trống)
+
+### RM-019 — Trang báo lỗi & Phục hồi điều hướng (Error Pages & Recovery Routing) (shared, Wave 4)
+- **Mô tả**: Thiết kế và triển khai bộ trang thông báo lỗi hệ thống hiện đại (404 Not Found, 403 Forbidden, 500 Internal Server Error / 505 HTTP Version Not Supported) kèm cơ chế điều hướng phục hồi thông minh theo vai trò và tự động trả người dùng về trang làm việc sau 5 giây:
+  - **Thiết kế giao diện hiện đại & Thân thiện (Modern Error UX/UI)**:
+    + Tone màu chủ đạo nhận diện Cam & Trắng (`#EA580C`), phong cách Card / Glassmorphism bo góc mềm mại, hiển thị đẹp mắt và chuyên nghiệp trên cả Desktop, Tablet và Mobile.
+    + Minh họa Vector / SVG sinh động riêng biệt cho từng mã lỗi:
+      * **404 — Không tìm thấy trang (Page Not Found)**: Minh họa bàn ăn trống hoặc bản đồ thất lạc khi truy cập đường dẫn không tồn tại (Wildcard route `**`).
+      * **403 — Truy cập bị từ chối (Forbidden / Access Denied)**: Minh họa ổ khóa bảo mật / khiên phân quyền khi người dùng cố truy cập trang ngoài phạm vi quyền hạn của vai trò.
+      * **500 / 505 — Sự cố hệ thống / Máy chủ không phản hồi (Server Error)**: Minh họa kết nối gián đoạn, thông báo thân thiện và hiển thị mã tham chiếu lỗi (Error Trace ID) an toàn để hỗ trợ kỹ thuật mà không làm lộ stack trace nội bộ.
+  - **Nút hành động quay lại trang thuộc về người dùng (Role-based Recovery Button)**:
+    + Cung cấp nút bấm hành động chính nổi bật: `[Quay về trang chính của tôi]` (Return to My Home).
+    + Cơ chế tự động nhận diện vai trò người dùng hiện tại (`currentUser.roles`) để điều hướng chính xác về không gian làm việc chuyên môn:
+      * **Waiter (Nhân viên phục vụ)**: Điều hướng về `/waiter/tables` (Danh sách bàn ăn phục vụ).
+      * **Admin / Manager (Quản trị viên & Quản lý)**: Điều hướng về `/` (Dashboard trung tâm) **nếu có quyền xem Dashboard** (`TooHungry.Dashboard`); nếu không có quyền, tự động chuyển về trang nghiệp vụ đầu tiên được phân quyền (`/tables`, `/orders`, `/dishes`, `/inventory`...) để tránh vòng lặp lỗi 403.
+      * **Cashier (Thu ngân)**: Điều hướng về `/table/layout` hoặc `/tables`.
+      * **InventoryStaff (Thủ kho)**: Điều hướng về `/inventory`.
+      * **Khách / Chưa đăng nhập (Unauthenticated)**: Điều hướng về `/account/login` hoặc `/` (Trạm vào ca nội bộ).
+    + Cung cấp nút hành động phụ tùy ngữ cảnh: `[Thử lại]` (Retry request) đối với lỗi 500/505, hoặc `[Đổi tài khoản / Đăng xuất]` đối với lỗi 403.
+  - **Cơ chế đếm ngược tự động trả về trang sau 5 giây (5-Second Auto-Recovery Countdown)**:
+    + Khi trang lỗi xuất hiện, nếu người dùng không thực hiện bất kỳ thao tác nào, hệ thống tự động kích hoạt đồng hồ đếm ngược trực quan:
+      *"Hệ thống sẽ tự động đưa bạn về trang làm việc sau 5... 4... 3... 2... 1 giây..."* (kèm thanh tiến trình progress bar đếm ngược mượt mà).
+    + Cho phép người dùng bấm `[Dừng đếm ngược]` hoặc di chuột/tương tác vào màn hình để dừng đồng hồ nếu muốn ở lại đọc thông tin kỹ thuật hoặc copy mã lỗi.
+    + Sau 5 giây đếm ngược kết thúc mà không bị dừng: Tự động kích hoạt điều hướng về trang tương ứng của vai trò người dùng mà không cần bấm nút.
+  - **Phạm vi áp dụng đồng bộ**:
+    + Áp dụng thống nhất cho toàn bộ các nhóm người dùng: **Admin**, **Manager**, **Waiter** và các nhân viên vận hành khác.
+  - **Tích hợp kỹ thuật trong Angular & ABP Framework**:
+    + Cấu hình Angular Router Wildcard `**` chuyển tiếp về trang 404.
+    + Tích hợp với `smartPermissionGuard`, ABP `HttpErrorReporterService` và HTTP Error Interceptor để bắt mã 403, 500, 505 thay thế hoàn toàn các dialog lỗi thô sơ mặc định.
+    + Xây dựng `UserRoleNavigationService` tập trung cung cấp hàm xác định URL đích theo vai trò người dùng để tái sử dụng xuyên suốt toàn bộ ứng dụng.
+  - **Đa ngôn ngữ & Quốc tế hóa (i18n)**:
+    + 100% toàn bộ tiêu đề lỗi, thông điệp hướng dẫn, nhãn nút thao tác và câu thông báo đếm ngược được cấu hình đầy đủ trong `vi.json` và `en.json`.
+- **Nguồn**: `angular/src/app/`, ABP Http Error Handling, Angular Router
+- **Thực thể/CRUD**: N/A (UI Layout, Routing & Error Handling Components).
+- **Backend**: Tận dụng cơ chế chuẩn hóa lỗi của ABP Framework (`AbpValidationException`, `UserFriendlyException`, HTTP status codes 403, 404, 500).
+- **Phụ thuộc**: RM-001, RM-002, RM-003, RM-015
+- **Spec**: [019-rm-019-error-pages-and-recovery](../specs/019-rm-019-error-pages-and-recovery/spec.md)
+- **Trạng thái**: xong
+- **Nợ phát sinh**:
+  - (trống)
+
 

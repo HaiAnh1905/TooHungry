@@ -68,7 +68,7 @@ export const smartPermissionGuard: CanActivateFn = (route, state) => {
           }
 
           if (authService.isAuthenticated) {
-            httpErrorReporter.reportError(new HttpErrorResponse({ status: 403, statusText: 'Forbidden' }));
+            return router.parseUrl('/error/403');
           }
           return false;
         })

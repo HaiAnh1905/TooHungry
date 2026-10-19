@@ -166,6 +166,24 @@ export const APP_ROUTES: Routes = [
     canActivate: [authGuard, smartPermissionGuard],
     data: { requiredPolicy: 'TooHungry.Forecasts' },
   },
+  {
+    path: 'error/403',
+    loadComponent: () =>
+      import('./shared/components/error-page/error-page.component').then(c => c.ErrorPageComponent),
+    data: { status: 403, layout: eLayoutType.empty },
+  },
+  {
+    path: 'error/500',
+    loadComponent: () =>
+      import('./shared/components/error-page/error-page.component').then(c => c.ErrorPageComponent),
+    data: { status: 500, layout: eLayoutType.empty },
+  },
+  {
+    path: '**',
+    loadComponent: () =>
+      import('./shared/components/error-page/error-page.component').then(c => c.ErrorPageComponent),
+    data: { status: 404, layout: eLayoutType.empty },
+  },
 ];
 
 
