@@ -11,7 +11,7 @@ import {
 } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
-import { CoreModule } from '@abp/ng.core';
+import { CoreModule, LocalizationService } from '@abp/ng.core';
 import { UserRoleNavigationService } from '../../services/user-role-navigation.service';
 
 export interface ErrorPageConfig {
@@ -68,6 +68,63 @@ export const ERROR_PAGE_CONFIGS: Record<number, ErrorPageConfig> = {
   },
 };
 
+export const ERROR_PAGE_LOCALIZATION: Record<string, Record<string, string>> = {
+  vi: {
+    'ErrorPages.404.Title': 'Không tìm thấy trang yêu cầu',
+    'ErrorPages.404.Description': 'Đường dẫn bạn truy cập không tồn tại hoặc đã được chuyển sang địa chỉ mới trong nhà hàng.',
+    'ErrorPages.403.Title': 'Truy cập bị từ chối',
+    'ErrorPages.403.Description': 'Tài khoản của bạn không có đủ quyền hạn để truy cập vào phân hệ này. Vui lòng liên hệ Quản lý nhà hàng.',
+    'ErrorPages.500.Title': 'Hệ thống gặp sự cố kỹ thuật',
+    'ErrorPages.500.Description': 'Đã xảy ra lỗi nội bộ máy chủ khi xử lý yêu cầu. Đội ngũ kỹ thuật đã được thông báo để khắc phục.',
+    'ErrorPages.505.Title': 'Giao thức không được hỗ trợ',
+    'ErrorPages.505.Description': 'Phiên bản HTTP của trình duyệt không được máy chủ hỗ trợ. Vui lòng thử tải lại hoặc cập nhật trình duyệt.',
+    'ErrorPages.AutoRedirectNotice': 'Hệ thống sẽ tự động đưa bạn về trang làm việc sau {0} giây...',
+    'ErrorPages.PauseCountdown': 'Tạm dừng',
+    'ErrorPages.ResumeCountdown': 'Tiếp tục',
+    'ErrorPages.BackToHome': 'Quay về trang chính của tôi',
+    'ErrorPages.BackToTableList': 'Quay về Danh sách bàn',
+    'ErrorPages.BackToDashboard': 'Quay về Dashboard',
+    'ErrorPages.BackToTableManagement': 'Quay về Quản lý bàn',
+    'ErrorPages.BackToOrders': 'Quay về Quản lý đơn hàng',
+    'ErrorPages.BackToDishes': 'Quay về Quản lý món ăn',
+    'ErrorPages.BackToInventory': 'Quay về Quản lý kho',
+    'ErrorPages.BackToUserManagement': 'Quay về Quản lý người dùng',
+    'ErrorPages.BackToLogin': 'Quay về Đăng nhập',
+    'ErrorPages.BackToPreviousPage': 'Quay lại trang trước',
+    'ErrorPages.Retry': 'Thử lại',
+    'ErrorPages.CopyTraceId': 'Sao chép mã lỗi',
+    'ErrorPages.Copied': 'Đã sao chép!',
+    'ErrorPages.TraceIdLabel': 'Mã tham chiếu lỗi',
+  },
+  en: {
+    'ErrorPages.404.Title': 'Page Not Found',
+    'ErrorPages.404.Description': 'The requested link does not exist or has been relocated to a new address.',
+    'ErrorPages.403.Title': 'Access Forbidden',
+    'ErrorPages.403.Description': 'Your account does not have sufficient permissions to access this area. Please contact your restaurant manager.',
+    'ErrorPages.500.Title': 'Server Error Occurred',
+    'ErrorPages.500.Description': 'An internal server error occurred while processing your request. The technical team has been notified.',
+    'ErrorPages.505.Title': 'HTTP Version Not Supported',
+    'ErrorPages.505.Description': 'The HTTP version used in your request is not supported by the server. Please try refreshing or updating your browser.',
+    'ErrorPages.AutoRedirectNotice': 'System will automatically redirect you to your workspace in {0} seconds...',
+    'ErrorPages.PauseCountdown': 'Pause',
+    'ErrorPages.ResumeCountdown': 'Resume',
+    'ErrorPages.BackToHome': 'Back to My Home',
+    'ErrorPages.BackToTableList': 'Back to Tables',
+    'ErrorPages.BackToDashboard': 'Back to Dashboard',
+    'ErrorPages.BackToTableManagement': 'Back to Table Management',
+    'ErrorPages.BackToOrders': 'Back to Orders',
+    'ErrorPages.BackToDishes': 'Back to Dishes',
+    'ErrorPages.BackToInventory': 'Back to Inventory',
+    'ErrorPages.BackToUserManagement': 'Back to User Management',
+    'ErrorPages.BackToLogin': 'Back to Login',
+    'ErrorPages.BackToPreviousPage': 'Back to Previous Page',
+    'ErrorPages.Retry': 'Retry',
+    'ErrorPages.CopyTraceId': 'Copy Error Code',
+    'ErrorPages.Copied': 'Copied!',
+    'ErrorPages.TraceIdLabel': 'Error Reference ID',
+  },
+};
+
 @Component({
   selector: 'app-error-page',
   standalone: true,
@@ -80,6 +137,7 @@ export class ErrorPageComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly location = inject(Location);
+  private readonly localizationService = inject(LocalizationService, { optional: true });
   readonly roleNavService = inject(UserRoleNavigationService);
 
   @Input() statusCodeInput?: number;
@@ -261,4 +319,48 @@ export class ErrorPageComponent implements OnInit, OnDestroy {
   get homeButtonLabelKey(): string {
     return this.roleNavService.getDefaultHomeLabelKey();
   }
+
+  /**
+   * Hàm dịch từ khóa i18n linh hoạt:
+   * 1. Ưu tiên tra cứu qua ABP LocalizationService nếu backend đã nạp resource.
+   * 2. Nếu ABP trả về nguyên mã key hoặc backend chưa restart, tự động dùng từ điển nội bộ (hỗ trợ cả vi & en).
+   * 3. Thay thế tham số {0} nếu có (ví dụ số giây đếm ngược).
+   */
+  translate(key: string, param?: string | number): string {
+    if (!key) {
+      return '';
+    }
+
+    const currentLang = this.localizationService?.currentLang?.toLowerCase();
+    const lang = currentLang?.startsWith('en') ? 'en' : 'vi';
+
+    let result = '';
+
+    if (this.localizationService) {
+      const prefixedKey = key.startsWith('::') ? key : `::${key}`;
+      const res = this.localizationService.instant(prefixedKey);
+      if (
+        res &&
+        res !== prefixedKey &&
+        res !== key &&
+        !res.startsWith('::') &&
+        !res.startsWith('ErrorPages.')
+      ) {
+        result = res;
+      }
+    }
+
+    if (!result) {
+      const cleanKey = key.replace(/^::/, '');
+      const dict = ERROR_PAGE_LOCALIZATION[lang] || ERROR_PAGE_LOCALIZATION['vi'];
+      result = dict[cleanKey] || cleanKey;
+    }
+
+    if (param !== undefined && param !== null) {
+      result = result.replace('{0}', String(param));
+    }
+
+    return result;
+  }
 }
+

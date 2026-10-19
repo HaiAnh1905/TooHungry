@@ -191,4 +191,31 @@ describe('ErrorPageComponent', () => {
     vi.advanceTimersByTime(2000);
     expect(component.copied()).toBe(false);
   });
+
+  describe('translate', () => {
+    it('should translate keys into Vietnamese by default with parameter interpolation', () => {
+      expect(component.translate('ErrorPages.403.Title')).toBe('Truy cập bị từ chối');
+      expect(component.translate('ErrorPages.404.Title')).toBe('Không tìm thấy trang yêu cầu');
+      expect(component.translate('ErrorPages.500.Title')).toBe('Hệ thống gặp sự cố kỹ thuật');
+      expect(component.translate('ErrorPages.AutoRedirectNotice', 5)).toBe(
+        'Hệ thống sẽ tự động đưa bạn về trang làm việc sau 5 giây...'
+      );
+      expect(component.translate('ErrorPages.BackToDashboard')).toBe('Quay về Dashboard');
+    });
+
+    it('should translate keys into English when language is set to English', () => {
+      (component as any).localizationService = {
+        currentLang: 'en',
+        instant: vi.fn().mockImplementation((k: string) => k),
+      };
+
+      expect(component.translate('ErrorPages.403.Title')).toBe('Access Forbidden');
+      expect(component.translate('ErrorPages.404.Title')).toBe('Page Not Found');
+      expect(component.translate('ErrorPages.500.Title')).toBe('Server Error Occurred');
+      expect(component.translate('ErrorPages.AutoRedirectNotice', 5)).toBe(
+        'System will automatically redirect you to your workspace in 5 seconds...'
+      );
+      expect(component.translate('ErrorPages.BackToDashboard')).toBe('Back to Dashboard');
+    });
+  });
 });

@@ -79,12 +79,12 @@
 
     <!-- Error Title -->
     <h1 class="error-title mb-2">
-      {{ customTitle || (activeConfig().titleKey | abpLocalization) }}
+      {{ customTitle || translate(activeConfig().titleKey) }}
     </h1>
 
     <!-- Error Description -->
     <p class="error-description text-muted mb-4 mx-auto">
-      {{ customMessage || (activeConfig().descriptionKey | abpLocalization) }}
+      {{ customMessage || translate(activeConfig().descriptionKey) }}
     </p>
 
     <!-- Trace ID Box (for 500 / 505) -->
@@ -92,18 +92,18 @@
       <div class="trace-id-box d-flex align-items-center justify-content-between p-2 px-3 mb-4 mx-auto rounded-3">
         <div class="d-flex align-items-center gap-2 text-start overflow-hidden">
           <i class="fas fa-terminal text-muted" aria-hidden="true"></i>
-          <span class="small text-muted text-nowrap">{{ 'ErrorPages.TraceIdLabel' | abpLocalization }}:</span>
+          <span class="small text-muted text-nowrap">{{ translate('ErrorPages.TraceIdLabel') }}:</span>
           <code class="trace-code text-truncate">{{ traceId() }}</code>
         </div>
         <button
           type="button"
           class="btn btn-sm copy-btn ms-2 text-nowrap"
           (click)="copyTraceId()"
-          [title]="'ErrorPages.CopyTraceId' | abpLocalization"
-          [attr.aria-label]="'ErrorPages.CopyTraceId' | abpLocalization"
+          [title]="translate('ErrorPages.CopyTraceId')"
+          [attr.aria-label]="translate('ErrorPages.CopyTraceId')"
         >
           <i class="fas me-1" [class.fa-check]="copied()" [class.fa-copy]="!copied()" aria-hidden="true"></i>
-          <span>{{ (copied() ? 'ErrorPages.Copied' : 'ErrorPages.CopyTraceId') | abpLocalization }}</span>
+          <span>{{ translate(copied() ? 'ErrorPages.Copied' : 'ErrorPages.CopyTraceId') }}</span>
         </button>
       </div>
     }
@@ -113,16 +113,16 @@
       <div class="d-flex align-items-center justify-content-between mb-2 small text-muted">
         <span class="countdown-text d-flex align-items-center gap-2">
           <i class="fas fa-clock text-warning" aria-hidden="true"></i>
-          <span>{{ 'ErrorPages.AutoRedirectNotice' | abpLocalization: countdownStr() }}</span>
+          <span>{{ translate('ErrorPages.AutoRedirectNotice', countdownStr()) }}</span>
         </span>
         <button
           type="button"
           class="btn btn-link btn-sm p-0 pause-toggle-btn text-decoration-none"
           (click)="togglePause()"
-          [attr.aria-label]="(isPaused() ? 'ErrorPages.ResumeCountdown' : 'ErrorPages.PauseCountdown') | abpLocalization"
+          [attr.aria-label]="translate(isPaused() ? 'ErrorPages.ResumeCountdown' : 'ErrorPages.PauseCountdown')"
         >
           <i class="fas me-1" [class.fa-play]="isPaused()" [class.fa-pause]="!isPaused()" aria-hidden="true"></i>
-          <span>{{ (isPaused() ? 'ErrorPages.ResumeCountdown' : 'ErrorPages.PauseCountdown') | abpLocalization }}</span>
+          <span>{{ translate(isPaused() ? 'ErrorPages.ResumeCountdown' : 'ErrorPages.PauseCountdown') }}</span>
         </button>
       </div>
 
@@ -145,7 +145,7 @@
         (click)="goHome()"
       >
         <i class="fas fa-home" aria-hidden="true"></i>
-        <span>{{ homeButtonLabelKey | abpLocalization }}</span>
+        <span>{{ translate(homeButtonLabelKey) }}</span>
       </button>
 
       <!-- Secondary Action: Back to Previous Page -->
@@ -156,7 +156,7 @@
           (click)="goBack()"
         >
           <i class="fas fa-arrow-left" aria-hidden="true"></i>
-          <span>{{ 'ErrorPages.BackToPreviousPage' | abpLocalization }}</span>
+          <span>{{ translate('ErrorPages.BackToPreviousPage') }}</span>
         </button>
       }
 
@@ -168,7 +168,7 @@
           (click)="retry()"
         >
           <i class="fas fa-redo-alt" aria-hidden="true"></i>
-          <span>{{ 'ErrorPages.Retry' | abpLocalization }}</span>
+          <span>{{ translate('ErrorPages.Retry') }}</span>
         </button>
       }
     </div>
