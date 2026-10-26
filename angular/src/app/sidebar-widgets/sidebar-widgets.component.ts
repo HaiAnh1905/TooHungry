@@ -8,11 +8,13 @@ import {
   ElementRef,
   ViewChild,
   HostListener,
+  NgZone,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CoreModule, SessionStateService } from '@abp/ng.core';
 import { Router, NavigationEnd } from '@angular/router';
 import { Subscription } from 'rxjs';
+import { RESTAURANT_BUSINESS_HOURS } from '../shared/constants/business-hours.constant';
 
 @Component({
   selector: 'app-sidebar-widgets',
@@ -67,6 +69,7 @@ export class SidebarWidgetsComponent implements OnInit, AfterViewInit, OnDestroy
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly router = inject(Router, { optional: true });
   private readonly sessionState = inject(SessionStateService, { optional: true });
+  private readonly ngZone = inject(NgZone);
 
   @ViewChild('statusWidget') statusWidgetRef!: ElementRef<HTMLDivElement>;
   @ViewChild('clockWidget') clockWidgetRef!: ElementRef<HTMLDivElement>;
@@ -81,11 +84,15 @@ export class SidebarWidgetsComponent implements OnInit, AfterViewInit, OnDestroy
 
   ngOnInit() {
     this.updateClock();
-    this.timerId = setInterval(() => {
-      this.updateClock();
-      this.tryInjectWidgets();
-      this.cdr.markForCheck();
-    }, 1000);
+    this.ngZone.runOutsideAngular(() => {
+      this.timerId = setInterval(() => {
+        this.updateClock();
+        this.tryInjectWidgets();
+        this.ngZone.run(() => {
+          this.cdr.markForCheck();
+        });
+      }, 1000);
+    });
 
     // Khi chuyển trang xong thì tự động đóng popup nếu đang mở
     if (this.router) {
@@ -100,13 +107,15 @@ export class SidebarWidgetsComponent implements OnInit, AfterViewInit, OnDestroy
   ngAfterViewInit() {
     this.tryInjectWidgets();
     let attempts = 0;
-    this.observerId = setInterval(() => {
-      attempts++;
-      const injected = this.tryInjectWidgets();
-      if (injected && attempts > 10) {
-        clearInterval(this.observerId);
-      }
-    }, 300);
+    this.ngZone.runOutsideAngular(() => {
+      this.observerId = setInterval(() => {
+        attempts++;
+        const injected = this.tryInjectWidgets();
+        if (injected || attempts >= 10) {
+          clearInterval(this.observerId);
+        }
+      }, 300);
+    });
   }
 
   ngOnDestroy() {
@@ -225,7 +234,7 @@ export class SidebarWidgetsComponent implements OnInit, AfterViewInit, OnDestroy
     const hoursStr = String(hours).padStart(2, '0');
 
     this.timeString = `${hoursStr} : ${minutes} : ${seconds}`;
-    this.isOpen = hours >= 9 && hours < 23;
+    this.isOpen = hours >= RESTAURANT_BUSINESS_HOURS.OPEN_HOUR && hours < RESTAURANT_BUSINESS_HOURS.CLOSE_HOUR;
 
     const currentLang = this.sessionState?.getLanguage() || 'vi';
     const isEn = currentLang.toLowerCase().startsWith('en');

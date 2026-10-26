@@ -49,6 +49,13 @@ public class InventoryController : TooHungryController
         return _inventoryAppService.DiscardBatchAsync(id, input);
     }
 
+    [HttpPost("batches/bulk-discard")]
+    [Authorize(TooHungryPermissions.Inventories.Discard)]
+    public virtual Task BulkDiscardBatchesAsync([FromBody] BulkDiscardBatchesInputDto input)
+    {
+        return _inventoryAppService.BulkDiscardBatchesAsync(input);
+    }
+
     [HttpPost("batches/{id:guid}/deactivate")]
     [Authorize(TooHungryPermissions.Inventories.Adjust)]
     public virtual Task<InventoryBatchDto> DeactivateBatchAsync(Guid id, [FromBody] DeactivateBatchDto input)
@@ -72,8 +79,8 @@ public class InventoryController : TooHungryController
 
     [HttpGet("transactions/{ingredientId:guid}")]
     [Authorize(TooHungryPermissions.Inventories.Default)]
-    public virtual Task<List<InventoryTransactionDto>> GetTransactionsAsync(Guid ingredientId)
+    public virtual Task<PagedResultDto<InventoryTransactionDto>> GetTransactionsAsync(Guid ingredientId, [FromQuery] PagedAndSortedResultRequestDto input)
     {
-        return _inventoryAppService.GetTransactionsAsync(ingredientId);
+        return _inventoryAppService.GetTransactionsAsync(ingredientId, input);
     }
 }

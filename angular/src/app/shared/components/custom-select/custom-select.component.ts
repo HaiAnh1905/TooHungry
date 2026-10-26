@@ -72,7 +72,17 @@ export class CustomSelectComponent implements ControlValueAccessor {
 
   isOpen = false;
   searchQuery = '';
-  value: any = null;
+  private _value: any = null;
+
+  @Input()
+  set value(val: any) {
+    this._value = val;
+    this.cdr.markForCheck();
+  }
+  get value(): any {
+    return this._value;
+  }
+
   calculatedPlacement: 'top' | 'bottom' = 'bottom';
 
   private onChange: (val: any) => void = () => {};
@@ -82,7 +92,7 @@ export class CustomSelectComponent implements ControlValueAccessor {
   private localizationService = inject(LocalizationService);
 
   writeValue(obj: any): void {
-    this.value = obj;
+    this._value = obj;
     this.cdr.markForCheck();
   }
 

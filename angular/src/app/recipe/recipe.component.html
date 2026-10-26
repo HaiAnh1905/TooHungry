@@ -229,16 +229,30 @@
                 </td>
                 <td class="pe-4 text-center">
                   <div class="d-flex align-items-center justify-content-center gap-1">
-                    <button
-                      type="button"
-                      class="btn btn-sm btn-outline-orange btn-action-icon"
-                      (click)="openRecipeModal(dish)"
-                      [title]="(dish.recipe ? '::EditRecipe' : '::ConfigureRecipe') | abpLocalization"
-                    >
-                      <i class="fa fa-book-open"></i>
-                    </button>
+                    @if (dish.recipe) {
+                      <button
+                        *abpPermission="'TooHungry.Recipes.Edit'"
+                        type="button"
+                        class="btn btn-sm btn-outline-orange btn-action-icon"
+                        (click)="openRecipeModal(dish)"
+                        [title]="'::EditRecipe' | abpLocalization"
+                      >
+                        <i class="fa fa-book-open"></i>
+                      </button>
+                    } @else {
+                      <button
+                        *abpPermission="'TooHungry.Recipes.Create'"
+                        type="button"
+                        class="btn btn-sm btn-outline-orange btn-action-icon"
+                        (click)="openRecipeModal(dish)"
+                        [title]="'::ConfigureRecipe' | abpLocalization"
+                      >
+                        <i class="fa fa-book-open"></i>
+                      </button>
+                    }
                     @if (dish.recipe && dish.recipe.isActive) {
                       <button
+                        *abpPermission="'TooHungry.Recipes.Delete'"
                         type="button"
                         class="btn btn-sm btn-outline-warning btn-action-icon"
                         (click)="openDeactivateModal(dish)"
@@ -249,6 +263,7 @@
                     }
                     @if (dish.recipe && !dish.recipe.isActive) {
                       <button
+                        *abpPermission="'TooHungry.Recipes.Edit'"
                         type="button"
                         class="btn btn-sm btn-outline-success btn-action-icon"
                         (click)="reactivateRecipe(dish)"
@@ -268,78 +283,12 @@
 
     <!-- FOOTER PAGINATION BAR -->
     @if (!isLoading && filteredDishes.length > 0) {
-      <div
-        class="custom-table-footer d-flex align-items-center justify-content-between flex-wrap gap-3"
-      >
-        <div class="d-flex align-items-center flex-wrap gap-3">
-          <span class="records-summary-text">
-            {{ '::ShowingRecords' | abpLocalization }}
-            <strong>{{ fromRecord }} - {{ toRecord }}</strong>
-            {{ '::OfTotal' | abpLocalization }}
-            <strong>{{ filteredDishes.length }}</strong>
-            {{ '::DishCount' | abpLocalization }}
-          </span>
-
-          <div class="d-flex align-items-center gap-2 page-size-box">
-            <span class="page-size-label">{{ '::Display' | abpLocalization }}:</span>
-            <app-custom-select
-              [options]="pageSizeOptions"
-              [ngModel]="pageSize"
-              (selectionChange)="changePageSize($event)"
-              size="sm"
-              placement="top"
-              minWidth="140px"
-            ></app-custom-select>
-          </div>
-        </div>
-
-        <div class="d-flex align-items-center pagination-btn-group" style="gap: 5px">
-          <button
-            type="button"
-            class="btn-page-nav"
-            [disabled]="currentPage === 1"
-            (click)="firstPage()"
-            [title]="'::FirstPage' | abpLocalization"
-          >
-            <i class="fa fa-angle-double-left"></i>
-          </button>
-
-          <button
-            type="button"
-            class="btn-page-nav btn-text-nav"
-            [disabled]="currentPage === 1"
-            (click)="prevPage()"
-          >
-            <i class="fa fa-angle-left me-1"></i>
-            <span>{{ '::PreviousPage' | abpLocalization }}</span>
-          </button>
-
-          <span class="current-page-badge">
-            {{ '::Page' | abpLocalization }}
-            <strong>{{ currentPage }}</strong> / {{ totalPages }}
-          </span>
-
-          <button
-            type="button"
-            class="btn-page-nav btn-text-nav"
-            [disabled]="currentPage === totalPages"
-            (click)="nextPage()"
-          >
-            <span>{{ '::NextPage' | abpLocalization }}</span>
-            <i class="fa fa-angle-right ms-1"></i>
-          </button>
-
-          <button
-            type="button"
-            class="btn-page-nav"
-            [disabled]="currentPage === totalPages"
-            (click)="lastPage()"
-            [title]="'::LastPage' | abpLocalization"
-          >
-            <i class="fa fa-angle-double-right"></i>
-          </button>
-        </div>
-      </div>
+      <app-pager
+        [totalCount]="filteredDishes.length"
+        [(page)]="currentPage"
+        [(pageSize)]="pageSize"
+        unitKey="::DishCount"
+      ></app-pager>
     }
   </div>
 

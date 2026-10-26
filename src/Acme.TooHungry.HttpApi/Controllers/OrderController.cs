@@ -27,7 +27,7 @@ public class OrderController : TooHungryController, IOrderAppService
     }
 
     [HttpGet]
-    public virtual Task<PagedResultDto<OrderDto>> GetListAsync(PagedAndSortedResultRequestDto input)
+    public virtual Task<PagedResultDto<OrderDto>> GetListAsync([FromQuery] GetOrdersInputDto input)
     {
         return _orderAppService.GetListAsync(input);
     }

@@ -133,12 +133,48 @@ public abstract class InventoryManager_Adjustment_Tests<TStartupModule> : TooHun
             var batches = (await _batchRepository.GetListAsync()).Where(x => x.IngredientId == oil.Id && x.IsActive).ToList();
             batches.Sum(x => x.RemainingQuantity).ShouldBe(5m);
 
+            var adjBatch = batches.FirstOrDefault(x => x.BatchCode.StartsWith("ADJ-"));
+            adjBatch.ShouldNotBeNull();
+            adjBatch.PurchaseUnit.ShouldBe(oil.BaseUnit);
+            adjBatch.UnitCost.ShouldBe(oil.EstimatedPrice);
+            adjBatch.RemainingQuantity.ShouldBe(3m);
+
             var txs = (await _transactionRepository.GetListAsync())
                 .Where(x => x.IngredientId == oil.Id && x.TransactionType == InventoryTransactionType.ADJUSTMENT_IN)
                 .ToList();
 
             txs.Count.ShouldBe(1);
             txs.First().Quantity.ShouldBe(3m);
+        });
+    }
+
+    [Fact]
+    public async Task Should_Throw_When_Deduct_Quantity_Is_Zero_Or_Negative()
+    {
+        await WithUnitOfWorkAsync(async () =>
+        {
+            var ingredient = await _ingredientRepository.InsertAsync(new Ingredient(
+                Guid.NewGuid(), "Tiêu Đen Test", "g", 10, StorageType.LONG_TERM), autoSave: true);
+
+            var b1 = await _batchRepository.InsertAsync(new InventoryBatch(
+                Guid.NewGuid(), ingredient.Id, "PEP-01", 100m, 100m, "g", 1m, DateTime.UtcNow, DateTime.UtcNow.AddDays(30)), autoSave: true);
+
+            // 1. FEFO với số lượng âm -> ném TooHungry:Inventory:InvalidQuantity
+            var exFefo = await Should.ThrowAsync<BusinessException>(async () =>
+            {
+                await _inventoryManager.DeductFefoAsync(ingredient.Id, -5m, "Test");
+            });
+            exFefo.Code.ShouldBe("TooHungry:Inventory:InvalidQuantity");
+
+            // 2. AdjustStock với quantity âm trong batchDeductions
+            var exAdj = await Should.ThrowAsync<BusinessException>(async () =>
+            {
+                await _inventoryManager.AdjustStockAsync(ingredient.Id, 90m, "Kiểm kê", new List<(Guid batchId, decimal quantity)>
+                {
+                    (b1.Id, -10m)
+                });
+            });
+            exAdj.Code.ShouldBe("TooHungry:Inventory:InvalidQuantity");
         });
     }
 }

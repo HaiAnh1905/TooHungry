@@ -72,41 +72,7 @@ public class TooHungryPermissionDefinitionProvider : PermissionDefinitionProvide
         ingredients.AddChild(TooHungryPermissions.Ingredients.Create, L("Permission:Ingredients.Create"));
         ingredients.AddChild(TooHungryPermissions.Ingredients.Edit, L("Permission:Ingredients.Edit"));
         ingredients.AddChild(TooHungryPermissions.Ingredients.Delete, L("Permission:Ingredients.Delete"));
-        // Unit Conversions
-        var unitConversions = myGroup.AddPermission(TooHungryPermissions.UnitConversions.Default, L("Permission:UnitConversions"));
-        unitConversions.AddChild(TooHungryPermissions.UnitConversions.Create, L("Permission:UnitConversions.Create"));
-        unitConversions.AddChild(TooHungryPermissions.UnitConversions.Edit, L("Permission:UnitConversions.Edit"));
-        unitConversions.AddChild(TooHungryPermissions.UnitConversions.Delete, L("Permission:UnitConversions.Delete"));
-        // Receivings
-        var receivings = myGroup.AddPermission(TooHungryPermissions.Receivings.Default, L("Permission:Receivings"));
-        receivings.AddChild(TooHungryPermissions.Receivings.Create, L("Permission:Receivings.Create"));
-        receivings.AddChild(TooHungryPermissions.Receivings.Edit, L("Permission:Receivings.Edit"));
-        receivings.AddChild(TooHungryPermissions.Receivings.Delete, L("Permission:Receivings.Delete"));
-        // Stock Adjustments
-        var stockAdjustments = myGroup.AddPermission(TooHungryPermissions.StockAdjustments.Default, L("Permission:StockAdjustments"));
-        stockAdjustments.AddChild(TooHungryPermissions.StockAdjustments.Create, L("Permission:StockAdjustments.Create"));
-        stockAdjustments.AddChild(TooHungryPermissions.StockAdjustments.Edit, L("Permission:StockAdjustments.Edit"));
-        stockAdjustments.AddChild(TooHungryPermissions.StockAdjustments.Delete, L("Permission:StockAdjustments.Delete"));
-        // Wastes
-        var wastes = myGroup.AddPermission(TooHungryPermissions.Wastes.Default, L("Permission:Wastes"));
-        wastes.AddChild(TooHungryPermissions.Wastes.Create, L("Permission:Wastes.Create"));
-        wastes.AddChild(TooHungryPermissions.Wastes.Edit, L("Permission:Wastes.Edit"));
-        wastes.AddChild(TooHungryPermissions.Wastes.Delete, L("Permission:Wastes.Delete"));
-        // Stocktakings
-        var stocktakings = myGroup.AddPermission(TooHungryPermissions.Stocktakings.Default, L("Permission:Stocktakings"));
-        stocktakings.AddChild(TooHungryPermissions.Stocktakings.Create, L("Permission:Stocktakings.Create"));
-        stocktakings.AddChild(TooHungryPermissions.Stocktakings.Edit, L("Permission:Stocktakings.Edit"));
-        stocktakings.AddChild(TooHungryPermissions.Stocktakings.Delete, L("Permission:Stocktakings.Delete"));
-        // Bills
-        var bills = myGroup.AddPermission(TooHungryPermissions.Bills.Default, L("Permission:Bills"));
-        bills.AddChild(TooHungryPermissions.Bills.Create, L("Permission:Bills.Create"));
-        bills.AddChild(TooHungryPermissions.Bills.Edit, L("Permission:Bills.Edit"));
-        bills.AddChild(TooHungryPermissions.Bills.Delete, L("Permission:Bills.Delete"));
-        // Payments
-        var payments = myGroup.AddPermission(TooHungryPermissions.Payments.Default, L("Permission:Payments"));
-        payments.AddChild(TooHungryPermissions.Payments.Create, L("Permission:Payments.Create"));
-        payments.AddChild(TooHungryPermissions.Payments.Edit, L("Permission:Payments.Edit"));
-        payments.AddChild(TooHungryPermissions.Payments.Delete, L("Permission:Payments.Delete"));
+
         // Forecasts
         var forecasts = myGroup.AddPermission(TooHungryPermissions.Forecasts.Default, L("Permission:Forecasts"));
         forecasts.AddChild(TooHungryPermissions.Forecasts.Create, L("Permission:Forecasts.Create"));

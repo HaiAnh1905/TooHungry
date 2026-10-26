@@ -1,0 +1,184 @@
+@if (visible) {
+  <div class="bento-modal-backdrop" (click)="close()">
+    <div
+      class="bento-modal-dialog"
+      (click)="$event.stopPropagation()"
+      role="dialog"
+      aria-modal="true"
+    >
+      <!-- Modal Header Bento -->
+      <div class="modal-header-bento">
+        <div class="d-flex align-items-center gap-2">
+          <div class="header-icon-box">
+            <i class="fa fa-truck-ramp-box"></i>
+          </div>
+          <div>
+            <h5 class="modal-title m-0">{{ '::InboundBatchAction' | abpLocalization }}</h5>
+            <small class="modal-subtitle text-muted">{{ '::InboundBatchSubtitle' | abpLocalization }}</small>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="btn-close-modal"
+          (click)="close()"
+          [title]="'::Close' | abpLocalization"
+        >
+          <i class="fa fa-times"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body-bento">
+        <form (ngSubmit)="submit()" class="d-flex flex-column gap-3">
+          <!-- Chọn Nguyên liệu -->
+          <div class="form-group mb-3">
+            <label class="form-label fw-semibold small text-slate-700 mb-1">
+              {{ '::Ingredient' | abpLocalization }} <span class="text-danger">*</span>
+            </label>
+            <app-custom-select
+              class="w-100 d-block"
+              [options]="ingredientSelectOptions"
+              [value]="batchModel.ingredientId"
+              [(ngModel)]="batchModel.ingredientId"
+              name="ingredientId"
+              (selectionChange)="onIngredientChange($event)"
+              [placeholder]="'::SelectIngredientPrompt' | abpLocalization"
+              leadIcon="fa-box"
+              minWidth="100%"
+              maxHeight="280px"
+              [searchable]="true"
+              [searchPlaceholder]="'::SearchIngredientPrompt' | abpLocalization"
+            ></app-custom-select>
+          </div>
+
+          <!-- Mã Lô Hàng -->
+          <div class="form-group mb-3">
+            <label class="form-label fw-semibold small text-slate-700 mb-1">
+              {{ '::BatchCode' | abpLocalization }} <span class="text-danger">*</span>
+            </label>
+            <div class="input-icon-wrap">
+              <i class="fa fa-barcode"></i>
+              <input
+                type="text"
+                class="form-control font-monospace text-uppercase"
+                [(ngModel)]="batchModel.batchCode"
+                name="batchCode"
+                required
+                [placeholder]="'::BatchCodePlaceholder' | abpLocalization"
+              />
+            </div>
+          </div>
+
+          <!-- Dòng Số lượng & Đơn vị -->
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label fw-semibold small text-slate-700 mb-1">
+                {{ '::InitialQuantity' | abpLocalization }} <span class="text-danger">*</span>
+              </label>
+              <div class="input-group">
+                <input
+                  type="number"
+                  class="form-control text-end font-monospace"
+                  [(ngModel)]="batchModel.initialQuantity"
+                  name="initialQuantity"
+                  min="0.001"
+                  step="any"
+                  required
+                />
+                <span class="input-group-text bg-light text-muted small font-monospace">
+                  {{ selectedIngredient?.baseUnit || selectedIngredient?.unitName || 'đơn vị' }}
+                </span>
+              </div>
+            </div>
+
+            <div class="col-6">
+              <label class="form-label fw-semibold small text-slate-700 mb-1">
+                {{ '::UnitPrice' | abpLocalization }}
+              </label>
+              <div class="input-group">
+                <input
+                  type="number"
+                  class="form-control text-end font-monospace"
+                  [(ngModel)]="batchModel.unitPrice"
+                  name="unitPrice"
+                  min="0"
+                  step="1000"
+                />
+                <span class="input-group-text bg-light text-muted small">₫</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dòng Hạn sử dụng & Điều kiện bảo quản -->
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label fw-semibold small text-slate-700 mb-1">
+                {{ '::ExpiryDate' | abpLocalization }}
+                @if (isFresh) {
+                  <span class="badge bg-warning-subtle text-warning-emphasis ms-1">{{ '::ExpiresToday' | abpLocalization }}</span>
+                }
+              </label>
+              <input
+                type="date"
+                class="form-control font-monospace"
+                [(ngModel)]="batchModel.expiryDate"
+                name="expiryDate"
+                [disabled]="isFresh"
+              />
+            </div>
+
+            <div class="col-6">
+              <label class="form-label fw-semibold small text-slate-700 mb-1">
+                {{ '::StorageType' | abpLocalization }}
+              </label>
+              <app-custom-select
+                class="w-100 d-block"
+                [options]="storageTypeOptions"
+                [value]="batchModel.storageType"
+                [(ngModel)]="batchModel.storageType"
+                name="storageType"
+                (selectionChange)="onStorageTypeChange($event)"
+                leadIcon="fa-layer-group"
+                minWidth="100%"
+              ></app-custom-select>
+            </div>
+          </div>
+
+          <!-- Thẻ dự toán thành tiền -->
+          <div class="bento-estimate-card mb-2">
+            <span class="text-muted small">{{ '::EstimatedTotal' | abpLocalization }}:</span>
+            <span class="estimate-value font-monospace">
+              {{ estimatedTotal | number:'1.0-0' }} ₫
+            </span>
+          </div>
+        </form>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="modal-footer-bento">
+        <button
+          type="button"
+          class="btn btn-outline-secondary btn-cancel"
+          (click)="close()"
+          [disabled]="isSubmitting"
+        >
+          {{ '::Cancel' | abpLocalization }}
+        </button>
+
+        <button
+          type="button"
+          class="btn btn-orange btn-submit"
+          (click)="submit()"
+          [disabled]="isSubmitting || !batchModel.ingredientId || !batchModel.batchCode"
+        >
+          @if (isSubmitting) {
+            <i class="fa fa-spinner fa-spin me-1"></i>
+          } @else {
+            <i class="fa fa-check me-1"></i>
+          }
+          <span>{{ '::Confirm' | abpLocalization }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+}

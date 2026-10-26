@@ -22,11 +22,12 @@ import { Subscription } from 'rxjs';
 import { DishCategoryService } from '../proxy/dishes/dish-category.service';
 import { DishCategoryDto } from '../proxy/dishes/models';
 import { CustomSelectComponent, CustomSelectOption } from '../shared/components/custom-select/custom-select.component';
+import { PagerComponent } from '../shared/components/pager/pager.component';
 
 @Component({
   selector: 'app-dish-category',
   standalone: true,
-  imports: [CommonModule, CoreModule, ThemeSharedModule, NgxDatatableModule, ReactiveFormsModule, FormsModule, CustomSelectComponent],
+  imports: [CommonModule, CoreModule, ThemeSharedModule, NgxDatatableModule, ReactiveFormsModule, FormsModule, CustomSelectComponent, PagerComponent],
   templateUrl: './dish-category.component.html',
   styleUrl: './dish-category.component.scss',
   providers: [ListService],
@@ -178,20 +179,8 @@ export class DishCategoryComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private recalculateTable() {
-    requestAnimationFrame(() => {
-      this.table?.recalculate();
-      window.dispatchEvent(new Event('resize'));
-      this.cdr.markForCheck();
-    });
-    setTimeout(() => {
-      this.table?.recalculate();
-      window.dispatchEvent(new Event('resize'));
-      this.cdr.markForCheck();
-    }, 50);
-    setTimeout(() => {
-      this.table?.recalculate();
-      this.cdr.markForCheck();
-    }, 200);
+    this.table?.recalculate();
+    this.cdr.markForCheck();
   }
 
   createCategory() {

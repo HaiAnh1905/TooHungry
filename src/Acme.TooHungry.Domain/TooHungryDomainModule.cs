@@ -18,6 +18,7 @@ using Volo.Abp.Emailing;
 using Volo.Abp.FeatureManagement;
 using Volo.Abp.Identity;
 using Volo.Abp.TenantManagement;
+using Volo.Abp.Timing;
 
 namespace Acme.TooHungry;
 
@@ -42,6 +43,11 @@ public class TooHungryDomainModule : AbpModule
         Configure<AbpMultiTenancyOptions>(options =>
         {
             options.IsEnabled = MultiTenancyConsts.IsEnabled;
+        });
+
+        Configure<AbpClockOptions>(options =>
+        {
+            options.Kind = DateTimeKind.Utc;
         });
 
         Configure<Microsoft.AspNetCore.Identity.IdentityOptions>(options =>

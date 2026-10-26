@@ -129,9 +129,11 @@ export class Roles implements OnInit {
     this.modalLoading = true;
     this.isPermissionModalVisible = true;
     
+    const providerName = encodeURIComponent('R');
+    const providerKey = encodeURIComponent(role.name || '');
     this.restService.request<void, any>({
       method: 'GET',
-      url: `/api/permission-management/permissions?providerName=R&providerKey=${role.name}`
+      url: `/api/permission-management/permissions?providerName=${providerName}&providerKey=${providerKey}`
     }).subscribe({
       next: (res) => {
         this.modalLoading = false;
@@ -258,9 +260,11 @@ export class Roles implements OnInit {
       }
     }
 
+    const providerName = encodeURIComponent('R');
+    const providerKey = encodeURIComponent(this.selectedRoleName || '');
     this.restService.request<any, void>({
       method: 'PUT',
-      url: `/api/permission-management/permissions?providerName=R&providerKey=${this.selectedRoleName}`,
+      url: `/api/permission-management/permissions?providerName=${providerName}&providerKey=${providerKey}`,
       body: { permissions: permissionsToUpdate }
     }).subscribe({
       next: () => {

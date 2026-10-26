@@ -52,12 +52,12 @@ public abstract class DishCategoryAppService_Tests<TStartupModule> : TooHungryAp
             DishCategoryId = category.Id
         });
 
-        var exception = await Should.ThrowAsync<UserFriendlyException>(async () =>
+        var exception = await Should.ThrowAsync<BusinessException>(async () =>
         {
             await _dishCategoryAppService.DeleteAsync(category.Id);
         });
 
-        exception.Message.ShouldContain("Không thể xóa danh mục vì đang có");
+        exception.Code.ShouldBe(TooHungryDomainErrorCodes.DishCategoryCannotDeleteWithDishes);
     }
 
     [Fact]

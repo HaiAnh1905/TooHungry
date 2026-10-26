@@ -10,6 +10,7 @@ using Volo.Abp.Application.Dtos;
 using Volo.Abp.Domain.Entities;
 using Volo.Abp.Domain.Repositories;
 using Acme.TooHungry.DiningAreas;
+using Acme.TooHungry.Dishes;
 using Acme.TooHungry.Orders;
 using Acme.TooHungry.Permissions;
 
@@ -22,17 +23,20 @@ public class TableAppService : TooHungryAppService, ITableAppService
     private readonly IRepository<Order, Guid> _orderRepository;
     private readonly IRepository<DiningArea, Guid> _diningAreaRepository;
     private readonly ITableRealtimeNotifier _realtimeNotifier;
+    private readonly IRepository<Dish, Guid> _dishRepository;
 
     public TableAppService(
         IRepository<RestaurantTable, Guid> tableRepository,
         IRepository<Order, Guid> orderRepository,
         IRepository<DiningArea, Guid> diningAreaRepository,
-        ITableRealtimeNotifier realtimeNotifier)
+        ITableRealtimeNotifier realtimeNotifier,
+        IRepository<Dish, Guid> dishRepository)
     {
         _tableRepository = tableRepository;
         _orderRepository = orderRepository;
         _diningAreaRepository = diningAreaRepository;
         _realtimeNotifier = realtimeNotifier;
+        _dishRepository = dishRepository;
     }
 
     /// <summary>
@@ -43,7 +47,8 @@ public class TableAppService : TooHungryAppService, ITableAppService
     public virtual async Task<TableDto> GetAsync(Guid id)
     {
         // Truy vấn bàn ăn kèm thông tin liên kết của DiningArea
-        var table = (await _tableRepository.WithDetailsAsync(x => x.DiningArea)).FirstOrDefault(x => x.Id == id)
+        var queryable = await _tableRepository.WithDetailsAsync(x => x.DiningArea);
+        var table = await AsyncExecuter.FirstOrDefaultAsync(queryable, x => x.Id == id)
             ?? await _tableRepository.GetAsync(id);
 
         var dto = ObjectMapper.Map<RestaurantTable, TableDto>(table);
@@ -118,10 +123,10 @@ public class TableAppService : TooHungryAppService, ITableAppService
 
         // Đảm bảo mỗi bàn đều có tên khu vực đồng nhất giữa DiningAreaName và Location
         var tableIds = items.Select(x => x.Id).ToList();
-        var activeOrders = (await _orderRepository.GetQueryableAsync())
+        var activeOrdersQuery = (await _orderRepository.GetQueryableAsync())
             .Where(x => x.TableId.HasValue && tableIds.Contains(x.TableId.Value) && x.Status != OrderStatus.Completed && x.Status != OrderStatus.Cancelled)
-            .Select(x => new { TableId = x.TableId!.Value, x.Id })
-            .ToList();
+            .Select(x => new { TableId = x.TableId!.Value, x.Id });
+        var activeOrders = await AsyncExecuter.ToListAsync(activeOrdersQuery);
 
         var activeOrderMap = activeOrders.ToDictionary(x => x.TableId, x => x.Id);
 
@@ -164,19 +169,19 @@ public class TableAppService : TooHungryAppService, ITableAppService
         var cleanName = input.Name?.Trim() ?? string.Empty;
         if (string.IsNullOrWhiteSpace(cleanName))
         {
-            throw new UserFriendlyException("Tên hoặc số bàn không được để trống!");
+            throw new BusinessException(TooHungryDomainErrorCodes.TableNameRequired);
         }
 
         if (input.Capacity < 1 || input.Capacity > 100)
         {
-            throw new UserFriendlyException("Sức chứa bàn ăn phải là số nguyên từ 1 đến 100 chỗ ngồi!");
+            throw new BusinessException(TooHungryDomainErrorCodes.TableInvalidCapacity);
         }
 
         // 2. Guard: Kiểm tra trùng tên bàn trên toàn hệ thống
         var isExist = await _tableRepository.AnyAsync(x => x.Name.ToLower() == cleanName.ToLower());
         if (isExist)
         {
-            throw new UserFriendlyException($"Bàn '{cleanName}' đã tồn tại trong danh sách!");
+            throw new BusinessException(TooHungryDomainErrorCodes.TableNameAlreadyExists).WithData("0", cleanName);
         }
 
         // 3. Kiểm tra khu vực có đang hoạt động không
@@ -185,22 +190,17 @@ public class TableAppService : TooHungryAppService, ITableAppService
             var area = await _diningAreaRepository.FindAsync(input.DiningAreaId.Value);
             if (area != null && !area.IsActive)
             {
-                throw new UserFriendlyException($"Khu vực '{area.Name}' đang bị vô hiệu hóa, không thể thêm bàn vào khu vực này!");
+                throw new BusinessException(TooHungryDomainErrorCodes.TableAreaInactive).WithData("0", area.Name);
             }
         }
 
-        var table = ObjectMapper.Map<CreateUpdateTableDto, RestaurantTable>(input);
-        table.Name = cleanName;
-        if (table.Status == TableStatus.Occupied && !table.OccupiedTime.HasValue)
-        {
-            table.OccupiedTime = DateTime.Now;
-        }
+        var table = new RestaurantTable(GuidGenerator.Create(), cleanName, input.Capacity, input.DiningAreaId);
 
         // 4. Tự động đồng bộ trường Location theo Khu vực được chọn
         if (input.DiningAreaId.HasValue)
         {
             var area = await _diningAreaRepository.FindAsync(input.DiningAreaId.Value);
-            table.Location = area?.Name;
+            table.SetLocation(area?.Name);
         }
         else if (!string.IsNullOrWhiteSpace(input.Location))
         {
@@ -209,10 +209,9 @@ public class TableAppService : TooHungryAppService, ITableAppService
             {
                 if (!area.IsActive)
                 {
-                    throw new UserFriendlyException($"Khu vực '{area.Name}' đang bị vô hiệu hóa, không thể thêm bàn vào khu vực này!");
+                    throw new BusinessException(TooHungryDomainErrorCodes.TableAreaInactive).WithData("0", area.Name);
                 }
-                table.DiningAreaId = area.Id;
-                table.Location = area.Name;
+                table.SetDiningArea(area.Id, area.Name);
             }
         }
 
@@ -238,19 +237,19 @@ public class TableAppService : TooHungryAppService, ITableAppService
         var cleanName = input.Name?.Trim() ?? string.Empty;
         if (string.IsNullOrWhiteSpace(cleanName))
         {
-            throw new UserFriendlyException("Tên hoặc số bàn không được để trống!");
+            throw new BusinessException(TooHungryDomainErrorCodes.TableNameRequired);
         }
 
         if (input.Capacity < 1 || input.Capacity > 100)
         {
-            throw new UserFriendlyException("Sức chứa bàn ăn phải là số nguyên từ 1 đến 100 chỗ ngồi!");
+            throw new BusinessException(TooHungryDomainErrorCodes.TableInvalidCapacity);
         }
 
         // Guard 1: Kiểm tra trùng tên bàn với bàn khác trên toàn hệ thống
         var isExist = await _tableRepository.AnyAsync(x => x.Id != id && x.Name.ToLower() == cleanName.ToLower());
         if (isExist)
         {
-            throw new UserFriendlyException($"Bàn '{cleanName}' đã tồn tại trong danh sách!");
+            throw new BusinessException(TooHungryDomainErrorCodes.TableNameAlreadyExists).WithData("0", cleanName);
         }
 
         var table = await _tableRepository.GetAsync(id);
@@ -260,7 +259,7 @@ public class TableAppService : TooHungryAppService, ITableAppService
             var area = await _diningAreaRepository.FindAsync(input.DiningAreaId.Value);
             if (area != null && !area.IsActive)
             {
-                throw new UserFriendlyException($"Khu vực '{area.Name}' đang bị vô hiệu hóa, không thể chuyển bàn vào khu vực này!");
+                throw new BusinessException(TooHungryDomainErrorCodes.TableAreaInactive).WithData("0", area.Name);
             }
         }
 
@@ -274,64 +273,35 @@ public class TableAppService : TooHungryAppService, ITableAppService
 
             if (isInfoChanged)
             {
-                throw new UserFriendlyException("Bàn đang được sử dụng (có khách), không được phép chỉnh sửa thông tin bàn!");
-            }
-
-            if (input.Status != TableStatus.Occupied && input.Status != TableStatus.Available && input.Status != TableStatus.Cleaning)
-            {
-                throw new UserFriendlyException("Bàn đang có khách sử dụng! Vui lòng kết thúc bữa ăn hoặc thanh toán trước khi thay đổi trạng thái bàn.");
+                throw new BusinessException(TooHungryDomainErrorCodes.TableCannotEditOccupied);
             }
         }
 
-        // Guard 3: Kiểm tra tính hợp lệ của thời gian đặt bàn (không được trong quá khứ & trong khung giờ nhận đặt 08:00 - 22:00, đóng cửa 23:00)
-        if (input.Status == TableStatus.Reserved && input.ReservedTime.HasValue)
-        {
-            var reservedTime = input.ReservedTime.Value;
-            if (reservedTime < DateTime.Now.AddMinutes(-5))
-            {
-                throw new UserFriendlyException("Thời gian đặt bàn không được ở trong quá khứ!");
-            }
-
-            var timeOfDay = reservedTime.TimeOfDay;
-            if (timeOfDay < TimeSpan.FromHours(8) || timeOfDay > TimeSpan.FromHours(22))
-            {
-                throw new UserFriendlyException("Nhà hàng chỉ nhận đặt bàn từ 08:00 đến 22:00 (nhà hàng đóng cửa lúc 23:00)!");
-            }
-        }
-
-        ObjectMapper.Map(input, table);
-        table.Name = cleanName;
-        if (table.Status == TableStatus.Occupied && !table.OccupiedTime.HasValue)
-        {
-            table.OccupiedTime = DateTime.Now;
-        }
-        else if (table.Status != TableStatus.Occupied)
-        {
-            table.OccupiedTime = null;
-        }
+        table.SetName(cleanName);
+        table.SetCapacity(input.Capacity);
+        table.SetDiningArea(input.DiningAreaId);
 
         // Đồng bộ trường Location theo DiningArea được chọn
         if (input.DiningAreaId.HasValue)
         {
             var area = await _diningAreaRepository.FindAsync(input.DiningAreaId.Value);
-            table.Location = area?.Name;
+            table.SetLocation(area?.Name);
         }
         else if (!string.IsNullOrWhiteSpace(input.Location))
         {
             var area = await _diningAreaRepository.FirstOrDefaultAsync(x => x.Name.ToLower() == input.Location.Trim().ToLower());
             if (area != null)
             {
-                table.DiningAreaId = area.Id;
-                table.Location = area.Name;
+                table.SetDiningArea(area.Id, area.Name);
             }
             else
             {
-                table.Location = input.Location.Trim();
+                table.SetLocation(input.Location.Trim());
             }
         }
         else
         {
-            table.Location = null;
+            table.SetLocation(null);
         }
 
         await _tableRepository.UpdateAsync(table, autoSave: true);
@@ -359,14 +329,14 @@ public class TableAppService : TooHungryAppService, ITableAppService
         // Guard 1: Bàn đang sử dụng (có khách ngồi) không được phép xóa
         if (table.Status == TableStatus.Occupied)
         {
-            throw new UserFriendlyException($"Không thể xóa bàn '{table.Name}' vì bàn đang có khách sử dụng!");
+            throw new BusinessException(TooHungryDomainErrorCodes.TableCannotDeleteOccupied).WithData("0", table.Name);
         }
 
         // Guard 2: Không cho phép xóa bàn nếu đang có đơn hàng (Order) liên kết
         var orderCount = await _orderRepository.CountAsync(x => x.TableId == id);
         if (orderCount > 0)
         {
-            throw new UserFriendlyException($"Không thể xóa bàn '{table.Name}' vì đang có {orderCount} đơn hàng liên kết với bàn này!");
+            throw new BusinessException(TooHungryDomainErrorCodes.TableCannotDeleteWithOrders).WithData("0", table.Name).WithData("1", orderCount);
         }
 
         await _tableRepository.DeleteAsync(table);
@@ -389,17 +359,17 @@ public class TableAppService : TooHungryAppService, ITableAppService
         // Atomic Status & Concurrency checks:
         if (table.Status == TableStatus.Disabled && status != TableStatus.Available && status != TableStatus.Disabled)
         {
-            throw new UserFriendlyException("Bàn đang bị vô hiệu hóa! Vui lòng kích hoạt bàn trước khi sử dụng.");
+            throw new BusinessException(TooHungryDomainErrorCodes.TableInactive);
         }
 
         if (table.Status == TableStatus.Cleaning && status == TableStatus.Occupied)
         {
-            throw new UserFriendlyException("Bàn đang được dọn dẹp! Vui lòng hoàn tất dọn dẹp trước khi tiếp đón khách.");
+            throw new BusinessException(TooHungryDomainErrorCodes.TableCleaning);
         }
 
         if (table.Status == TableStatus.Occupied && status == TableStatus.Occupied)
         {
-            throw new UserFriendlyException("Trạng thái bàn đã được cập nhật bởi nhân viên khác (Bàn đang có khách phục vụ)!");
+            throw new BusinessException(TooHungryDomainErrorCodes.TableAlreadyOccupied);
         }
 
         if (table.Status == TableStatus.Occupied && status == TableStatus.Available)
@@ -407,35 +377,33 @@ public class TableAppService : TooHungryAppService, ITableAppService
             var hasActiveOrder = await _orderRepository.AnyAsync(x => x.TableId == id && x.Status != OrderStatus.Completed && x.Status != OrderStatus.Cancelled);
             if (hasActiveOrder)
             {
-                throw new UserFriendlyException("Bàn đang có đơn hàng chưa hoàn tất thanh toán! Vui lòng thanh toán trước khi giải phóng bàn.");
+                throw new BusinessException(TooHungryDomainErrorCodes.TablePendingPayment);
             }
         }
-
-        table.Status = status;
 
         if (status == TableStatus.Occupied)
         {
-            if (!table.OccupiedTime.HasValue)
-            {
-                table.OccupiedTime = DateTime.Now;
-            }
+            table.Occupy(Clock.Now);
+        }
+        else if (status == TableStatus.Available)
+        {
+            table.Release();
+        }
+        else if (status == TableStatus.Cleaning)
+        {
+            table.MarkCleaning();
         }
         else
         {
-            table.OccupiedTime = null;
-        }
-
-        if (status == TableStatus.Available || status == TableStatus.Disabled || status == TableStatus.Cleaning)
-        {
-            table.ReservedCustomerName = null;
-            table.ReservedCustomerPhone = null;
-            table.ReservedTime = null;
-            table.ReservedGuestCount = null;
-            table.ReservedNote = null;
+            table.Release();
+            table.SetStatus(status);
         }
 
         await _tableRepository.UpdateAsync(table, autoSave: true);
-        await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name, table.DiningAreaId, table.OccupiedTime);
+        CurrentUnitOfWork?.OnCompleted(async () =>
+        {
+            await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name, table.DiningAreaId, table.OccupiedTime);
+        });
 
         var dto = ObjectMapper.Map<RestaurantTable, TableDto>(table);
         if (string.IsNullOrWhiteSpace(dto.DiningAreaName))
@@ -470,27 +438,22 @@ public class TableAppService : TooHungryAppService, ITableAppService
         var tables = await _tableRepository.GetListAsync(x => x.DiningAreaId == diningAreaId);
         foreach (var table in tables)
         {
-            table.Status = status;
-            if (status == TableStatus.Occupied)
+            if (status == TableStatus.Available)
             {
-                if (!table.OccupiedTime.HasValue)
-                {
-                    table.OccupiedTime = DateTime.Now;
-                }
+                table.Release();
+            }
+            else if (status == TableStatus.Cleaning)
+            {
+                table.MarkCleaning();
+            }
+            else if (status == TableStatus.Occupied)
+            {
+                table.Occupy(table.OccupiedTime ?? Clock.Now);
             }
             else
             {
-                table.OccupiedTime = null;
-            }
-
-            // Nếu vô hiệu hóa hoặc chuyển về có sẵn thì reset lại thông tin đặt bàn cũ
-            if (status == TableStatus.Disabled || status == TableStatus.Available)
-            {
-                table.ReservedCustomerName = null;
-                table.ReservedCustomerPhone = null;
-                table.ReservedTime = null;
-                table.ReservedGuestCount = null;
-                table.ReservedNote = null;
+                table.Release();
+                table.SetStatus(status);
             }
         }
 
@@ -516,7 +479,7 @@ public class TableAppService : TooHungryAppService, ITableAppService
 
         if (input.SourceTableId == input.TargetTableId)
         {
-            throw new UserFriendlyException("Bàn đích không được trùng với bàn hiện tại!");
+            throw new BusinessException(TooHungryDomainErrorCodes.TableSameSourceAndTarget);
         }
 
         var sourceTable = await _tableRepository.GetAsync(input.SourceTableId);
@@ -524,19 +487,19 @@ public class TableAppService : TooHungryAppService, ITableAppService
 
         if (sourceTable.Status != TableStatus.Occupied)
         {
-            throw new UserFriendlyException($"Bàn nguồn '{sourceTable.Name}' không ở trạng thái đang phục vụ khách!");
+            throw new BusinessException(TooHungryDomainErrorCodes.TableSourceNotOccupied).WithData("0", sourceTable.Name);
         }
 
         if (targetTable.Status != TableStatus.Available)
         {
-            throw new UserFriendlyException($"Bàn đích '{targetTable.Name}' không ở trạng thái trống (Đã có khách hoặc đang dọn dẹp)!");
+            throw new BusinessException(TooHungryDomainErrorCodes.TableTargetNotEmpty).WithData("0", targetTable.Name);
         }
 
         // 1. Chuyển active order (nếu có) sang bàn đích
         var activeOrder = await _orderRepository.FirstOrDefaultAsync(x => x.TableId == sourceTable.Id && x.Status != OrderStatus.Completed && x.Status != OrderStatus.Cancelled);
         if (activeOrder != null)
         {
-            activeOrder.TableId = targetTable.Id;
+            activeOrder.SetTable(targetTable.Id);
             if (!string.IsNullOrWhiteSpace(input.Note))
             {
                 activeOrder.Note = string.IsNullOrWhiteSpace(activeOrder.Note)
@@ -547,30 +510,33 @@ public class TableAppService : TooHungryAppService, ITableAppService
         }
 
         // 2. Cập nhật Bàn đích: Occupied, kế thừa OccupiedTime
-        targetTable.Status = TableStatus.Occupied;
-        targetTable.OccupiedTime = sourceTable.OccupiedTime ?? DateTime.Now;
+        targetTable.Occupy(sourceTable.OccupiedTime ?? Clock.Now);
         await _tableRepository.UpdateAsync(targetTable, autoSave: true);
 
         // 3. Phân nhánh Bàn nguồn:
         // Nếu có activeOrder/dùng món: Chuyển sang Cleaning; nếu không có order: Chuyển thẳng về Available
         var hasActiveOrder = activeOrder != null;
-        sourceTable.Status = hasActiveOrder ? TableStatus.Cleaning : TableStatus.Available;
-        sourceTable.OccupiedTime = null;
-        sourceTable.ReservedCustomerName = null;
-        sourceTable.ReservedCustomerPhone = null;
-        sourceTable.ReservedTime = null;
-        sourceTable.ReservedGuestCount = null;
-        sourceTable.ReservedNote = null;
+        if (hasActiveOrder)
+        {
+            sourceTable.MarkCleaning();
+        }
+        else
+        {
+            sourceTable.Release();
+        }
         await _tableRepository.UpdateAsync(sourceTable, autoSave: true);
 
-        // 4. Phát sự kiện SignalR cho cả 2 bàn
-        await _realtimeNotifier.NotifyTableStatusChangedAsync(sourceTable.Id, sourceTable.Status, sourceTable.Name, sourceTable.DiningAreaId, sourceTable.OccupiedTime);
-        await _realtimeNotifier.NotifyTableStatusChangedAsync(targetTable.Id, targetTable.Status, targetTable.Name, targetTable.DiningAreaId, targetTable.OccupiedTime);
-        if (activeOrder != null)
+        // 4. Phát sự kiện SignalR cho cả 2 bàn sau khi commit UoW
+        CurrentUnitOfWork?.OnCompleted(async () =>
         {
-            await _realtimeNotifier.NotifyTableOrderUpdatedAsync(sourceTable.Id, false, null);
-            await _realtimeNotifier.NotifyTableOrderUpdatedAsync(targetTable.Id, true, activeOrder.Id);
-        }
+            await _realtimeNotifier.NotifyTableStatusChangedAsync(sourceTable.Id, sourceTable.Status, sourceTable.Name, sourceTable.DiningAreaId, sourceTable.OccupiedTime);
+            await _realtimeNotifier.NotifyTableStatusChangedAsync(targetTable.Id, targetTable.Status, targetTable.Name, targetTable.DiningAreaId, targetTable.OccupiedTime);
+            if (activeOrder != null)
+            {
+                await _realtimeNotifier.NotifyTableOrderUpdatedAsync(sourceTable.Id, false, null);
+                await _realtimeNotifier.NotifyTableOrderUpdatedAsync(targetTable.Id, true, activeOrder.Id);
+            }
+        });
 
         var targetDto = ObjectMapper.Map<RestaurantTable, TableDto>(targetTable);
         if (string.IsNullOrWhiteSpace(targetDto.DiningAreaName))
@@ -600,7 +566,7 @@ public class TableAppService : TooHungryAppService, ITableAppService
 
         if (input.PrimaryTableId == input.SecondaryTableId)
         {
-            throw new UserFriendlyException("Bàn cần gộp không được trùng với bàn chính!");
+            throw new BusinessException(TooHungryDomainErrorCodes.TableSameSourceAndTarget);
         }
 
         var primaryTable = await _tableRepository.GetAsync(input.PrimaryTableId);
@@ -608,22 +574,26 @@ public class TableAppService : TooHungryAppService, ITableAppService
 
         if (primaryTable.Status != TableStatus.Occupied || secondaryTable.Status != TableStatus.Occupied)
         {
-            throw new UserFriendlyException("Cả hai bàn cần gộp đều phải ở trạng thái đang phục vụ khách (Occupied)!");
+            throw new BusinessException(TooHungryDomainErrorCodes.TableBothMustBeOccupied);
         }
 
         // Nạp kèm Items của order
-        var primaryOrder = (await _orderRepository.WithDetailsAsync(x => x.Items))
-            .FirstOrDefault(x => x.TableId == primaryTable.Id && x.Status != OrderStatus.Completed && x.Status != OrderStatus.Cancelled);
+        var primaryQuery = await _orderRepository.WithDetailsAsync(x => x.Items);
+        var primaryOrder = await AsyncExecuter.FirstOrDefaultAsync(
+            primaryQuery,
+            x => x.TableId == primaryTable.Id && x.Status != OrderStatus.Completed && x.Status != OrderStatus.Cancelled);
 
-        var secondaryOrder = (await _orderRepository.WithDetailsAsync(x => x.Items))
-            .FirstOrDefault(x => x.TableId == secondaryTable.Id && x.Status != OrderStatus.Completed && x.Status != OrderStatus.Cancelled);
+        var secondaryQuery = await _orderRepository.WithDetailsAsync(x => x.Items);
+        var secondaryOrder = await AsyncExecuter.FirstOrDefaultAsync(
+            secondaryQuery,
+            x => x.TableId == secondaryTable.Id && x.Status != OrderStatus.Completed && x.Status != OrderStatus.Cancelled);
 
         if (secondaryOrder != null)
         {
             if (primaryOrder == null)
             {
                 // Bàn chính chưa có đơn, chuyển thẳng đơn bàn phụ sang bàn chính
-                secondaryOrder.TableId = primaryTable.Id;
+                secondaryOrder.SetTable(primaryTable.Id);
                 secondaryOrder.Note = string.IsNullOrWhiteSpace(secondaryOrder.Note)
                     ? $"[Gộp từ {secondaryTable.Name}]"
                     : $"{secondaryOrder.Note} | [Gộp từ {secondaryTable.Name}]";
@@ -632,59 +602,91 @@ public class TableAppService : TooHungryAppService, ITableAppService
             }
             else
             {
-                // Cả hai đều có đơn: ghép items từ secondary sang primary
+                // Cả hai đều có đơn: lấy thông tin giá niêm yết từ CSDL
+                var allDishIds = primaryOrder.Items.Select(x => x.DishId)
+                    .Concat(secondaryOrder.Items.Select(x => x.DishId))
+                    .Distinct()
+                    .ToList();
+                var dishes = await _dishRepository.GetListAsync(x => allDishIds.Contains(x.Id));
+                var dishMap = dishes.ToDictionary(x => x.Id);
+
+                // Ghép items từ secondary sang primary
                 foreach (var item in secondaryOrder.Items.ToList())
                 {
+                    dishMap.TryGetValue(item.DishId, out var dish);
+                    var price = dish?.Price ?? item.UnitPrice;
+
                     var existingItem = primaryOrder.Items.FirstOrDefault(x => x.DishId == item.DishId);
                     if (existingItem != null)
                     {
                         existingItem.Quantity += item.Quantity;
-                        existingItem.TotalPrice = existingItem.Quantity * existingItem.UnitPrice;
+                        existingItem.UnitPrice = price;
+                        existingItem.TotalPrice = existingItem.Quantity * price;
+
+                        // Ghép nối ghi chú chế biến: "{primary.Note} | [Gộp từ {secondary.Name}: {secondary.Note}]"
+                        if (!string.IsNullOrWhiteSpace(item.Note))
+                        {
+                            existingItem.Note = string.IsNullOrWhiteSpace(existingItem.Note)
+                                ? $"[Gộp từ {secondaryTable.Name}: {item.Note}]"
+                                : $"{existingItem.Note} | [Gộp từ {secondaryTable.Name}: {item.Note}]";
+                        }
                     }
                     else
                     {
+                        var mergedNote = string.IsNullOrWhiteSpace(item.Note)
+                            ? $"[Gộp từ {secondaryTable.Name}]"
+                            : $"[Gộp từ {secondaryTable.Name}: {item.Note}]";
+
                         primaryOrder.Items.Add(new OrderItem(GuidGenerator.Create())
                         {
                             OrderId = primaryOrder.Id,
                             DishId = item.DishId,
                             Quantity = item.Quantity,
-                            UnitPrice = item.UnitPrice,
-                            TotalPrice = item.TotalPrice,
-                            Note = item.Note
+                            UnitPrice = price,
+                            TotalPrice = item.Quantity * price,
+                            Note = mergedNote
                         });
                     }
                 }
-                primaryOrder.TotalAmount = primaryOrder.Items.Sum(x => x.TotalPrice);
+
+                // Cập nhật lại giá cho các món ban đầu của primaryOrder theo giá niêm yết
+                foreach (var pItem in primaryOrder.Items)
+                {
+                    if (dishMap.TryGetValue(pItem.DishId, out var d))
+                    {
+                        pItem.UnitPrice = d.Price;
+                        pItem.TotalPrice = pItem.Quantity * d.Price;
+                    }
+                }
+
+                primaryOrder.RecalculateTotalAmount();
                 primaryOrder.Note = string.IsNullOrWhiteSpace(primaryOrder.Note)
                     ? $"[Gộp từ {secondaryTable.Name} (#{secondaryOrder.OrderNumber})]"
                     : $"{primaryOrder.Note} | [Gộp từ {secondaryTable.Name} (#{secondaryOrder.OrderNumber})]";
                 await _orderRepository.UpdateAsync(primaryOrder, autoSave: true);
 
-                // Đóng đơn hàng bàn phụ
-                secondaryOrder.Status = OrderStatus.Cancelled;
+                // Đóng đơn hàng bàn phụ an toàn bằng Cancel
+                secondaryOrder.Cancel();
                 secondaryOrder.Note = $"[Đã gộp vào {primaryTable.Name} (#{primaryOrder.OrderNumber})]";
                 await _orderRepository.UpdateAsync(secondaryOrder, autoSave: true);
             }
         }
 
         // Giải phóng Bàn phụ về Cleaning
-        secondaryTable.Status = TableStatus.Cleaning;
-        secondaryTable.OccupiedTime = null;
-        secondaryTable.ReservedCustomerName = null;
-        secondaryTable.ReservedCustomerPhone = null;
-        secondaryTable.ReservedTime = null;
-        secondaryTable.ReservedGuestCount = null;
-        secondaryTable.ReservedNote = null;
+        secondaryTable.MarkCleaning();
         await _tableRepository.UpdateAsync(secondaryTable, autoSave: true);
 
-        // Phát sự kiện SignalR
-        await _realtimeNotifier.NotifyTableStatusChangedAsync(secondaryTable.Id, secondaryTable.Status, secondaryTable.Name, secondaryTable.DiningAreaId, null);
-        await _realtimeNotifier.NotifyTableOrderUpdatedAsync(secondaryTable.Id, false, null);
-
-        if (primaryOrder != null)
+        // Phát sự kiện SignalR sau khi commit UoW
+        CurrentUnitOfWork?.OnCompleted(async () =>
         {
-            await _realtimeNotifier.NotifyTableOrderUpdatedAsync(primaryTable.Id, true, primaryOrder.Id);
-        }
+            await _realtimeNotifier.NotifyTableStatusChangedAsync(secondaryTable.Id, secondaryTable.Status, secondaryTable.Name, secondaryTable.DiningAreaId, null);
+            await _realtimeNotifier.NotifyTableOrderUpdatedAsync(secondaryTable.Id, false, null);
+
+            if (primaryOrder != null)
+            {
+                await _realtimeNotifier.NotifyTableOrderUpdatedAsync(primaryTable.Id, true, primaryOrder.Id);
+            }
+        });
 
         var primaryDto = ObjectMapper.Map<RestaurantTable, TableDto>(primaryTable);
         if (string.IsNullOrWhiteSpace(primaryDto.DiningAreaName))

@@ -134,7 +134,6 @@ public class TooHungryDbContext :
             b.Property(x => x.ImageUrl).HasMaxLength(1024);
             b.Property(x => x.DeletionReason).HasMaxLength(256);
             b.HasIndex(x => x.Name);
-            b.Navigation(x => x.DishCategory).AutoInclude();
         });
 
         // DailyMenu (1 - N with DailyMenuItem)
@@ -155,7 +154,6 @@ public class TooHungryDbContext :
             b.ConfigureByConvention();
             b.Property(x => x.Note).HasMaxLength(256);
             b.HasOne(x => x.Dish).WithMany(x => x.DailyMenuItems).HasForeignKey(x => x.DishId).OnDelete(DeleteBehavior.Restrict);
-            b.Navigation(x => x.Dish).AutoInclude();
         });
 
         // Unit
@@ -164,9 +162,9 @@ public class TooHungryDbContext :
             b.ToTable(TooHungryConsts.DbTablePrefix + "Units", TooHungryConsts.DbSchema);
             b.ConfigureByConvention();
             b.Property(x => x.Name).IsRequired().HasMaxLength(64);
-            b.HasIndex(x => x.Name).IsUnique();
+            b.HasIndex(x => x.Name).IsUnique().HasFilter("[IsDeleted] = 0");
             b.Property(x => x.Abbreviation).IsRequired().HasMaxLength(32);
-            b.HasIndex(x => x.Abbreviation).IsUnique();
+            b.HasIndex(x => x.Abbreviation).IsUnique().HasFilter("[IsDeleted] = 0");
         });
 
         // DiningArea
@@ -186,7 +184,7 @@ public class TooHungryDbContext :
             b.ToTable(TooHungryConsts.DbTablePrefix + "Tables", TooHungryConsts.DbSchema);
             b.ConfigureByConvention();
             b.Property(x => x.Name).IsRequired().HasMaxLength(128);
-            b.HasIndex(x => x.Name).IsUnique();
+            b.HasIndex(x => x.Name).IsUnique().HasFilter("[IsDeleted] = 0");
             b.Property(x => x.Location).HasMaxLength(128);
             b.Property(x => x.ReservedCustomerName).HasMaxLength(128);
             b.Property(x => x.ReservedCustomerPhone).HasMaxLength(32);
@@ -195,7 +193,6 @@ public class TooHungryDbContext :
             b.HasOne(x => x.DiningArea).WithMany(x => x.Tables).HasForeignKey(x => x.DiningAreaId).OnDelete(DeleteBehavior.SetNull);
             b.HasMany(x => x.Orders).WithOne(x => x.Table).HasForeignKey(x => x.TableId).OnDelete(DeleteBehavior.SetNull);
             b.HasMany(x => x.Reservations).WithOne(x => x.Table).HasForeignKey(x => x.TableId).OnDelete(DeleteBehavior.Cascade);
-            b.Navigation(x => x.DiningArea).AutoInclude();
         });
 
         // TableReservation
@@ -225,10 +222,19 @@ public class TooHungryDbContext :
             b.HasOne(x => x.Table).WithMany(x => x.Orders).HasForeignKey(x => x.TableId).OnDelete(DeleteBehavior.SetNull);
             b.HasMany(x => x.Items).WithOne(x => x.Order).HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.Cascade);
             b.Navigation(x => x.Items).AutoInclude();
-            b.Navigation(x => x.Table).AutoInclude();
             b.HasIndex(x => x.TableId)
                 .IsUnique()
-                .HasFilter("[TableId] IS NOT NULL AND [Status] = 0 AND [IsDeleted] = 0");
+                .HasFilter("[TableId] IS NOT NULL AND [Status] <> 2 AND [Status] <> 3 AND [IsDeleted] = 0");
+
+            // Composite index phục vụ tìm kiếm, báo cáo và lọc đơn hàng theo trạng thái và thời gian
+            b.HasIndex(x => new { x.Status, x.OrderDate })
+             .HasDatabaseName("IX_AppOrders_Status_OrderDate");
+
+            // Unique index cho mã đơn hàng OrderNumber có lọc soft-delete
+            b.HasIndex(x => x.OrderNumber)
+             .IsUnique()
+             .HasFilter("[IsDeleted] = 0")
+             .HasDatabaseName("IX_AppOrders_OrderNumber");
         });
 
         // OrderItem (M - 1 Order, 1 - 1 / M - 1 Dish)
@@ -240,7 +246,6 @@ public class TooHungryDbContext :
             b.Property(x => x.TotalPrice).HasPrecision(18, 2);
             b.Property(x => x.Note).HasMaxLength(256);
             b.HasOne(x => x.Dish).WithMany().HasForeignKey(x => x.DishId).OnDelete(DeleteBehavior.Restrict);
-            b.Navigation(x => x.Dish).AutoInclude();
         });
 
         // DemandForecast
@@ -311,7 +316,10 @@ public class TooHungryDbContext :
             b.HasOne(x => x.Dish).WithMany().HasForeignKey(x => x.DishId).OnDelete(DeleteBehavior.Restrict);
             b.HasMany(x => x.Ingredients).WithOne(x => x.Recipe).HasForeignKey(x => x.RecipeId).OnDelete(DeleteBehavior.Cascade);
             b.Navigation(x => x.Ingredients).AutoInclude();
-            b.HasIndex(x => new { x.DishId, x.IsActive });
+            b.HasIndex(x => new { x.DishId, x.IsActive })
+             .IsUnique()
+             .HasFilter("[DishId] IS NOT NULL AND [IsActive] = 1 AND [IsDeleted] = 0")
+             .HasDatabaseName("IX_AppRecipes_DishId_IsActive_Unique_Active");
         });
 
         // RecipeIngredient
@@ -339,7 +347,6 @@ public class TooHungryDbContext :
             b.Property(x => x.UnitCost).HasPrecision(18, 2);
             b.Property(x => x.DeactivationReason).HasMaxLength(500);
             b.HasOne(x => x.Ingredient).WithMany().HasForeignKey(x => x.IngredientId).OnDelete(DeleteBehavior.Restrict);
-            b.Navigation(x => x.Ingredient).AutoInclude();
             b.HasIndex(x => new { x.IngredientId, x.IsActive, x.RemainingQuantity, x.ExpiryDate });
         });
 
@@ -354,7 +361,6 @@ public class TooHungryDbContext :
             b.Property(x => x.ReferenceId).HasMaxLength(128);
             b.HasOne(x => x.Ingredient).WithMany().HasForeignKey(x => x.IngredientId).OnDelete(DeleteBehavior.Restrict);
             b.HasOne(x => x.Batch).WithMany().HasForeignKey(x => x.BatchId).OnDelete(DeleteBehavior.SetNull);
-            b.Navigation(x => x.Ingredient).AutoInclude();
             b.HasIndex(x => new { x.IngredientId, x.CreationTime });
         });
     }

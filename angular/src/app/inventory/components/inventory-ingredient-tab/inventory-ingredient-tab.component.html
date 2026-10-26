@@ -1,0 +1,352 @@
+<div class="ingredient-tab-container">
+  <!-- Toolbar: Tìm kiếm & Bộ lọc Bento -->
+  <div class="bento-filter-card">
+    <div class="row g-2 align-items-center">
+      <!-- Search Input -->
+      <div class="col-12 col-md-4">
+        <div class="modern-search-box">
+          <i class="fa fa-search search-icon"></i>
+          <input
+            type="text"
+            class="form-control"
+            [ngModel]="searchQuery"
+            (ngModelChange)="onSearchChange($event)"
+            [placeholder]="'::SearchIngredientPlaceholder' | abpLocalization"
+          />
+          @if (searchQuery) {
+            <button
+              type="button"
+              class="btn-clear-search"
+              (click)="onSearchChange('')"
+            >
+              <i class="fa fa-times-circle"></i>
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Storage Filter -->
+      <div class="col-6 col-md-2">
+        <app-custom-select
+          class="w-100 d-block"
+          [options]="storageFilterOptions"
+          [ngModel]="storageFilter"
+          (selectionChange)="onStorageChange($event)"
+          leadIcon="fa-layer-group"
+          minWidth="100%"
+        ></app-custom-select>
+      </div>
+
+      <!-- Stock Level Filter -->
+      <div class="col-6 col-md-2">
+        <app-custom-select
+          class="w-100 d-block"
+          [options]="stockFilterOptions"
+          [ngModel]="stockFilter"
+          (selectionChange)="onStockLevelChange($event)"
+          leadIcon="fa-shield-halved"
+          minWidth="100%"
+        ></app-custom-select>
+      </div>
+
+      <!-- Active / Deactivated Status Filter -->
+      <div class="col-6 col-md-2">
+        <app-custom-select
+          class="w-100 d-block"
+          [options]="statusFilterOptions"
+          [ngModel]="statusFilter"
+          (selectionChange)="onStatusChange($event)"
+          leadIcon="fa-circle-dot"
+          minWidth="100%"
+        ></app-custom-select>
+      </div>
+
+      <!-- Actions & Reset -->
+      <div class="col-6 col-md-2 d-flex align-items-center justify-content-end gap-2">
+        @if (hasActiveFilters) {
+          <button
+            type="button"
+            class="btn btn-outline-secondary btn-reset-filter"
+            (click)="resetFilters()"
+            [title]="'::ResetFilter' | abpLocalization"
+          >
+            <i class="fa fa-rotate-left"></i>
+          </button>
+        }
+        <button
+          type="button"
+          class="btn btn-orange btn-add-ingredient flex-grow-1"
+          (click)="openCreate.emit()"
+        >
+          <i class="fa fa-plus me-1"></i>
+          <span>{{ '::AddIngredientAction' | abpLocalization }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bento Table: Danh sách Nguyên liệu -->
+  <div class="bento-table-card">
+    <div class="table-responsive">
+      <table class="table align-middle table-hover mb-0">
+        <thead class="bento-thead">
+          <tr>
+            <th class="ps-4" style="width: 50px;">#</th>
+            <th>{{ '::Ingredient' | abpLocalization }}</th>
+            <th>{{ '::Unit' | abpLocalization }}</th>
+            <th>{{ '::StorageType' | abpLocalization }}</th>
+            <th class="text-end">{{ '::StockQuantity' | abpLocalization }}</th>
+            <th class="text-end">{{ '::MinStockHeader' | abpLocalization }}</th>
+            <th style="min-width: 140px;">{{ '::StockProgress' | abpLocalization }}</th>
+            <th>{{ '::Status' | abpLocalization }}</th>
+            <th class="pe-4 text-center" style="width: 160px;">{{ '::Actions' | abpLocalization }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (isLoading) {
+            <tr>
+              <td colspan="9" class="text-center py-5">
+                <div class="spinner-border text-orange" role="status"></div>
+              </td>
+            </tr>
+          } @else if (filteredIngredients.length === 0) {
+            <tr>
+              <td colspan="9" class="text-center py-5 text-muted">
+                <div class="empty-state">
+                  <i class="fa fa-box-open fa-2x mb-2 text-slate-300"></i>
+                  <p class="m-0">{{ '::NoIngredientsFound' | abpLocalization }}</p>
+                </div>
+              </td>
+            </tr>
+          } @else {
+            @for (item of pagedIngredients; track item.id; let idx = $index) {
+              <tr [class.highlighted-row]="highlightedIngredientId === item.id">
+                <td class="ps-4 text-muted font-monospace small">
+                  {{ (currentPage - 1) * pageSize + idx + 1 }}
+                </td>
+                <td>
+                  <div class="ingredient-name-cell">
+                    <span class="fw-bold text-dark d-block">{{ item.name }}</span>
+                    @if (item.code) {
+                      <span class="badge-code font-monospace">{{ item.code }}</span>
+                    }
+                  </div>
+                </td>
+                <td>
+                  <span class="unit-badge">{{ item.baseUnit || item.unitName }}</span>
+                </td>
+                <td>
+                  @if (item.storageType === StorageTypeEnum.FRESH) {
+                    <span class="storage-tag storage-fresh">
+                      <i class="fa fa-leaf me-1"></i>{{ '::StorageType_FRESH' | abpLocalization }}
+                    </span>
+                  } @else if (item.storageType === StorageTypeEnum.SHORT_TERM) {
+                    <span class="storage-tag storage-chilled">
+                      <i class="fa fa-snowflake me-1"></i>{{ '::StorageType_SHORT_TERM' | abpLocalization }}
+                    </span>
+                  } @else {
+                    <span class="storage-tag storage-frozen">
+                      <i class="fa fa-box-archive me-1"></i>{{ '::StorageType_LONG_TERM' | abpLocalization }}
+                    </span>
+                  }
+                </td>
+                <td
+                  class="text-end font-monospace fw-bold"
+                  [class.text-danger]="(item.currentStock || 0) <= 0"
+                  [class.text-amber-600]="(item.currentStock || 0) > 0 && (item.currentStock || 0) < (item.minStock || 0)"
+                >
+                  {{ item.currentStock || 0 }} {{ item.baseUnit || item.unitName }}
+                </td>
+                <td class="text-end font-monospace text-muted">
+                  {{ item.minStock || 0 }} {{ item.baseUnit || item.unitName }}
+                </td>
+                <td>
+                  <!-- Visual Stock Progress Bar -->
+                  <div class="stock-progress-wrap">
+                    <div class="progress-track">
+                      <div
+                        class="progress-fill"
+                        [ngClass]="getStockProgressClass(item)"
+                        [style.width.%]="Math.min(100, getStockPercentage(item))"
+                      ></div>
+                    </div>
+                    <span class="progress-label font-monospace">
+                      {{ getStockPercentage(item) }}%
+                    </span>
+                  </div>
+                </td>
+                <td>
+                  @if (item.isActive === false) {
+                    <span class="status-pill status-disabled">
+                      <i class="fa fa-pause me-1"></i>{{ '::Disabled' | abpLocalization }}
+                    </span>
+                  } @else if ((item.currentStock || 0) <= 0) {
+                    <span class="status-pill status-out">
+                      <i class="fa fa-circle-xmark me-1"></i>{{ '::OutOfStock' | abpLocalization }}
+                    </span>
+                  } @else if ((item.currentStock || 0) < (item.minStock || 0)) {
+                    <span class="status-pill status-low">
+                      <i class="fa fa-triangle-exclamation me-1"></i>{{ '::LowStock' | abpLocalization }}
+                    </span>
+                  } @else {
+                    <span class="status-pill status-safe">
+                      <i class="fa fa-circle-check me-1"></i>{{ '::InStock' | abpLocalization }}
+                    </span>
+                  }
+                </td>
+                <td class="pe-4 text-center">
+                  <div class="action-buttons-group">
+                    @if (item.isActive === false) {
+                      <button
+                        type="button"
+                        class="btn-row-action btn-reactivate"
+                        (click)="reactivateIngredient.emit(item)"
+                        [title]="'::ActionReactivate' | abpLocalization"
+                      >
+                        <i class="fa fa-rotate-right"></i>
+                      </button>
+                      <button
+                        type="button"
+                        class="btn-row-action btn-edit"
+                        (click)="openEdit.emit(item)"
+                        [title]="'::Edit' | abpLocalization"
+                      >
+                        <i class="fa fa-pen"></i>
+                      </button>
+                    } @else {
+                      <!-- Nhập kho nhanh -->
+                      <button
+                        *abpPermission="'TooHungry.Inventories.Batch'"
+                        type="button"
+                        class="btn-row-action btn-inbound"
+                        (click)="quickInbound.emit(item)"
+                        [title]="'::InboundBatchAction' | abpLocalization"
+                      >
+                        <i class="fa fa-truck-ramp-box"></i>
+                      </button>
+
+                      <!-- Xem lô hàng -->
+                      <button
+                        type="button"
+                        class="btn-row-action btn-batches"
+                        (click)="viewBatches.emit(item)"
+                        [title]="'::ViewBatches' | abpLocalization"
+                      >
+                        <i class="fa fa-boxes-stacked"></i>
+                      </button>
+
+                      <!-- Kiểm kê điều chỉnh -->
+                      <button
+                        *abpPermission="'TooHungry.Inventories.Adjust'"
+                        type="button"
+                        class="btn-row-action btn-adjust"
+                        (click)="openAdjustment.emit(item)"
+                        [title]="'::AdjustStock' | abpLocalization"
+                      >
+                        <i class="fa fa-sliders"></i>
+                      </button>
+
+                      <!-- Sửa -->
+                      <button
+                        type="button"
+                        class="btn-row-action btn-edit"
+                        (click)="openEdit.emit(item)"
+                        [title]="'::Edit' | abpLocalization"
+                      >
+                        <i class="fa fa-pen"></i>
+                      </button>
+
+                      <!-- Tạm ngưng -->
+                      <button
+                        type="button"
+                        class="btn-row-action btn-deactivate"
+                        (click)="deactivateIngredient.emit(item)"
+                        [title]="'::ActionDeactivate' | abpLocalization"
+                      >
+                        <i class="fa fa-pause"></i>
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Phân trang chuẩn Bento -->
+    @if (!isLoading && filteredIngredients.length > 0) {
+      <div class="bento-pagination-bar">
+        <div class="pagination-info">
+          <span>
+            {{ '::ShowingRecords' | abpLocalization }}
+            <strong>{{ fromRecord }} - {{ toRecord }}</strong>
+            {{ '::OfTotal' | abpLocalization }}
+            <strong>{{ filteredIngredients.length }}</strong>
+            {{ '::IngredientCount' | abpLocalization }}
+          </span>
+
+          <div class="page-size-selector">
+            <span class="text-muted small">{{ '::Display' | abpLocalization }}:</span>
+            <app-custom-select
+              [options]="pageSizeOptions"
+              [ngModel]="pageSize"
+              (selectionChange)="onPageSizeChange($event)"
+              size="sm"
+              placement="top"
+              minWidth="140px"
+            ></app-custom-select>
+          </div>
+        </div>
+
+        <div class="pagination-nav-group">
+          <button
+            type="button"
+            class="btn-page-nav"
+            [disabled]="currentPage === 1"
+            (click)="onPageChange(1)"
+            [title]="'::FirstPage' | abpLocalization"
+          >
+            <i class="fa fa-angle-double-left"></i>
+          </button>
+
+          <button
+            type="button"
+            class="btn-page-nav btn-text-nav"
+            [disabled]="currentPage === 1"
+            (click)="onPageChange(currentPage - 1)"
+          >
+            <i class="fa fa-angle-left me-1"></i>
+            <span>{{ '::PreviousPage' | abpLocalization }}</span>
+          </button>
+
+          <span class="page-current-indicator">
+            {{ '::Page' | abpLocalization }}
+            <strong>{{ currentPage }}</strong> / {{ totalPages }}
+          </span>
+
+          <button
+            type="button"
+            class="btn-page-nav btn-text-nav"
+            [disabled]="currentPage === totalPages"
+            (click)="onPageChange(currentPage + 1)"
+          >
+            <span>{{ '::NextPage' | abpLocalization }}</span>
+            <i class="fa fa-angle-right ms-1"></i>
+          </button>
+
+          <button
+            type="button"
+            class="btn-page-nav"
+            [disabled]="currentPage === totalPages"
+            (click)="onPageChange(totalPages)"
+            [title]="'::LastPage' | abpLocalization"
+          >
+            <i class="fa fa-angle-double-right"></i>
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+</div>

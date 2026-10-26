@@ -40,6 +40,17 @@ export interface CartItem {
   note?: string;
 }
 
+export interface ParsedItemNote {
+  isMerged: boolean;
+  sourceTable?: string;
+  text: string;
+}
+
+export interface ParsedOrderNote {
+  regularNotes: string[];
+  mergedSources: { table: string; orderCode?: string; raw: string }[];
+}
+
 @Component({
   selector: 'app-waiter-order',
   standalone: true,
@@ -85,6 +96,7 @@ export class WaiterOrderComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Cart & Order State
   readonly cartItems = signal<CartItem[]>([]);
+  readonly activeOrder = signal<OrderDto | null>(null);
   activeOrderId: string | null = null;
   orderNote: string = '';
   initialCartSnapshot: string = '[]';
@@ -138,6 +150,8 @@ export class WaiterOrderComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly totalCartAmount = computed(() =>
     this.cartItems().reduce((sum, item) => sum + item.quantity * item.unitPrice, 0)
   );
+
+  readonly dishTypesCount = computed(() => this.cartItems().length);
 
   // Unsaved changes check
   readonly hasUnsavedChanges = computed(() => {
@@ -225,6 +239,7 @@ export class WaiterOrderComponent implements OnInit, AfterViewInit, OnDestroy {
       next: activeOrder => {
         if (activeOrder && activeOrder.id) {
           this.activeOrderId = activeOrder.id;
+          this.activeOrder.set(activeOrder);
           this.orderNote = activeOrder.note || '';
 
           if (activeOrder.items && activeOrder.items.length > 0) {
@@ -244,6 +259,7 @@ export class WaiterOrderComponent implements OnInit, AfterViewInit, OnDestroy {
           }
         } else {
           this.activeOrderId = null;
+          this.activeOrder.set(null);
           this.cartItems.set([]);
           this.takeSnapshot();
         }
@@ -251,6 +267,7 @@ export class WaiterOrderComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       error: () => {
         this.activeOrderId = null;
+        this.activeOrder.set(null);
         this.cartItems.set([]);
         this.takeSnapshot();
       },
@@ -420,6 +437,60 @@ export class WaiterOrderComponent implements OnInit, AfterViewInit, OnDestroy {
     return found?.imageUrl || null;
   }
 
+  // --- ITEM NOTE PARSING & TAGGING ---
+
+  parseItemNotes(note?: string | null): ParsedItemNote[] {
+    if (!note || !note.trim()) return [];
+    const parts = note.split(/\s*\|\s*/).map(p => p.trim()).filter(Boolean);
+    return parts.map(part => {
+      const mergedMatch = part.match(/^\[Gộp từ\s+([^:\]]+):\s*(.*)\]$/i);
+      if (mergedMatch) {
+        return {
+          isMerged: true,
+          sourceTable: mergedMatch[1].trim(),
+          text: mergedMatch[2].trim(),
+        };
+      }
+      const bracketMatch = part.match(/^\[(.*)\]$/);
+      return {
+        isMerged: false,
+        text: bracketMatch ? bracketMatch[1].trim() : part,
+      };
+    });
+  }
+
+  serializeItemNotes(notes: ParsedItemNote[]): string {
+    return notes
+      .map(n => (n.isMerged && n.sourceTable ? `[Gộp từ ${n.sourceTable}: ${n.text}]` : n.text))
+      .join(' | ');
+  }
+
+  removeItemNoteTag(item: CartItem, index: number) {
+    const notes = this.parseItemNotes(item.note);
+    if (index >= 0 && index < notes.length) {
+      notes.splice(index, 1);
+      const updatedNote = this.serializeItemNotes(notes);
+      this.cartItems.update(list =>
+        list.map(x => (x.dishId === item.dishId ? { ...x, note: updatedNote } : x))
+      );
+      this.cdr.markForCheck();
+    }
+  }
+
+  addItemNoteTag(item: CartItem, noteText: string) {
+    const trimmed = noteText.trim();
+    if (!trimmed) return;
+    const notes = this.parseItemNotes(item.note);
+    if (!notes.some(n => !n.isMerged && n.text.toLowerCase() === trimmed.toLowerCase())) {
+      notes.push({ isMerged: false, text: trimmed });
+      const updatedNote = this.serializeItemNotes(notes);
+      this.cartItems.update(list =>
+        list.map(x => (x.dishId === item.dishId ? { ...x, note: updatedNote } : x))
+      );
+      this.cdr.markForCheck();
+    }
+  }
+
   // Cập nhật ghi chú trực tiếp trong Order Drawer
   updateItemNote(item: CartItem, event: Event) {
     const input = event.target as HTMLInputElement;
@@ -429,12 +500,88 @@ export class WaiterOrderComponent implements OnInit, AfterViewInit, OnDestroy {
     );
   }
 
-  // Xóa nhanh ghi chú của món
+  // Xóa toàn bộ ghi chú của món
   clearItemNote(item: CartItem) {
     this.cartItems.update(list =>
       list.map(x => (x.dishId === item.dishId ? { ...x, note: '' } : x))
     );
     this.cdr.markForCheck();
+  }
+
+  // --- GENERAL ORDER NOTE (MERGE SOURCE PRESERVATION) ---
+
+  parseOrderNote(noteStr?: string): ParsedOrderNote {
+    if (!noteStr || !noteStr.trim()) return { regularNotes: [], mergedSources: [] };
+    const parts = noteStr.split(/\s*\|\s*/).map(p => p.trim()).filter(Boolean);
+    const regularNotes: string[] = [];
+    const mergedSources: { table: string; orderCode?: string; raw: string }[] = [];
+
+    for (const part of parts) {
+      const sourceMatch = part.match(/^\[Gộp từ\s+([^()\]]+)(?:\s*\(([^)]+)\))?\]$/i);
+      if (sourceMatch) {
+        mergedSources.push({
+          table: sourceMatch[1].trim(),
+          orderCode: sourceMatch[2]?.trim(),
+          raw: part,
+        });
+      } else {
+        regularNotes.push(part);
+      }
+    }
+
+    return { regularNotes, mergedSources };
+  }
+
+  get editableOrderNote(): string {
+    const parsed = this.parseOrderNote(this.orderNote);
+    return parsed.regularNotes.join(' | ');
+  }
+
+  updateEditableOrderNote(newText: string) {
+    const parsed = this.parseOrderNote(this.orderNote);
+    const trimmedNew = newText.trim();
+    const mergedPart = parsed.mergedSources
+      .map(s => s.raw)
+      .join(' | ');
+
+    if (trimmedNew && mergedPart) {
+      this.orderNote = `${trimmedNew} | ${mergedPart}`;
+    } else if (trimmedNew) {
+      this.orderNote = trimmedNew;
+    } else {
+      this.orderNote = mergedPart;
+    }
+    this.cdr.markForCheck();
+  }
+
+  addQuickOrderNote(tag: string): void {
+    const current = this.editableOrderNote.trim();
+    if (!current) {
+      this.updateEditableOrderNote(tag);
+    } else if (!current.toLowerCase().includes(tag.toLowerCase())) {
+      this.updateEditableOrderNote(`${current} | ${tag}`);
+    }
+  }
+
+  // --- ORDER SUMMARY HELPERS ---
+
+  getOrderCode(): string {
+    if (this.activeOrder()?.orderNumber) {
+      return this.activeOrder()!.orderNumber!;
+    }
+    if (this.activeOrderId) {
+      return `#ORD-${this.activeOrderId.substring(0, 8).toUpperCase()}`;
+    }
+    return '';
+  }
+
+  getFormattedOrderTime(): string {
+    const creationTime = this.activeOrder()?.creationTime || this.activeOrder()?.orderDate;
+    if (creationTime) {
+      const date = new Date(creationTime);
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+    return '';
   }
 
   // --- INSTANT STOCK VALIDATION ---
@@ -445,7 +592,6 @@ export class WaiterOrderComponent implements OnInit, AfterViewInit, OnDestroy {
       .map(x => ({
         dishId: x.dishId,
         quantity: x.dishId === dishId ? newQuantity : x.quantity,
-        unitPrice: x.unitPrice,
         note: x.note,
       }));
 
@@ -453,7 +599,6 @@ export class WaiterOrderComponent implements OnInit, AfterViewInit, OnDestroy {
       itemsPayload.push({
         dishId: dishId,
         quantity: newQuantity,
-        unitPrice: 0,
       });
     }
 
@@ -510,7 +655,6 @@ export class WaiterOrderComponent implements OnInit, AfterViewInit, OnDestroy {
       items: this.cartItems().map(x => ({
         dishId: x.dishId,
         quantity: x.quantity,
-        unitPrice: x.unitPrice,
         note: x.note,
       })),
     };
@@ -520,6 +664,7 @@ export class WaiterOrderComponent implements OnInit, AfterViewInit, OnDestroy {
         const isExistingOrder = !!this.activeOrderId;
         this.isSubmitting = false;
         this.activeOrderId = order.id || null;
+        this.activeOrder.set(order);
         this.takeSnapshot();
         const successMsg = isExistingOrder
           ? this.localizationService.instant('::UpdateOrderSuccess')
@@ -530,7 +675,7 @@ export class WaiterOrderComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       error: err => {
         this.isSubmitting = false;
-        const msg = err.error?.error?.message || err.message || 'Lỗi gửi đơn!';
+        const msg = err.error?.error?.message || err.message || this.localizationService.instant('::ActionFailedError');
         this.toaster.error(msg);
         this.cdr.markForCheck();
       },
@@ -559,11 +704,14 @@ export class WaiterOrderComponent implements OnInit, AfterViewInit, OnDestroy {
         next: () => {
           this.closeCancelModal();
           this.closeDrawer();
+          this.activeOrderId = null;
+          this.activeOrder.set(null);
+          this.cartItems.set([]);
           this.toaster.success(this.localizationService.instant('::CancelOrderSuccess'));
           this.router.navigate(['/waiter/tables']);
         },
         error: err => {
-          this.toaster.error(err.error?.error?.message || err.message || 'Lỗi hủy đơn!');
+          this.toaster.error(err.error?.error?.message || err.message || this.localizationService.instant('::ActionFailedError'));
         },
       });
   }

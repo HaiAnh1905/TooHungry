@@ -34,7 +34,7 @@ public class UnitManager : DomainService
         var isExist = await _unitRepository.AnyAsync(x => x.Name.ToLower() == cleanName.ToLower());
         if (isExist)
         {
-            throw new UserFriendlyException($"Đơn vị tính '{cleanName}' đã tồn tại!");
+            throw new BusinessException(TooHungryDomainErrorCodes.UnitNameAlreadyExists).WithData("0", cleanName);
         }
 
         var cleanAbbr = string.IsNullOrWhiteSpace(abbreviation) ? cleanName : abbreviation.Trim();
@@ -57,7 +57,7 @@ public class UnitManager : DomainService
             var isExist = await _unitRepository.AnyAsync(x => x.Id != unit.Id && x.Name.ToLower() == cleanName.ToLower());
             if (isExist)
             {
-                throw new UserFriendlyException($"Đơn vị tính '{cleanName}' đã tồn tại!");
+                throw new BusinessException(TooHungryDomainErrorCodes.UnitNameAlreadyExists).WithData("0", cleanName);
             }
         }
 
@@ -79,7 +79,7 @@ public class UnitManager : DomainService
         // 1. Chặn xóa đơn vị tính mặc định hệ thống
         if (SystemDefaultUnits.Any(su => string.Equals(su, unit.Name, StringComparison.OrdinalIgnoreCase)))
         {
-            throw new UserFriendlyException("Không thể xóa đơn vị tính mặc định của hệ thống!");
+            throw new BusinessException(TooHungryDomainErrorCodes.UnitCannotDeleteDefault);
         }
 
         // 2. Chặn xóa nếu đang được sử dụng bởi nguyên liệu
@@ -88,7 +88,7 @@ public class UnitManager : DomainService
             (!string.IsNullOrEmpty(unit.Abbreviation) && i.BaseUnit.ToLower() == unit.Abbreviation.ToLower()));
         if (isUsed)
         {
-            throw new UserFriendlyException("Không thể xóa đơn vị tính này vì đang được sử dụng bởi các nguyên liệu trong hệ thống!");
+            throw new BusinessException(TooHungryDomainErrorCodes.UnitCannotDeleteInUse);
         }
     }
 }

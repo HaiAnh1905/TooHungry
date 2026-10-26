@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Acme.TooHungry.Dishes;
 using Acme.TooHungry.Inventories;
 using Acme.TooHungry.Orders;
@@ -61,7 +62,7 @@ public class DashboardAppService : TooHungryAppService, IDashboardAppService
             o.OrderDate <= toDate);
 
         var currentCompletedList = await AsyncExecuter.ToListAsync(
-            completedOrdersInPeriod.Select(o => new { o.OrderDate, o.TotalAmount }));
+            completedOrdersInPeriod.Select(o => new OrderTrendSummary(o.OrderDate, o.TotalAmount)));
 
         var totalRevenue = currentCompletedList.Sum(o => o.TotalAmount);
         var completedOrdersCount = currentCompletedList.Count;
@@ -129,8 +130,9 @@ public class DashboardAppService : TooHungryAppService, IDashboardAppService
         {
             alerts = await _inventoryAppService.GetAlertsAsync() ?? new List<InventoryAlertDto>();
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.LogWarning(ex, "Không thể tải danh sách cảnh báo tồn kho cho Dashboard. Trả về danh sách rỗng an toàn.");
             alerts = new List<InventoryAlertDto>();
         }
 
@@ -167,9 +169,9 @@ public class DashboardAppService : TooHungryAppService, IDashboardAppService
         };
     }
 
-    private static (DateTime fromDate, DateTime toDate, DateTime prevFromDate, DateTime prevToDate) CalculatePeriodBoundaries(GetDashboardInput input)
+    private (DateTime fromDate, DateTime toDate, DateTime prevFromDate, DateTime prevToDate) CalculatePeriodBoundaries(GetDashboardInput input)
     {
-        var now = DateTime.UtcNow;
+        var now = Clock.Now;
         var todayStart = new DateTime(now.Year, now.Month, now.Day, 0, 0, 0, DateTimeKind.Utc);
         var todayEnd = todayStart.AddDays(1).AddTicks(-1);
 
@@ -233,7 +235,7 @@ public class DashboardAppService : TooHungryAppService, IDashboardAppService
     }
 
     private static List<RevenueTrendPointDto> CalculateRevenueTrend(
-        IReadOnlyList<dynamic> orders,
+        IReadOnlyList<OrderTrendSummary> orders,
         DashboardPeriod period,
         DateTime fromDate,
         DateTime toDate)
@@ -249,12 +251,12 @@ public class DashboardAppService : TooHungryAppService, IDashboardAppService
             // 15 khung giờ từ 09:00 đến 23:00
             for (var hour = 9; hour <= 23; hour++)
             {
-                var ordersInHour = orders.Where(o => ((DateTime)o.OrderDate).Hour == hour).ToList();
+                var ordersInHour = orders.Where(o => o.OrderDate.Hour == hour).ToList();
                 trendPoints.Add(new RevenueTrendPointDto
                 {
                     TimeLabel = $"{hour:D2}:00",
                     Timestamp = fromDate.Date.AddHours(hour),
-                    Revenue = ordersInHour.Sum(o => (decimal)o.TotalAmount),
+                    Revenue = ordersInHour.Sum(o => o.TotalAmount),
                     OrderCount = ordersInHour.Count
                 });
             }
@@ -268,13 +270,13 @@ public class DashboardAppService : TooHungryAppService, IDashboardAppService
             while (currentDay <= endDay)
             {
                 var day = currentDay;
-                var ordersInDay = orders.Where(o => ((DateTime)o.OrderDate).Date == day).ToList();
+                var ordersInDay = orders.Where(o => o.OrderDate.Date == day).ToList();
 
                 trendPoints.Add(new RevenueTrendPointDto
                 {
                     TimeLabel = day.ToString("dd/MM"),
                     Timestamp = day,
-                    Revenue = ordersInDay.Sum(o => (decimal)o.TotalAmount),
+                    Revenue = ordersInDay.Sum(o => o.TotalAmount),
                     OrderCount = ordersInDay.Count
                 });
 
@@ -341,3 +343,5 @@ public class DashboardAppService : TooHungryAppService, IDashboardAppService
         return result;
     }
 }
+
+public record OrderTrendSummary(DateTime OrderDate, decimal TotalAmount);

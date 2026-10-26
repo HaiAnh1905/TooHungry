@@ -33,7 +33,7 @@ public class DishManager : DomainService
 
         if (price < 0)
         {
-            throw new UserFriendlyException("Đơn vị giá bán của món ăn không được là số âm!");
+            throw new BusinessException(TooHungryDomainErrorCodes.DishNegativePrice);
         }
 
         await CheckDuplicateNameAsync(cleanName);
@@ -66,7 +66,7 @@ public class DishManager : DomainService
 
         if (newPrice < 0)
         {
-            throw new UserFriendlyException("Đơn vị giá bán của món ăn không được là số âm!");
+            throw new BusinessException(TooHungryDomainErrorCodes.DishNegativePrice);
         }
 
         await CheckDuplicateNameAsync(cleanName, dish.Id);
@@ -123,7 +123,7 @@ public class DishManager : DomainService
 
         if (exists)
         {
-            throw new UserFriendlyException($"Món ăn '{name}' đã tồn tại trong thực đơn!");
+            throw new BusinessException(TooHungryDomainErrorCodes.DishNameAlreadyExists).WithData("0", name);
         }
     }
 }

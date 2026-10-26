@@ -15,7 +15,7 @@ import { Router, RouterModule } from '@angular/router';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CoreModule, LocalizationService } from '@abp/ng.core';
 import { ConfirmationService, Confirmation, ThemeSharedModule, ToasterService } from '@abp/ng.theme.shared';
-import { Subscription } from 'rxjs';
+import { Subscription, filter, switchMap, map } from 'rxjs';
 import { TableService } from '../../proxy/tables/table.service';
 import { TableDto, CreateUpdateTableDto } from '../../proxy/tables/models';
 import { TableStatus } from '../../proxy/tables/table-status.enum';
@@ -32,6 +32,8 @@ import { WaiterSidebarService } from '../services/waiter-sidebar.service';
 import { TableTransferModalComponent } from '../../shared/components/tables/table-transfer-modal.component';
 import { TableMergeModalComponent } from '../../shared/components/tables/table-merge-modal.component';
 import { TableEndMealModalComponent } from '../../shared/components/tables/table-end-meal-modal.component';
+import { TableCardComponent } from '../../shared/components/tables/table-card/table-card.component';
+import { TableStateService } from '../../shared/services/table-state.service';
 
 @Component({
   selector: 'app-waiter-tables',
@@ -49,6 +51,7 @@ import { TableEndMealModalComponent } from '../../shared/components/tables/table
     TableTransferModalComponent,
     TableMergeModalComponent,
     TableEndMealModalComponent,
+    TableCardComponent,
   ],
   templateUrl: './waiter-tables.component.html',
   styleUrl: './waiter-tables.component.scss',
@@ -60,6 +63,7 @@ export class WaiterTablesComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly orderService = inject(OrderService);
   private readonly tableReservationService = inject(TableReservationService);
   private readonly signalrService = inject(TableSignalrService);
+  private readonly tableState = inject(TableStateService);
   private readonly confirmation = inject(ConfirmationService);
   private readonly toaster = inject(ToasterService);
   private readonly localizationService = inject(LocalizationService);
@@ -474,33 +478,33 @@ export class WaiterTablesComponent implements OnInit, AfterViewInit, OnDestroy {
   // 4. Khách đặt đến nhận bàn (RESERVED -> OCCUPIED)
   checkInReservation(table: TableDto) {
     if (!table.id) return;
-    this.tableReservationService.getActiveByTableId(table.id).subscribe({
-      next: res => {
-        if (!res?.id) {
-          this.tableService.changeStatus(table.id!, TableStatus.Occupied).subscribe({
-            next: updated => {
-              this.updateLocalTable(updated);
-              this.toaster.success(
-                this.localizationService.instant('::CheckInSuccess', table.name || '')
-              );
-            },
-            error: err => this.handleError(err),
-          });
-          return;
-        }
-
-        this.tableReservationService.checkIn(res.id).subscribe({
-          next: checkedInDto => {
-            this.onReservationCheckedIn(checkedInDto);
-            this.toaster.success(
-              this.localizationService.instant('::CheckInSuccess', table.name || '')
-            );
-          },
-          error: err => this.handleError(err),
-        });
-      },
-      error: err => this.handleError(err),
-    });
+    this.tableReservationService
+      .getActiveByTableId(table.id)
+      .pipe(
+        switchMap(res => {
+          if (!res?.id) {
+            return this.tableService
+              .changeStatus(table.id!, TableStatus.Occupied)
+              .pipe(map(updated => ({ type: 'table' as const, data: updated })));
+          }
+          return this.tableReservationService
+            .checkIn(res.id)
+            .pipe(map(checkedInDto => ({ type: 'reservation' as const, data: checkedInDto })));
+        })
+      )
+      .subscribe({
+        next: result => {
+          if (result.type === 'table') {
+            this.updateLocalTable(result.data as TableDto);
+          } else {
+            this.onReservationCheckedIn(result.data as TableReservationDto);
+          }
+          this.toaster.success(
+            this.localizationService.instant('::CheckInSuccess', table.name || '')
+          );
+        },
+        error: err => this.handleError(err),
+      });
   }
 
   // 5. Hủy đặt bàn (RESERVED -> AVAILABLE)
@@ -511,40 +515,36 @@ export class WaiterTablesComponent implements OnInit, AfterViewInit, OnDestroy {
         this.localizationService.instant('::CancelReservationConfirmMessage', table.name || ''),
         this.localizationService.instant('::CancelReservationConfirmTitle')
       )
-      .subscribe((status: Confirmation.Status) => {
-        if (status === Confirmation.Status.confirm) {
-          this.tableReservationService.getActiveByTableId(table.id!).subscribe({
-            next: res => {
-              if (!res?.id) {
-                this.tableService.changeStatus(table.id!, TableStatus.Available).subscribe({
-                  next: updated => {
-                    this.updateLocalTable(updated);
-                    this.toaster.success(
-                      this.localizationService.instant('::CancelReservationSuccess', table.name || '')
-                    );
-                  },
-                  error: err => this.handleError(err),
-                });
-                return;
-              }
-
-              this.tableReservationService.cancel(res.id).subscribe({
-                next: cancelledDto => {
-                  this.onReservationCancelled(cancelledDto);
-                  this.toaster.success(
-                    this.localizationService.instant('::CancelReservationSuccess', table.name || '')
-                  );
-                },
-                error: err => this.handleError(err),
-              });
-            },
-            error: err => this.handleError(err),
-          });
-        }
+      .pipe(
+        filter((status: Confirmation.Status) => status === Confirmation.Status.confirm),
+        switchMap(() => this.tableReservationService.getActiveByTableId(table.id!)),
+        switchMap(res => {
+          if (!res?.id) {
+            return this.tableService
+              .changeStatus(table.id!, TableStatus.Available)
+              .pipe(map(updated => ({ type: 'table' as const, data: updated })));
+          }
+          return this.tableReservationService
+            .cancel(res.id)
+            .pipe(map(cancelledDto => ({ type: 'reservation' as const, data: cancelledDto })));
+        })
+      )
+      .subscribe({
+        next: result => {
+          if (result.type === 'table') {
+            this.updateLocalTable(result.data as TableDto);
+          } else {
+            this.onReservationCancelled(result.data as TableReservationDto);
+          }
+          this.toaster.success(
+            this.localizationService.instant('::CancelReservationSuccess', table.name || '')
+          );
+        },
+        error: err => this.handleError(err),
       });
   }
 
-  // 5. Vô hiệu hóa bàn (AVAILABLE -> DISABLED)
+  // 6. Vô hiệu hóa bàn (AVAILABLE -> DISABLED)
   disableTable(table: TableDto) {
     if (!table.id) return;
     this.confirmation
@@ -552,20 +552,20 @@ export class WaiterTablesComponent implements OnInit, AfterViewInit, OnDestroy {
         this.localizationService.instant('::DisableTableConfirmMessage', table.name || ''),
         this.localizationService.instant('::DisableTableConfirmTitle')
       )
-      .subscribe((status: Confirmation.Status) => {
-        if (status === Confirmation.Status.confirm) {
-          this.tableService.changeStatus(table.id!, TableStatus.Disabled).subscribe({
-            next: updated => {
-              this.updateLocalTable(updated);
-              this.toaster.success(
-                this.localizationService.instant('::DisableTableSuccess', table.name || '')
-              );
-            },
-            error: err => {
-              this.handleError(err);
-            },
-          });
-        }
+      .pipe(
+        filter((status: Confirmation.Status) => status === Confirmation.Status.confirm),
+        switchMap(() => this.tableService.changeStatus(table.id!, TableStatus.Disabled))
+      )
+      .subscribe({
+        next: updated => {
+          this.updateLocalTable(updated);
+          this.toaster.success(
+            this.localizationService.instant('::DisableTableSuccess', table.name || '')
+          );
+        },
+        error: err => {
+          this.handleError(err);
+        },
       });
   }
 

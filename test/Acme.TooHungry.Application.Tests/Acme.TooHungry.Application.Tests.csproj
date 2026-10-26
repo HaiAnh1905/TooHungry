@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Acme.TooHungry.Application\Acme.TooHungry.Application.csproj" />
+    <ProjectReference Include="..\..\src\Acme.TooHungry.HttpApi\Acme.TooHungry.HttpApi.csproj" />
     <ProjectReference Include="..\Acme.TooHungry.Domain.Tests\Acme.TooHungry.Domain.Tests.csproj" />
   </ItemGroup>
 

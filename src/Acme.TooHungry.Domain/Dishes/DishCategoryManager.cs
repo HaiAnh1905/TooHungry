@@ -56,7 +56,7 @@ public class DishCategoryManager : DomainService
         var count = await _dishRepository.CountAsync(x => x.DishCategoryId == categoryId);
         if (count > 0)
         {
-            throw new UserFriendlyException($"Không thể xóa danh mục vì đang có {count} món ăn trực thuộc! Vui lòng chuyển các món ăn sang danh mục khác trước khi xóa.");
+            throw new BusinessException(TooHungryDomainErrorCodes.DishCategoryCannotDeleteWithDishes).WithData("0", count);
         }
     }
 
@@ -68,7 +68,7 @@ public class DishCategoryManager : DomainService
 
         if (exists)
         {
-            throw new UserFriendlyException($"Danh mục món ăn '{name}' đã tồn tại trên hệ thống!");
+            throw new BusinessException(TooHungryDomainErrorCodes.DishCategoryNameAlreadyExists).WithData("0", name);
         }
     }
 }

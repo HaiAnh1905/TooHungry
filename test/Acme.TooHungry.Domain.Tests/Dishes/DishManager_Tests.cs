@@ -45,7 +45,7 @@ public abstract class DishManager_Tests<TStartupModule> : TooHungryDomainTestBas
     {
         await WithUnitOfWorkAsync(async () =>
         {
-            var exception = await Should.ThrowAsync<UserFriendlyException>(async () =>
+            var exception = await Should.ThrowAsync<BusinessException>(async () =>
             {
                 await _dishManager.CreateAsync(
                     name: $"Món Giá Âm {Guid.NewGuid():N}",
@@ -53,7 +53,7 @@ public abstract class DishManager_Tests<TStartupModule> : TooHungryDomainTestBas
                 );
             });
 
-            exception.Message.ShouldContain("không được là số âm");
+            exception.Code.ShouldBe(TooHungryDomainErrorCodes.DishNegativePrice);
         });
     }
 
@@ -65,12 +65,12 @@ public abstract class DishManager_Tests<TStartupModule> : TooHungryDomainTestBas
             var baseName = $"Phở Bò Tái {Guid.NewGuid():N}";
             await _dishManager.CreateAsync(baseName, 65000m);
 
-            var exception = await Should.ThrowAsync<UserFriendlyException>(async () =>
+            var exception = await Should.ThrowAsync<BusinessException>(async () =>
             {
                 await _dishManager.CreateAsync(baseName.ToLowerInvariant(), 70000m);
             });
 
-            exception.Message.ShouldContain("đã tồn tại");
+            exception.Code.ShouldBe(TooHungryDomainErrorCodes.DishNameAlreadyExists);
         });
     }
 

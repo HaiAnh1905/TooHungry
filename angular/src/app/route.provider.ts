@@ -177,5 +177,36 @@ function configureRoutes() {
       layout: eLayoutType.empty,
       invisible: true,
     },
+    {
+      path: '/inventory-keeper',
+      name: '::Menu:InventoryKeeperPortal',
+      layout: eLayoutType.empty,
+      invisible: true,
+    },
+    {
+      path: '/inventory-keeper/dashboard',
+      name: '::Menu:InventoryKeeperDashboard',
+      layout: eLayoutType.empty,
+      invisible: true,
+    },
+    {
+      path: '/inventory-keeper/batches',
+      name: '::Menu:InventoryKeeperBatches',
+      layout: eLayoutType.empty,
+      invisible: true,
+    },
+    {
+      path: '/inventory-keeper/transactions',
+      name: '::Menu:InventoryKeeperTransactions',
+      layout: eLayoutType.empty,
+      invisible: true,
+    },
+    {
+      path: '/keeper',
+      name: '::Menu:KeeperAlias',
+      layout: eLayoutType.empty,
+      invisible: true,
+    },
   ]);
 }
+

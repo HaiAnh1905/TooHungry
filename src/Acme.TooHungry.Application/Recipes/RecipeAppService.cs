@@ -88,13 +88,8 @@ public class RecipeAppService : TooHungryAppService, IRecipeAppService
 
         var recipes = await AsyncExecuter.ToListAsync(queryable);
 
-        var dtos = new List<RecipeDto>();
-        foreach (var r in recipes)
-        {
-            var dto = _recipeMapper.Map(r);
-            await PopulateAdditionalIngredientDataAsync(dto, r);
-            dtos.Add(dto);
-        }
+        var dtos = recipes.Select(r => _recipeMapper.Map(r)).ToList();
+        await PopulateAdditionalIngredientDataAsync(dtos.Zip(recipes, (dto, r) => (dto, r)));
 
         return new PagedResultDto<RecipeDto>(totalCount, dtos);
     }
@@ -120,13 +115,8 @@ public class RecipeAppService : TooHungryAppService, IRecipeAppService
             queryable.Where(x => x.DishId == dishId).OrderByDescending(x => x.Version)
         );
 
-        var dtos = new List<RecipeDto>();
-        foreach (var r in recipes)
-        {
-            var dto = _recipeMapper.Map(r);
-            await PopulateAdditionalIngredientDataAsync(dto, r);
-            dtos.Add(dto);
-        }
+        var dtos = recipes.Select(r => _recipeMapper.Map(r)).ToList();
+        await PopulateAdditionalIngredientDataAsync(dtos.Zip(recipes, (dto, r) => (dto, r)));
 
         return dtos;
     }
@@ -199,19 +189,35 @@ public class RecipeAppService : TooHungryAppService, IRecipeAppService
     private async Task<List<(Guid ingredientId, decimal quantity, string unit, decimal conversionFactor, Guid? recipeUnitId)>> PrepareIngredientsAsync(List<CreateRecipeIngredientDto> items)
     {
         var result = new List<(Guid, decimal, string, decimal, Guid?)>();
+        if (items.Count == 0) return result;
+
+        var unitIds = items.Where(x => string.IsNullOrWhiteSpace(x.Unit) && x.RecipeUnitId.HasValue)
+                           .Select(x => x.RecipeUnitId!.Value)
+                           .Distinct()
+                           .ToList();
+        var unitMap = unitIds.Count > 0
+            ? (await _unitRepository.GetListAsync(x => unitIds.Contains(x.Id))).ToDictionary(x => x.Id)
+            : new Dictionary<Guid, Unit>();
+
+        var ingIds = items.Where(x => string.IsNullOrWhiteSpace(x.Unit))
+                          .Select(x => x.IngredientId)
+                          .Distinct()
+                          .ToList();
+        var ingMap = ingIds.Count > 0
+            ? (await _ingredientRepository.GetListAsync(x => ingIds.Contains(x.Id))).ToDictionary(x => x.Id)
+            : new Dictionary<Guid, Ingredient>();
+
         foreach (var item in items)
         {
             var unit = item.Unit;
-            if (string.IsNullOrWhiteSpace(unit) && item.RecipeUnitId.HasValue)
+            if (string.IsNullOrWhiteSpace(unit) && item.RecipeUnitId.HasValue && unitMap.TryGetValue(item.RecipeUnitId.Value, out var unitEntity))
             {
-                var unitEntity = await _unitRepository.FindAsync(item.RecipeUnitId.Value);
-                unit = unitEntity?.Name;
+                unit = unitEntity.Name;
             }
 
-            if (string.IsNullOrWhiteSpace(unit))
+            if (string.IsNullOrWhiteSpace(unit) && ingMap.TryGetValue(item.IngredientId, out var ing))
             {
-                var ing = await _ingredientRepository.FindAsync(item.IngredientId);
-                unit = ing?.BaseUnit;
+                unit = ing.BaseUnit;
             }
 
             if (string.IsNullOrWhiteSpace(unit))
@@ -225,61 +231,93 @@ public class RecipeAppService : TooHungryAppService, IRecipeAppService
         return result;
     }
 
-    private async Task PopulateAdditionalIngredientDataAsync(RecipeDto dto, Recipe recipe)
+    private async Task PopulateAdditionalIngredientDataAsync(IEnumerable<(RecipeDto Dto, Recipe Entity)> items)
     {
-        if (recipe.Dish != null)
+        var itemList = items.ToList();
+        if (itemList.Count == 0) return;
+
+        // 1. Nạp danh mục Unit 1 lần duy nhất
+        var units = await _unitRepository.GetListAsync();
+
+        // 2. Gom nhóm các DishId thiếu tên/giá
+        var missingDishIds = itemList
+            .Where(x => x.Entity.Dish == null && x.Dto.DishId != Guid.Empty && (string.IsNullOrWhiteSpace(x.Dto.DishName) || x.Dto.DishPrice == 0))
+            .Select(x => x.Dto.DishId)
+            .Distinct()
+            .ToList();
+
+        var dishMap = new Dictionary<Guid, Dish>();
+        if (missingDishIds.Count > 0)
         {
-            dto.DishName = recipe.Dish.Name;
-            dto.DishPrice = recipe.Dish.Price;
+            var dishes = await _dishRepository.GetListAsync(x => missingDishIds.Contains(x.Id));
+            dishMap = dishes.ToDictionary(x => x.Id);
         }
-        else if (dto.DishId != Guid.Empty && (string.IsNullOrWhiteSpace(dto.DishName) || dto.DishPrice == 0))
+
+        // 3. Gom nhóm toàn bộ IngredientIds của tất cả Recipes
+        var allIngredientIds = itemList
+            .SelectMany(x => x.Dto.Ingredients.Select(i => i.IngredientId))
+            .Distinct()
+            .ToList();
+
+        var ingMap = new Dictionary<Guid, Ingredient>();
+        if (allIngredientIds.Count > 0)
         {
-            var dish = await _dishRepository.FindAsync(dto.DishId);
-            if (dish != null)
+            var ingredientEntities = await _ingredientRepository.GetListAsync(x => allIngredientIds.Contains(x.Id));
+            ingMap = ingredientEntities.ToDictionary(x => x.Id);
+        }
+
+        // 4. Map in-memory O(1)
+        foreach (var (dto, recipe) in itemList)
+        {
+            if (recipe.Dish != null)
+            {
+                dto.DishName = recipe.Dish.Name;
+                dto.DishPrice = recipe.Dish.Price;
+            }
+            else if (dishMap.TryGetValue(dto.DishId, out var dish))
             {
                 dto.DishName = dish.Name;
                 dto.DishPrice = dish.Price;
             }
-        }
 
-        var ingredientIds = dto.Ingredients.Select(x => x.IngredientId).Distinct().ToList();
-        var ingredientEntities = await _ingredientRepository.GetListAsync(x => ingredientIds.Contains(x.Id));
-        var ingMap = ingredientEntities.ToDictionary(x => x.Id);
-
-        var units = await _unitRepository.GetListAsync();
-
-        foreach (var item in dto.Ingredients)
-        {
-            var entityItem = recipe.Ingredients.FirstOrDefault(x => x.Id == item.Id || x.IngredientId == item.IngredientId);
-            if (entityItem != null)
+            foreach (var item in dto.Ingredients)
             {
-                item.BaseQuantity = entityItem.CalculateBaseQuantity();
-                item.RecipeUnitId = entityItem.RecipeUnitId;
-            }
-
-            if (ingMap.TryGetValue(item.IngredientId, out var ing))
-            {
-                item.IngredientName = ing.Name;
-                item.BaseUnit = ing.BaseUnit;
-                item.EstimatedPrice = ing.EstimatedPrice;
-                item.IsIngredientActive = ing.IsActive;
-            }
-
-            item.ItemEstimatedCost = item.BaseQuantity * item.EstimatedPrice;
-
-            if (!string.IsNullOrWhiteSpace(item.Unit))
-            {
-                var matchedUnit = units.FirstOrDefault(u => string.Equals(u.Name, item.Unit, StringComparison.OrdinalIgnoreCase) ||
-                                                           string.Equals(u.Abbreviation, item.Unit, StringComparison.OrdinalIgnoreCase));
-                if (matchedUnit != null)
+                var entityItem = recipe.Ingredients.FirstOrDefault(x => x.Id == item.Id || x.IngredientId == item.IngredientId);
+                if (entityItem != null)
                 {
-                    item.RecipeUnitId = matchedUnit.Id;
+                    item.BaseQuantity = entityItem.CalculateBaseQuantity();
+                    item.RecipeUnitId = entityItem.RecipeUnitId;
+                }
+
+                if (ingMap.TryGetValue(item.IngredientId, out var ing))
+                {
+                    item.IngredientName = ing.Name;
+                    item.BaseUnit = ing.BaseUnit;
+                    item.EstimatedPrice = ing.EstimatedPrice;
+                    item.IsIngredientActive = ing.IsActive;
+                }
+
+                item.ItemEstimatedCost = item.BaseQuantity * item.EstimatedPrice;
+
+                if (!string.IsNullOrWhiteSpace(item.Unit))
+                {
+                    var matchedUnit = units.FirstOrDefault(u => string.Equals(u.Name, item.Unit, StringComparison.OrdinalIgnoreCase) ||
+                                                               string.Equals(u.Abbreviation, item.Unit, StringComparison.OrdinalIgnoreCase));
+                    if (matchedUnit != null)
+                    {
+                        item.RecipeUnitId = matchedUnit.Id;
+                    }
                 }
             }
-        }
 
-        dto.TotalEstimatedCost = dto.Ingredients.Sum(x => x.ItemEstimatedCost);
-        dto.FoodCostPercentage = dto.DishPrice > 0 ? Math.Round((dto.TotalEstimatedCost / dto.DishPrice) * 100m, 2) : 0m;
-        dto.HasDeactivatedIngredients = dto.Ingredients.Any(x => !x.IsIngredientActive);
+            dto.TotalEstimatedCost = dto.Ingredients.Sum(x => x.ItemEstimatedCost);
+            dto.FoodCostPercentage = dto.DishPrice > 0 ? Math.Round((dto.TotalEstimatedCost / dto.DishPrice) * 100m, 2) : 0m;
+            dto.HasDeactivatedIngredients = dto.Ingredients.Any(x => !x.IsIngredientActive);
+        }
+    }
+
+    private Task PopulateAdditionalIngredientDataAsync(RecipeDto dto, Recipe recipe)
+    {
+        return PopulateAdditionalIngredientDataAsync(new[] { (dto, recipe) });
     }
 }

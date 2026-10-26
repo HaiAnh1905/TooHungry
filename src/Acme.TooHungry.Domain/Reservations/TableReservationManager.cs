@@ -44,7 +44,9 @@ public class TableReservationManager : DomainService
         }
 
         var timeOfDay = reservationTime.TimeOfDay;
-        if (timeOfDay < new TimeSpan(9, 0, 0) || timeOfDay > new TimeSpan(22, 59, 59))
+        var openingTime = new TimeSpan(TooHungryConsts.BusinessOpeningHour, 0, 0);
+        var closingTime = new TimeSpan(TooHungryConsts.BusinessClosingHour, 0, 0);
+        if (timeOfDay < openingTime || timeOfDay > closingTime)
         {
             throw new BusinessException(ReservationErrorCodes.OutsideOpeningHours)
                 .WithData("TimeOfDay", timeOfDay);
@@ -92,16 +94,15 @@ public class TableReservationManager : DomainService
             ReservationStatus.Confirmed
         );
 
-        // Sync to table
-        table.Status = TableStatus.Reserved;
-        table.ReservedCustomerName = reservation.CustomerName;
-        table.ReservedCustomerPhone = reservation.CustomerPhone;
-        table.ReservedTime = reservation.ReservationTime;
-        table.ReservedGuestCount = reservation.GuestCount;
-        table.ReservedNote = reservation.Note;
+        var now = _clock.Now;
+        // Bàn chỉ tự động chuyển Reserved nếu thời gian đặt trong vòng 60 phút tới
+        if (reservationTime <= now.AddMinutes(60))
+        {
+            table.Reserve(reservation.CustomerName, reservation.CustomerPhone, reservation.ReservationTime, reservation.GuestCount, reservation.Note);
+            await _tableRepository.UpdateAsync(table, autoSave: true);
+        }
 
         await _reservationRepository.InsertAsync(reservation, autoSave: true);
-        await _tableRepository.UpdateAsync(table, autoSave: true);
 
         return (reservation, table);
     }
@@ -134,13 +135,15 @@ public class TableReservationManager : DomainService
         reservation.GuestCount = guestCount;
         reservation.Note = note?.Trim();
 
-        if (table.Status == TableStatus.Reserved)
+        var now = _clock.Now;
+        if (reservationTime <= now.AddMinutes(60))
         {
-            table.ReservedCustomerName = reservation.CustomerName;
-            table.ReservedCustomerPhone = reservation.CustomerPhone;
-            table.ReservedTime = reservation.ReservationTime;
-            table.ReservedGuestCount = reservation.GuestCount;
-            table.ReservedNote = reservation.Note;
+            table.Reserve(reservation.CustomerName, reservation.CustomerPhone, reservation.ReservationTime, reservation.GuestCount, reservation.Note);
+            await _tableRepository.UpdateAsync(table, autoSave: true);
+        }
+        else if (table.Status == TableStatus.Reserved)
+        {
+            table.Release();
             await _tableRepository.UpdateAsync(table, autoSave: true);
         }
 
@@ -160,16 +163,17 @@ public class TableReservationManager : DomainService
                 .WithData("Status", reservation.Status);
         }
 
-        reservation.Status = ReservationStatus.Completed;
-
         var table = await _tableRepository.GetAsync(reservation.TableId);
-        table.Status = TableStatus.Occupied;
-        table.OccupiedTime = DateTime.Now;
-        table.ReservedCustomerName = null;
-        table.ReservedCustomerPhone = null;
-        table.ReservedTime = null;
-        table.ReservedGuestCount = null;
-        table.ReservedNote = null;
+
+        if (table.Status == TableStatus.Occupied)
+        {
+            throw new BusinessException("TooHungry:Table:TableCurrentlyOccupied")
+                .WithData("TableId", table.Id)
+                .WithData("TableName", table.Name);
+        }
+
+        reservation.Status = ReservationStatus.Completed;
+        table.Occupy(_clock.Now);
 
         await _reservationRepository.UpdateAsync(reservation, autoSave: true);
         await _tableRepository.UpdateAsync(table, autoSave: true);
@@ -193,12 +197,7 @@ public class TableReservationManager : DomainService
         var table = await _tableRepository.GetAsync(reservation.TableId);
         if (table.Status == TableStatus.Reserved)
         {
-            table.Status = TableStatus.Available;
-            table.ReservedCustomerName = null;
-            table.ReservedCustomerPhone = null;
-            table.ReservedTime = null;
-            table.ReservedGuestCount = null;
-            table.ReservedNote = null;
+            table.Release();
             await _tableRepository.UpdateAsync(table, autoSave: true);
         }
 

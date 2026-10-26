@@ -236,11 +236,19 @@ public class TooHungryDataSeederContributor : IDataSeedContributor, ITransientDe
 
         if (await _tableRepository.GetCountAsync() == 0)
         {
-            await _tableRepository.InsertAsync(new RestaurantTable { Name = "Bàn 01", Capacity = 4, Status = TableStatus.Available, DiningAreaId = floor1.Id, Location = "Tầng 1" });
-            await _tableRepository.InsertAsync(new RestaurantTable { Name = "Bàn 02", Capacity = 2, Status = TableStatus.Available, DiningAreaId = floor1.Id, Location = "Tầng 1" });
-            await _tableRepository.InsertAsync(new RestaurantTable { Name = "Bàn 03", Capacity = 6, Status = TableStatus.Occupied, DiningAreaId = floor2.Id, Location = "Tầng 2", OccupiedTime = DateTime.Now.AddMinutes(-35) });
-            await _tableRepository.InsertAsync(new RestaurantTable { Name = "Bàn VIP 01", Capacity = 10, Status = TableStatus.Reserved, DiningAreaId = vip.Id, Location = "Phòng VIP" });
-            await _tableRepository.InsertAsync(new RestaurantTable { Name = "Bàn Sân Vườn", Capacity = 4, Status = TableStatus.Available, DiningAreaId = outdoor.Id, Location = "Ngoài trời" });
+            var table1 = new RestaurantTable(_guidGenerator.Create(), "Bàn 01", 4, floor1.Id, "Tầng 1");
+            var table2 = new RestaurantTable(_guidGenerator.Create(), "Bàn 02", 2, floor1.Id, "Tầng 1");
+            var table3 = new RestaurantTable(_guidGenerator.Create(), "Bàn 03", 6, floor2.Id, "Tầng 2");
+            table3.Occupy(DateTime.Now.AddMinutes(-35));
+            var tableVip = new RestaurantTable(_guidGenerator.Create(), "Bàn VIP 01", 10, vip.Id, "Phòng VIP");
+            tableVip.SetStatus(TableStatus.Reserved);
+            var tableOutdoor = new RestaurantTable(_guidGenerator.Create(), "Bàn Sân Vườn", 4, outdoor.Id, "Ngoài trời");
+
+            await _tableRepository.InsertAsync(table1);
+            await _tableRepository.InsertAsync(table2);
+            await _tableRepository.InsertAsync(table3);
+            await _tableRepository.InsertAsync(tableVip);
+            await _tableRepository.InsertAsync(tableOutdoor);
         }
         else
         {
@@ -251,7 +259,7 @@ public class TooHungryDataSeederContributor : IDataSeedContributor, ITransientDe
                 var isModified = false;
                 if (table.Status == TableStatus.Occupied && !table.OccupiedTime.HasValue)
                 {
-                    table.OccupiedTime = DateTime.Now.AddMinutes(-30);
+                    table.Occupy(DateTime.Now.AddMinutes(-30));
                     isModified = true;
                 }
 
@@ -259,19 +267,19 @@ public class TooHungryDataSeederContributor : IDataSeedContributor, ITransientDe
                 {
                     if (table.Location == "Tầng 1" || table.Name.Contains("01") || table.Name.Contains("02"))
                     {
-                        table.DiningAreaId = floor1.Id;
+                        table.SetDiningArea(floor1.Id, table.Location);
                     }
                     else if (table.Location == "Tầng 2" || table.Name.Contains("03"))
                     {
-                        table.DiningAreaId = floor2.Id;
+                        table.SetDiningArea(floor2.Id, table.Location);
                     }
                     else if (table.Location == "Phòng VIP" || table.Name.Contains("VIP"))
                     {
-                        table.DiningAreaId = vip.Id;
+                        table.SetDiningArea(vip.Id, table.Location);
                     }
                     else
                     {
-                        table.DiningAreaId = outdoor.Id;
+                        table.SetDiningArea(outdoor.Id, table.Location);
                     }
                     isModified = true;
                 }

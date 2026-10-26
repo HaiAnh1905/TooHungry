@@ -42,30 +42,22 @@ export class IngredientService {
     },
     { apiName: this.apiName, ...config });
 
-  getList = (inputOrIncludeInactive: GetIngredientsInput | boolean = {}, config?: Partial<Rest.Config>) => {
-    let params: any = {};
-    if (typeof inputOrIncludeInactive === 'boolean') {
-      params = { includeInactive: inputOrIncludeInactive, maxResultCount: 1000 };
-    } else {
-      params = {
-        filter: inputOrIncludeInactive.filter,
-        storageType: inputOrIncludeInactive.storageType,
-        consumptionMethod: inputOrIncludeInactive.consumptionMethod,
-        isActive: inputOrIncludeInactive.isActive,
-        skipCount: inputOrIncludeInactive.skipCount,
-        maxResultCount: inputOrIncludeInactive.maxResultCount,
-        sorting: inputOrIncludeInactive.sorting,
-      };
-    }
-
-    return this.restService.request<any, PagedResultDto<IngredientDto>>({
+  getList = (input: GetIngredientsInput = {}, config?: Partial<Rest.Config>) =>
+    this.restService.request<any, PagedResultDto<IngredientDto>>({
       method: 'GET',
       headers: { Accept: 'application/json' },
       url: '/api/app/ingredient',
-      params,
+      params: {
+        filter: input.filter,
+        storageType: input.storageType,
+        consumptionMethod: input.consumptionMethod,
+        isActive: input.isActive,
+        skipCount: input.skipCount,
+        maxResultCount: input.maxResultCount,
+        sorting: input.sorting,
+      },
     },
     { apiName: this.apiName, ...config });
-  };
 
   deactivate = (id: string, input: DeactivateInput, config?: Partial<Rest.Config>) =>
     this.restService.request<any, IngredientDto>({

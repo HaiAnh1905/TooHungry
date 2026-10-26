@@ -40,12 +40,12 @@ public abstract class DishCategoryManager_Tests<TStartupModule> : TooHungryDomai
             var baseName = $"Lẩu Nướng {Guid.NewGuid():N}";
             await _categoryManager.CreateAsync(baseName);
 
-            var exception = await Should.ThrowAsync<UserFriendlyException>(async () =>
+            var exception = await Should.ThrowAsync<BusinessException>(async () =>
             {
                 await _categoryManager.CreateAsync(baseName.ToLowerInvariant());
             });
 
-            exception.Message.ShouldContain("đã tồn tại");
+            exception.Code.ShouldBe(TooHungryDomainErrorCodes.DishCategoryNameAlreadyExists);
         });
     }
 
@@ -63,12 +63,12 @@ public abstract class DishCategoryManager_Tests<TStartupModule> : TooHungryDomai
                 DishCategoryId = category.Id
             }, autoSave: true);
 
-            var exception = await Should.ThrowAsync<UserFriendlyException>(async () =>
+            var exception = await Should.ThrowAsync<BusinessException>(async () =>
             {
                 await _categoryManager.CheckCanDeleteAsync(category.Id);
             });
 
-            exception.Message.ShouldContain("Không thể xóa danh mục vì đang có");
+            exception.Code.ShouldBe(TooHungryDomainErrorCodes.DishCategoryCannotDeleteWithDishes);
         });
     }
 }

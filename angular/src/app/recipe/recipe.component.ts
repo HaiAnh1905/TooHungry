@@ -15,6 +15,7 @@ import {
   CustomSelectComponent,
   CustomSelectOption,
 } from '../shared/components/custom-select/custom-select.component';
+import { PagerComponent } from '../shared/components/pager/pager.component';
 
 interface DishRecipeViewModel extends DishDto {
   recipe?: RecipeDto;
@@ -31,6 +32,7 @@ interface DishRecipeViewModel extends DishDto {
     FormsModule,
     RecipeModalComponent,
     CustomSelectComponent,
+    PagerComponent,
   ],
   templateUrl: './recipe.component.html',
   styleUrl: './recipe.component.scss',
@@ -185,8 +187,7 @@ export class RecipeComponent implements OnInit {
         this.isLoading = false;
         this.cdr.markForCheck();
       },
-      error: err => {
-        console.error('Lỗi khi tải danh sách món ăn/công thức:', err);
+      error: () => {
         this.dishes = [];
         this.filteredDishes = [];
         this.isLoading = false;

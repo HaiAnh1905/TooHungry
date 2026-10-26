@@ -2,7 +2,7 @@ import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { CoreModule } from '@abp/ng.core';
+import { CoreModule, LocalizationService } from '@abp/ng.core';
 import { ConfirmationService, Confirmation, ThemeSharedModule, ToasterService } from '@abp/ng.theme.shared';
 import { IngredientService } from '../../proxy/ingredients/ingredient.service';
 import { IngredientDto } from '../../proxy/ingredients/models';
@@ -26,6 +26,7 @@ export class DeactivatedIngredientsComponent implements OnInit {
   private readonly ingredientService = inject(IngredientService);
   private readonly confirmation = inject(ConfirmationService);
   private readonly toaster = inject(ToasterService);
+  private readonly localizationService = inject(LocalizationService);
   private readonly cdr = inject(ChangeDetectorRef);
 
   ingredients: IngredientDto[] = [];
@@ -76,7 +77,7 @@ export class DeactivatedIngredientsComponent implements OnInit {
         },
         error: (err) => {
           this.loading = false;
-          this.toaster.error(err?.error?.message || err?.message || 'Có lỗi xảy ra khi tải dữ liệu');
+          this.toaster.error(err?.error?.message || err?.message || this.localizationService.instant('::ActionFailedError'));
           this.cdr.detectChanges();
         },
       });
@@ -127,7 +128,7 @@ export class DeactivatedIngredientsComponent implements OnInit {
               this.loadData();
             },
             error: (err) => {
-              this.toaster.error(err?.error?.message || err?.message || 'Có lỗi xảy ra');
+              this.toaster.error(err?.error?.message || err?.message || this.localizationService.instant('::ActionFailedError'));
             },
           });
         }

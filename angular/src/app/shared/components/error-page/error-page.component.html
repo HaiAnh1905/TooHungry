@@ -1,0 +1,197 @@
+<div class="error-page-wrapper d-flex align-items-center justify-content-center p-3 p-md-4">
+  <div class="bento-error-card text-center position-relative" (mouseenter)="onMouseEnter()" (mouseleave)="onMouseLeave()">
+    <!-- Decorative Ambient Glow -->
+    <div class="card-ambient-glow" aria-hidden="true"></div>
+
+    <!-- Top Badge -->
+    <div class="badge-wrapper mb-3">
+      <span class="badge error-status-badge">
+        <i class="fas fa-exclamation-circle me-1" aria-hidden="true"></i>
+        {{ activeConfig().badgeText }}
+      </span>
+    </div>
+
+    <!-- Illustration Vector Art -->
+    <div class="illustration-container mb-4">
+      <!-- 404: Empty Dining Plate & Compass -->
+      @if (activeConfig().iconType === 'empty-table') {
+        <svg class="error-illustration float-animation" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <!-- Background Glow Circle -->
+          <circle cx="80" cy="80" r="70" fill="#FFF7ED" />
+          <circle cx="80" cy="80" r="58" stroke="#FDBA74" stroke-width="2" stroke-dasharray="4 4" />
+          <!-- Plate Base -->
+          <circle cx="80" cy="80" r="48" fill="#FFFFFF" stroke="#EA580C" stroke-width="4" />
+          <circle cx="80" cy="80" r="36" fill="#FFF7ED" stroke="#FED7AA" stroke-width="2" />
+          <!-- Fork on the Left -->
+          <path d="M42 58V72C42 75.3 44.7 78 48 78V104M48 78C51.3 78 54 75.3 54 72V58M45 58V70M51 58V70" stroke="#EA580C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+          <!-- Knife on the Right -->
+          <path d="M112 58V104M112 58C117 62 118 70 118 78C118 83 115 86 112 88" stroke="#EA580C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+          <!-- Compass Center Needle -->
+          <polygon points="80,54 85,80 80,75 75,80" fill="#EA580C" />
+          <polygon points="80,106 85,80 80,85 75,80" fill="#94A3B8" />
+          <circle cx="80" cy="80" r="4" fill="#FFFFFF" stroke="#EA580C" stroke-width="2" />
+        </svg>
+      }
+
+      <!-- 403: Security Shield & Padlock -->
+      @if (activeConfig().iconType === 'security-lock') {
+        <svg class="error-illustration float-animation" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <!-- Ambient Glow Circle -->
+          <circle cx="80" cy="80" r="70" fill="#FFF7ED" />
+          <!-- Shield Frame -->
+          <path d="M80 32L116 46V84C116 106.4 100.8 126.8 80 132C59.2 126.8 44 106.4 44 84V46L80 32Z" fill="#FFFFFF" stroke="#EA580C" stroke-width="4" stroke-linejoin="round" />
+          <!-- Inner Shield Shading -->
+          <path d="M80 39L110 51V84C110 102.5 97.4 119.5 80 124.5V39Z" fill="#FFEDD5" opacity="0.6" />
+          <!-- Padlock Shackle -->
+          <path d="M70 78V68C70 62.5 74.5 58 80 58C85.5 58 90 62.5 90 68V78" stroke="#EA580C" stroke-width="3" stroke-linecap="round" />
+          <!-- Padlock Body -->
+          <rect x="64" y="78" width="32" height="26" rx="4" fill="#EA580C" />
+          <!-- Keyhole -->
+          <circle cx="80" cy="88" r="3" fill="#FFFFFF" />
+          <path d="M79 90H81L82 96H78L79 90Z" fill="#FFFFFF" />
+        </svg>
+      }
+
+      <!-- 500 / 505: Steaming Pot & Disconnected Cable -->
+      @if (activeConfig().iconType === 'server-disconnect') {
+        <svg class="error-illustration float-animation" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <!-- Background Glow Circle -->
+          <circle cx="80" cy="80" r="70" fill="#FFF7ED" />
+          <!-- Steam Lines Rising -->
+          <path d="M68 44C66 38 72 34 70 28" stroke="#F97316" stroke-width="2.5" stroke-linecap="round" />
+          <path d="M80 40C78 34 84 30 82 24" stroke="#EA580C" stroke-width="3" stroke-linecap="round" />
+          <path d="M92 44C90 38 96 34 94 28" stroke="#F97316" stroke-width="2.5" stroke-linecap="round" />
+          <!-- Chef Pot / Server Box Base -->
+          <rect x="46" y="52" width="68" height="52" rx="10" fill="#FFFFFF" stroke="#EA580C" stroke-width="4" />
+          <!-- Pot Handles -->
+          <path d="M46 68H36C33.8 68 32 70 32 72.5C32 75 33.8 77 36 77H46" stroke="#EA580C" stroke-width="3" stroke-linecap="round" />
+          <path d="M114 68H124C126.2 68 128 70 128 72.5C128 75 126.2 77 124 77H114" stroke="#EA580C" stroke-width="3" stroke-linecap="round" />
+          <!-- Temperature Alert Gauge / Lightning -->
+          <path d="M82 62L74 76H83L78 92L90 76H81L85 62H82Z" fill="#EA580C" />
+          <!-- Cable Plugs with Sparks -->
+          <path d="M50 120H66M94 120H110" stroke="#94A3B8" stroke-width="3" stroke-linecap="round" />
+          <rect x="66" y="114" width="8" height="12" rx="2" fill="#64748B" />
+          <rect x="86" y="114" width="8" height="12" rx="2" fill="#64748B" />
+          <path d="M78 116L82 124M82 116L78 124" stroke="#EA580C" stroke-width="2" stroke-linecap="round" />
+        </svg>
+      }
+
+      <!-- 0: Network Offline / Server Unreachable -->
+      @if (activeConfig().iconType === 'network-offline') {
+        <svg class="error-illustration float-animation" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <!-- Background Glow Circle -->
+          <circle cx="80" cy="80" r="70" fill="#FFF7ED" />
+          <circle cx="80" cy="80" r="58" stroke="#FDBA74" stroke-width="2" stroke-dasharray="4 4" />
+          <!-- Cloud Outline -->
+          <path d="M52 88C45.4 88 40 82.6 40 76C40 70.2 44.1 65.3 49.7 64.3C50.5 53.6 59.4 45 70.3 45C78.4 45 85.5 49.8 88.7 56.7C91 55.6 93.7 55 96.5 55C104.5 55 111 61.5 111 69.5C111 70.6 110.8 71.7 110.5 72.8C115.9 74.3 120 79.2 120 85C120 92.2 114.2 98 107 98H52" fill="#FFFFFF" stroke="#EA580C" stroke-width="3.5" stroke-linejoin="round" />
+          <!-- Server Box Mini below Cloud -->
+          <rect x="58" y="104" width="44" height="20" rx="4" fill="#FFFFFF" stroke="#EA580C" stroke-width="2.5" />
+          <circle cx="66" cy="114" r="2" fill="#EA580C" />
+          <circle cx="74" cy="114" r="2" fill="#FED7AA" />
+          <line x1="84" y1="114" x2="94" y2="114" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" />
+          <!-- Disconnect Slash Line -->
+          <line x1="38" y1="126" x2="122" y2="42" stroke="#EF4444" stroke-width="4" stroke-linecap="round" />
+          <circle cx="80" cy="84" r="14" fill="#FFF7ED" stroke="#EF4444" stroke-width="2.5" />
+          <!-- Warning Exclamation Mark inside Center Circle -->
+          <path d="M80 77V85M80 90H80.01" stroke="#EF4444" stroke-width="3" stroke-linecap="round" />
+        </svg>
+      }
+    </div>
+
+    <!-- Error Title -->
+    <h1 class="error-title mb-2">
+      {{ customTitle || translate(activeConfig().titleKey) }}
+    </h1>
+
+    <!-- Error Description -->
+    <p class="error-description text-muted mb-4 mx-auto">
+      {{ customMessage || translate(activeConfig().descriptionKey) }}
+    </p>
+
+    <!-- Trace ID Box (for 500 / 505) -->
+    @if (activeConfig().showTraceId && traceId()) {
+      <div class="trace-id-box d-flex align-items-center justify-content-between p-2 px-3 mb-4 mx-auto rounded-3">
+        <div class="d-flex align-items-center gap-2 text-start overflow-hidden">
+          <i class="fas fa-terminal text-muted" aria-hidden="true"></i>
+          <span class="small text-muted text-nowrap">{{ translate('ErrorPages.TraceIdLabel') }}:</span>
+          <code class="trace-code text-truncate">{{ traceId() }}</code>
+        </div>
+        <button
+          type="button"
+          class="btn btn-sm copy-btn ms-2 text-nowrap"
+          (click)="copyTraceId()"
+          [title]="translate('ErrorPages.CopyTraceId')"
+          [attr.aria-label]="translate('ErrorPages.CopyTraceId')"
+        >
+          <i class="fas me-1" [class.fa-check]="copied()" [class.fa-copy]="!copied()" aria-hidden="true"></i>
+          <span>{{ translate(copied() ? 'ErrorPages.Copied' : 'ErrorPages.CopyTraceId') }}</span>
+        </button>
+      </div>
+    }
+
+    <!-- Countdown Recovery Section -->
+    <div class="countdown-section mb-4 mx-auto">
+      <div class="d-flex align-items-center justify-content-between mb-2 small text-muted">
+        <span class="countdown-text d-flex align-items-center gap-2">
+          <i class="fas fa-clock text-warning" aria-hidden="true"></i>
+          <span>{{ translate('ErrorPages.AutoRedirectNotice', countdownStr()) }}</span>
+        </span>
+        <button
+          type="button"
+          class="btn btn-link btn-sm p-0 pause-toggle-btn text-decoration-none"
+          (click)="togglePause()"
+          [attr.aria-label]="translate(isPaused() ? 'ErrorPages.ResumeCountdown' : 'ErrorPages.PauseCountdown')"
+        >
+          <i class="fas me-1" [class.fa-play]="isPaused()" [class.fa-pause]="!isPaused()" aria-hidden="true"></i>
+          <span>{{ translate(isPaused() ? 'ErrorPages.ResumeCountdown' : 'ErrorPages.PauseCountdown') }}</span>
+        </button>
+      </div>
+
+      <!-- Linear Progress Bar -->
+      <div class="progress-track" role="progressbar" [attr.aria-valuenow]="progressPercent()" aria-valuemin="0" aria-valuemax="100">
+        <div
+          class="progress-bar-fill"
+          [style.width.%]="progressPercent()"
+          [class.paused]="isPaused()"
+        ></div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons-group d-flex flex-wrap align-items-center justify-content-center gap-2 pt-2">
+      <!-- Primary CTA: Back to Role Home -->
+      <button
+        type="button"
+        class="btn btn-primary primary-cta-btn d-flex align-items-center justify-content-center gap-2 px-4 py-2"
+        (click)="goHome()"
+      >
+        <i class="fas fa-home" aria-hidden="true"></i>
+        <span>{{ translate(homeButtonLabelKey) }}</span>
+      </button>
+
+      <!-- Secondary Action: Back to Previous Page -->
+      @if (activeConfig().showBackButton) {
+        <button
+          type="button"
+          class="btn btn-outline-secondary secondary-back-btn d-flex align-items-center justify-content-center gap-2 px-3 py-2"
+          (click)="goBack()"
+        >
+          <i class="fas fa-arrow-left" aria-hidden="true"></i>
+          <span>{{ translate('ErrorPages.BackToPreviousPage') }}</span>
+        </button>
+      }
+
+      <!-- Secondary Action: Retry Page (500 / 505) -->
+      @if (activeConfig().showRetryButton) {
+        <button
+          type="button"
+          class="btn btn-outline-warning secondary-retry-btn d-flex align-items-center justify-content-center gap-2 px-3 py-2"
+          (click)="retry()"
+        >
+          <i class="fas fa-redo-alt" aria-hidden="true"></i>
+          <span>{{ translate('ErrorPages.Retry') }}</span>
+        </button>
+      }
+    </div>
+  </div>
+</div>

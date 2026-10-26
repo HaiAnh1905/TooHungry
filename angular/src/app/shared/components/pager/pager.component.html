@@ -1,0 +1,88 @@
+<div class="custom-table-footer d-flex align-items-center justify-content-between flex-wrap gap-3">
+  <!-- Bên trái: Số lượng bản ghi + Select số dòng -->
+  <div class="d-flex align-items-center flex-wrap gap-3">
+    <span class="records-summary-text">
+      {{ '::ShowingRecords' | abpLocalization }}
+      <strong>{{ fromRecord }} - {{ toRecord }}</strong>
+      {{ '::OfTotal' | abpLocalization }}
+      <strong>{{ totalCount }}</strong>
+      @if (unitKey) {
+        <span>{{ unitKey | abpLocalization }}</span>
+      }
+    </span>
+
+    @if (showPageSizeSelector) {
+      <div class="d-flex align-items-center gap-2 page-size-box">
+        <span class="page-size-label">{{ '::Display' | abpLocalization }}:</span>
+        <app-custom-select
+          [options]="pageSizeSelectOptions"
+          [ngModel]="pageSize"
+          (selectionChange)="onPageSizeSelected($event)"
+          size="sm"
+          placement="top"
+          minWidth="140px"
+        ></app-custom-select>
+      </div>
+    }
+  </div>
+
+  <!-- Bên phải: Dãy nút điều hướng phân trang -->
+  <div class="d-flex align-items-center pagination-btn-group" style="gap: 5px">
+    <button
+      type="button"
+      class="btn-page-nav"
+      [disabled]="page === 1"
+      (click)="firstPage()"
+      [title]="'::Pagination:First' | abpLocalization"
+    >
+      <i class="fa fa-angle-double-left"></i>
+    </button>
+
+    <button
+      type="button"
+      class="btn-page-nav btn-text-nav"
+      [disabled]="page === 1"
+      (click)="prevPage()"
+      [title]="'::Pagination:Previous' | abpLocalization"
+    >
+      <i class="fa fa-angle-left me-1"></i>
+      <span>{{ '::Pagination:Previous' | abpLocalization }}</span>
+    </button>
+
+    @for (p of pages; track $index) {
+      @if (p === '...') {
+        <span class="page-ellipsis">...</span>
+      } @else {
+        <button
+          type="button"
+          class="btn-page-nav btn-page-number"
+          [class.active]="p === page"
+          (click)="goToPage(p)"
+        >
+          {{ p }}
+        </button>
+      }
+    }
+
+    <button
+      type="button"
+      class="btn-page-nav btn-text-nav"
+      [disabled]="page === totalPages"
+      (click)="nextPage()"
+      [title]="'::Pagination:Next' | abpLocalization"
+    >
+      <span>{{ '::Pagination:Next' | abpLocalization }}</span>
+      <i class="fa fa-angle-right ms-1"></i>
+    </button>
+
+    <button
+      type="button"
+      class="btn-page-nav"
+      [disabled]="page === totalPages"
+      (click)="lastPage()"
+      [title]="'::Pagination:Last' | abpLocalization"
+    >
+      <i class="fa fa-angle-double-right"></i>
+    </button>
+  </div>
+</div>

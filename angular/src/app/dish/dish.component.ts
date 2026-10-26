@@ -28,6 +28,7 @@ import { MediaService } from '../proxy/controllers/media.service';
 import { CustomSelectComponent, CustomSelectOption } from '../shared/components/custom-select/custom-select.component';
 import { ImgFallbackDirective } from '../shared/directives/img-fallback.directive';
 import { RecipeModalComponent } from '../recipe/recipe-modal/recipe-modal.component';
+import { PagerComponent } from '../shared/components/pager/pager.component';
 
 @Component({
   selector: 'app-dish',
@@ -42,6 +43,7 @@ import { RecipeModalComponent } from '../recipe/recipe-modal/recipe-modal.compon
     CustomSelectComponent,
     ImgFallbackDirective,
     RecipeModalComponent,
+    PagerComponent,
   ],
   templateUrl: './dish.component.html',
   styleUrl: './dish.component.scss',
@@ -385,21 +387,8 @@ export class DishComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private recalculateTable() {
-    requestAnimationFrame(() => {
-      this.table?.recalculate();
-      window.dispatchEvent(new Event('resize'));
-      this.cdr.markForCheck();
-    });
-    setTimeout(() => {
-      this.table?.recalculate();
-      window.dispatchEvent(new Event('resize'));
-      this.cdr.markForCheck();
-    }, 50);
-    setTimeout(() => {
-      this.table?.recalculate();
-      window.dispatchEvent(new Event('resize'));
-      this.cdr.markForCheck();
-    }, 200);
+    this.table?.recalculate();
+    this.cdr.markForCheck();
   }
 
   // Toggle IsActive

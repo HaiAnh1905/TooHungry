@@ -37,6 +37,9 @@ import { TableMergeModalComponent } from '../shared/components/tables/table-merg
 import { TableEndMealModalComponent } from '../shared/components/tables/table-end-meal-modal.component';
 import { TableFormModalComponent } from './components/table-form-modal.component';
 import { DiningAreaFormModalComponent } from './components/dining-area-form-modal.component';
+import { TableCardComponent } from '../shared/components/tables/table-card/table-card.component';
+import { PagerComponent } from '../shared/components/pager/pager.component';
+import { RESTAURANT_BUSINESS_HOURS } from '../shared/constants/business-hours.constant';
 
 @Component({
   selector: 'app-table',
@@ -57,6 +60,8 @@ import { DiningAreaFormModalComponent } from './components/dining-area-form-moda
     TableTransferModalComponent,
     TableMergeModalComponent,
     TableEndMealModalComponent,
+    TableCardComponent,
+    PagerComponent,
   ],
   templateUrl: './table.component.html',
   styleUrl: './table.component.scss',
@@ -243,7 +248,7 @@ export class TableComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly isRestaurantOpen = computed(() => {
     const now = new Date(this.currentTime());
     const hours = now.getHours();
-    return hours >= 9 && hours < 23;
+    return hours >= RESTAURANT_BUSINESS_HOURS.OPEN_HOUR && hours < RESTAURANT_BUSINESS_HOURS.CLOSE_HOUR;
   });
 
   readonly currentAreaTables = computed(() => {
@@ -604,6 +609,10 @@ export class TableComponent implements OnInit, AfterViewInit, OnDestroy {
   changeGridPageSize(size: any) {
     this.gridPageSize.set(Number(size));
     this.gridPage.set(1);
+  }
+
+  onGridPageChange(page: number) {
+    this.gridPage.set(page);
   }
 
   gridFirstPage() {

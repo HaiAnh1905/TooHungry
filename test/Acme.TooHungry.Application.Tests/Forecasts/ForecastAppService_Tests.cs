@@ -47,13 +47,7 @@ public abstract class ForecastAppService_Tests<TStartupModule> : TooHungryApplic
             IsActive = true
         }, autoSave: true);
 
-        var order = new Order
-        {
-            OrderNumber = $"ORD-{Guid.NewGuid():N}"[..12],
-            OrderDate = DateTime.Now.AddDays(-2),
-            Status = OrderStatus.Completed,
-            TotalAmount = 300000m
-        };
+        var order = new Order($"ORD-{Guid.NewGuid():N}"[..12], DateTime.Now.AddDays(-2), OrderStatus.Completed, 300000m);
         order.Items.Add(new OrderItem
         {
             DishId = dish.Id,

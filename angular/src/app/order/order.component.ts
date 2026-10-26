@@ -7,6 +7,8 @@ import {
   inject,
   ViewChild,
   ElementRef,
+  signal,
+  computed,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormArray, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -19,8 +21,8 @@ import {
 } from '@abp/ng.core';
 import { ConfirmationService, Confirmation, ThemeSharedModule, ToasterService } from '@abp/ng.theme.shared';
 import { DatatableComponent, NgxDatatableModule } from '@swimlane/ngx-datatable';
-import { forkJoin, of, Subscription } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { of, Subscription, Subject } from 'rxjs';
+import { catchError, debounceTime, switchMap } from 'rxjs/operators';
 import { OrderService } from '../proxy/orders/order.service';
 import { OrderDto } from '../proxy/orders/models';
 import { OrderStatus, orderStatusOptions } from '../proxy/orders/order-status.enum';
@@ -28,17 +30,14 @@ import { DishService } from '../proxy/controllers/dish.service';
 import { DishDto } from '../proxy/dishes/models';
 import { TableService } from '../proxy/tables/table.service';
 import { TableDto } from '../proxy/tables/models';
-import { RecipeService } from '../proxy/recipes/recipe.service';
-import { RecipeDto } from '../proxy/recipes/models';
-import { IngredientService } from '../proxy/ingredients/ingredient.service';
-import { IngredientDto } from '../proxy/ingredients/models';
 import { Router } from '@angular/router';
 import { CustomSelectComponent, CustomSelectOption } from '../shared/components/custom-select/custom-select.component';
+import { PagerComponent } from '../shared/components/pager/pager.component';
 
 @Component({
   selector: 'app-order',
   standalone: true,
-  imports: [CommonModule, CoreModule, ThemeSharedModule, NgxDatatableModule, ReactiveFormsModule, FormsModule, CustomSelectComponent],
+  imports: [CommonModule, CoreModule, ThemeSharedModule, NgxDatatableModule, ReactiveFormsModule, FormsModule, CustomSelectComponent, PagerComponent],
   templateUrl: './order.component.html',
   styleUrl: './order.component.scss',
   providers: [ListService],
@@ -48,8 +47,6 @@ export class OrderComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly orderService = inject(OrderService);
   private readonly dishService = inject(DishService);
   private readonly tableService = inject(TableService);
-  private readonly recipeService = inject(RecipeService);
-  private readonly ingredientService = inject(IngredientService);
   private readonly fb = inject(FormBuilder);
   private readonly confirmation = inject(ConfirmationService);
   private readonly toaster = inject(ToasterService);
@@ -61,13 +58,9 @@ export class OrderComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('tableWrapper') tableWrapper?: ElementRef;
 
   data: PagedResultDto<OrderDto> = { items: [], totalCount: 0 };
-  dishes: DishDto[] = [];
+  readonly dishes = signal<DishDto[]>([]);
   tables: TableDto[] = [];
   tableSelectOptions: CustomSelectOption[] = [];
-  recipes: RecipeDto[] = [];
-  ingredients: IngredientDto[] = [];
-  recipeByDishId = new Map<string, RecipeDto>();
-  ingredientById = new Map<string, IngredientDto>();
 
   readonly orderStatuses = orderStatusOptions;
   readonly OrderStatus = OrderStatus;
@@ -110,10 +103,52 @@ export class OrderComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // POS Menu Selection
   dishSearchTerm = '';
+  readonly dishSearchTermSignal = signal<string>('');
   expandedCategories: Set<string> = new Set<string>();
+
+  // Real-time server stock warnings
+  readonly stockWarnings = signal<Map<string, string>>(new Map());
+  private readonly validateCartStockSubject = new Subject<void>();
+  private cartStockSubscription?: Subscription;
 
   private resizeObserver?: ResizeObserver;
   private listSubscription?: Subscription;
+
+  readonly filteredDishes = computed(() => {
+    const list = this.dishes();
+    const term = this.dishSearchTermSignal().trim().toLowerCase();
+    if (!term) return list;
+    return list.filter(
+      d =>
+        (d.name && d.name.toLowerCase().includes(term)) ||
+        (d.dishCategoryName && d.dishCategoryName.toLowerCase().includes(term))
+    );
+  });
+
+  readonly groupedDishes = computed(() => {
+    const filtered = this.filteredDishes();
+    if (!filtered || filtered.length === 0) return [];
+
+    const otherCatName = this.localizationService.instant('::OtherDishes');
+    const groupsMap = new Map<string, DishDto[]>();
+
+    for (const dish of filtered) {
+      const catName = dish.dishCategoryName?.trim() || otherCatName;
+      if (!groupsMap.has(catName)) {
+        groupsMap.set(catName, []);
+      }
+      groupsMap.get(catName)!.push(dish);
+    }
+
+    const result: { categoryName: string; dishes: DishDto[] }[] = [];
+    groupsMap.forEach((dishes, categoryName) => {
+      if (dishes.length > 0) {
+        result.push({ categoryName, dishes });
+      }
+    });
+
+    return result;
+  });
 
   get currentPage(): number {
     return this.list.page + 1;
@@ -141,10 +176,40 @@ export class OrderComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit() {
     this.list.maxResultCount = 10;
-    this.loadRecipesAndIngredients();
+
+    this.cartStockSubscription = this.validateCartStockSubject
+      .pipe(
+        debounceTime(300),
+        switchMap(() => {
+          const items = (this.orderItemsArray?.controls || [])
+            .map(c => ({
+              dishId: c.get('dishId')?.value,
+              quantity: Number(c.get('quantity')?.value || 1),
+            }))
+            .filter(x => !!x.dishId);
+          if (items.length === 0) {
+            return of({ isValid: true, shortages: [] });
+          }
+          return this.orderService.validateStock({ items }, { skipHandleError: true }).pipe(
+            catchError(() => of({ isValid: true, shortages: [] }))
+          );
+        })
+      )
+      .subscribe((res: any) => {
+        const warningMap = new Map<string, string>();
+        if (res && !res.isValid && res.shortages) {
+          for (const s of res.shortages) {
+            if (s.dishId && s.warningMessage) {
+              warningMap.set(s.dishId, s.warningMessage);
+            }
+          }
+        }
+        this.stockWarnings.set(warningMap);
+        this.cdr.markForCheck();
+      });
 
     this.dishService.getList({ maxResultCount: 200, skipCount: 0 }).subscribe(res => {
-      this.dishes = res.items || [];
+      this.dishes.set(res.items || []);
       this.cdr.markForCheck();
     });
 
@@ -162,124 +227,26 @@ export class OrderComponent implements OnInit, AfterViewInit, OnDestroy {
       this.orderService.getList({
         ...query,
         sorting: this.sortBy,
+        filter: this.searchTerm?.trim() || undefined,
+        status: this.selectedStatus !== '' ? (Number(this.selectedStatus) as OrderStatus) : undefined,
       });
 
     this.listSubscription = this.list.hookToQuery(streamCreator).subscribe(res => {
-      let items = res.items || [];
-
-      if (this.searchTerm && this.searchTerm.trim() !== '') {
-        const term = this.searchTerm.trim().toLowerCase();
-        items = items.filter(
-          item =>
-            item.orderNumber?.toLowerCase().includes(term) ||
-            item.note?.toLowerCase().includes(term)
-        );
-      }
-
-      if (this.selectedStatus !== '') {
-        const statusNum = Number(this.selectedStatus);
-        items = items.filter(item => item.status === statusNum);
-      }
-
-      this.data = { items, totalCount: items.length };
+      this.data = res;
       this.cdr.markForCheck();
       this.recalculateTable();
     });
   }
 
-  loadRecipesAndIngredients() {
-    forkJoin({
-      recipesRes: this.recipeService.getList({ maxResultCount: 1000 } as any).pipe(catchError(() => of({ items: [] }))),
-      ingredientsRes: this.ingredientService.getList({ maxResultCount: 1000 } as any).pipe(catchError(() => of({ items: [] }))),
-    }).subscribe({
-      next: ({ recipesRes, ingredientsRes }) => {
-        this.recipes = (recipesRes as any)?.items || [];
-        this.ingredients = (ingredientsRes as any)?.items || [];
-
-        this.recipeByDishId.clear();
-        for (const r of this.recipes) {
-          if (r.dishId && r.isActive) {
-            this.recipeByDishId.set(r.dishId, r);
-          }
-        }
-
-        this.ingredientById.clear();
-        for (const ing of this.ingredients) {
-          if (ing.id) {
-            this.ingredientById.set(ing.id, ing);
-          }
-        }
-        this.cdr.markForCheck();
-      },
-    });
+  private triggerStockCheck() {
+    this.validateCartStockSubject.next();
   }
 
-  getDishStockInfo(
-    dishId?: string,
-    quantity: number = 1
-  ): {
-    isOutOfStock: boolean;
-    isShortage: boolean;
-    warningMessage?: string;
-    ingredientName?: string;
-    unitStr?: string;
-    currentStock?: number;
-    missingAmount?: number;
-  } {
-    if (!dishId) return { isOutOfStock: false, isShortage: false };
-    const recipe = this.recipeByDishId.get(dishId);
-    if (!recipe || !recipe.ingredients || recipe.ingredients.length === 0) {
-      return { isOutOfStock: false, isShortage: false };
-    }
-
-    for (const item of recipe.ingredients) {
-      if (!item.ingredientId) continue;
-      const ing = this.ingredientById.get(item.ingredientId);
-      if (!ing) continue;
-
-      const currentStock = Number(ing.currentStock || 0);
-      const conversion = Number(item.conversionFactor || 1);
-      const neededPerDish = Number(item.quantity || 0) * conversion;
-      const totalNeeded = neededPerDish * quantity;
-      const unitStr = ing.baseUnit || item.warehouseUnitName || item.unit || '';
-
-      if (currentStock <= 0) {
-        return {
-          isOutOfStock: true,
-          isShortage: true,
-          ingredientName: ing.name,
-          unitStr,
-          currentStock: 0,
-          missingAmount: totalNeeded,
-          warningMessage: this.localizationService.instant(
-            '::StockShortageOutOfStock',
-            ing.name,
-            unitStr
-          ),
-        };
-      }
-
-      if (currentStock < totalNeeded) {
-        const missing = Number((totalNeeded - currentStock).toFixed(1));
-        return {
-          isOutOfStock: false,
-          isShortage: true,
-          ingredientName: ing.name,
-          unitStr,
-          currentStock,
-          missingAmount: missing,
-          warningMessage: this.localizationService.instant(
-            '::StockShortageDeficit',
-            missing.toString(),
-            unitStr,
-            ing.name,
-            currentStock.toString()
-          ),
-        };
-      }
-    }
-
-    return { isOutOfStock: false, isShortage: false };
+  private getLocalDateString(date: Date = new Date()): string {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
   }
 
   initialDishQuantities = new Map<string, number>();
@@ -291,7 +258,6 @@ export class OrderComponent implements OnInit, AfterViewInit, OnDestroy {
       .map(c => ({
         dishId: c.get('dishId')?.value,
         quantity: Number(c.get('quantity')?.value || 0),
-        unitPrice: Number(c.get('unitPrice')?.value || 0),
       }))
       .sort((a, b) => (a.dishId || '').localeCompare(b.dishId || ''));
 
@@ -308,7 +274,8 @@ export class OrderComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   isDishOutOfStock(dishId?: string): boolean {
-    return this.getDishStockInfo(dishId, 1).isOutOfStock;
+    if (!dishId) return false;
+    return !!this.stockWarnings().get(dishId);
   }
 
   getDishStockWarning(dishId?: string, quantity: number = 1): string | null {
@@ -317,9 +284,7 @@ export class OrderComponent implements OnInit, AfterViewInit, OnDestroy {
     if (initialQty > 0 && quantity <= initialQty) {
       return null;
     }
-
-    const info = this.getDishStockInfo(dishId, quantity);
-    return info.warningMessage || null;
+    return this.stockWarnings().get(dishId) || null;
   }
 
   onSearchChange() {
@@ -388,50 +353,41 @@ export class OrderComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnDestroy() {
     this.resizeObserver?.disconnect();
     this.listSubscription?.unsubscribe();
+    this.cartStockSubscription?.unsubscribe();
   }
 
   private recalculateTable() {
-    requestAnimationFrame(() => {
-      this.table?.recalculate();
-      window.dispatchEvent(new Event('resize'));
-      this.cdr.markForCheck();
-    });
-    setTimeout(() => {
-      this.table?.recalculate();
-      window.dispatchEvent(new Event('resize'));
-      this.cdr.markForCheck();
-    }, 50);
-    setTimeout(() => {
-      this.table?.recalculate();
-      this.cdr.markForCheck();
-    }, 200);
+    this.table?.recalculate();
+    this.cdr.markForCheck();
   }
 
   createOrder() {
-    this.loadRecipesAndIngredients();
+    this.stockWarnings.set(new Map());
     this.selectedItem = {
-      orderNumber: 'ORD-' + Math.floor(100000 + Math.random() * 900000),
-      orderDate: new Date().toISOString().substring(0, 10),
+      orderNumber: '',
+      orderDate: this.getLocalDateString(),
       status: OrderStatus.Pending,
       totalAmount: 0,
       items: [],
     } as OrderDto;
     this.buildForm();
     this.dishSearchTerm = '';
-    // Mặc định đóng tất cả category dropdown
+    this.dishSearchTermSignal.set('');
     this.expandedCategories = new Set<string>();
     this.isModalOpen = true;
     this.cdr.markForCheck();
   }
 
   editOrder(id: string) {
-    this.loadRecipesAndIngredients();
+    this.stockWarnings.set(new Map());
     this.orderService.get(id).subscribe(order => {
       this.selectedItem = order;
       this.buildForm();
       this.dishSearchTerm = '';
+      this.dishSearchTermSignal.set('');
       this.expandedCategories = new Set<string>();
       this.isModalOpen = true;
+      this.triggerStockCheck();
       this.cdr.markForCheck();
     });
   }
@@ -439,13 +395,13 @@ export class OrderComponent implements OnInit, AfterViewInit, OnDestroy {
   buildForm() {
     const formattedDate = this.selectedItem.orderDate
       ? this.selectedItem.orderDate.substring(0, 10)
-      : new Date().toISOString().substring(0, 10);
+      : this.getLocalDateString();
 
     const defaultTableId =
       this.selectedItem.tableId || (this.tables.length > 0 ? this.tables[0].id : null);
 
     this.form = this.fb.group({
-      orderNumber: [this.selectedItem.orderNumber || '', Validators.required],
+      orderNumber: [this.selectedItem.orderNumber || ''],
       orderDate: [formattedDate, Validators.required],
       status: [this.selectedItem.status ?? OrderStatus.Pending, Validators.required],
       tableId: [defaultTableId, Validators.required],
@@ -460,13 +416,13 @@ export class OrderComponent implements OnInit, AfterViewInit, OnDestroy {
           this.fb.group({
             dishId: [item.dishId || '', Validators.required],
             quantity: [item.quantity || 1, [Validators.required, Validators.min(1)]],
-            unitPrice: [item.unitPrice || 0, [Validators.required, Validators.min(0)]],
+            unitPrice: [item.unitPrice || 0],
           })
         );
       });
     }
 
-    if (this.isOrderCompleted) {
+    if (this.isOrderLocked) {
       this.form.disable();
     }
 
@@ -487,6 +443,14 @@ export class OrderComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.selectedItem?.status === OrderStatus.Completed;
   }
 
+  get isOrderCancelled(): boolean {
+    return this.selectedItem?.status === OrderStatus.Cancelled;
+  }
+
+  get isOrderLocked(): boolean {
+    return this.isOrderCompleted || this.isOrderCancelled;
+  }
+
   goToPayment(orderId?: string) {
     if (orderId) {
       this.isModalOpen = false;
@@ -494,42 +458,9 @@ export class OrderComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  get filteredDishes(): DishDto[] {
-    if (!this.dishes) return [];
-    if (!this.dishSearchTerm || this.dishSearchTerm.trim() === '') {
-      return this.dishes;
-    }
-    const term = this.dishSearchTerm.trim().toLowerCase();
-    return this.dishes.filter(
-      d =>
-        (d.name && d.name.toLowerCase().includes(term)) ||
-        (d.dishCategoryName && d.dishCategoryName.toLowerCase().includes(term))
-    );
-  }
-
-  get groupedDishes(): { categoryName: string; dishes: DishDto[] }[] {
-    const filtered = this.filteredDishes;
-    if (!filtered || filtered.length === 0) return [];
-
-    const otherCatName = this.localizationService.instant('::OtherDishes');
-    const groupsMap = new Map<string, DishDto[]>();
-
-    for (const dish of filtered) {
-      const catName = dish.dishCategoryName?.trim() || otherCatName;
-      if (!groupsMap.has(catName)) {
-        groupsMap.set(catName, []);
-      }
-      groupsMap.get(catName)!.push(dish);
-    }
-
-    const result: { categoryName: string; dishes: DishDto[] }[] = [];
-    groupsMap.forEach((dishes, categoryName) => {
-      if (dishes.length > 0) {
-        result.push({ categoryName, dishes });
-      }
-    });
-
-    return result;
+  onDishSearchInput(term: string) {
+    this.dishSearchTerm = term;
+    this.dishSearchTermSignal.set(term);
   }
 
   toggleCategory(categoryName: string) {
@@ -541,7 +472,7 @@ export class OrderComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   isCategoryExpanded(categoryName: string): boolean {
-    if (this.dishSearchTerm && this.dishSearchTerm.trim() !== '') {
+    if (this.dishSearchTermSignal().trim() !== '') {
       return true;
     }
     return this.expandedCategories.has(categoryName);
@@ -549,7 +480,7 @@ export class OrderComponent implements OnInit, AfterViewInit, OnDestroy {
 
   getDishById(id?: string): DishDto | undefined {
     if (!id) return undefined;
-    return this.dishes?.find(d => d.id === id);
+    return this.dishes().find(d => d.id === id);
   }
 
   getDishName(id?: string): string {
@@ -578,22 +509,8 @@ export class OrderComponent implements OnInit, AfterViewInit, OnDestroy {
     return item ? Number(item.get('quantity')?.value || 0) : 0;
   }
 
-  private lastWarningMsg = '';
-  private lastWarningTime = 0;
-
-  private showStockWarningToast(message?: string, title?: string) {
-    if (!message) return;
-    const now = Date.now();
-    if (this.lastWarningMsg === message && now - this.lastWarningTime < 1500) {
-      return;
-    }
-    this.lastWarningMsg = message;
-    this.lastWarningTime = now;
-    this.toaster.warn(message, title);
-  }
-
   addDishToOrder(dish: DishDto) {
-    if (this.isOrderCompleted || !dish || !dish.id) return;
+    if (this.isOrderLocked || !dish || !dish.id) return;
 
     const existingIndex = this.orderItemsArray.controls.findIndex(
       c => c.get('dishId')?.value === dish.id
@@ -604,42 +521,28 @@ export class OrderComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    const stockInfo = this.getDishStockInfo(dish.id, 1);
-    if (stockInfo.isShortage && stockInfo.warningMessage) {
-      this.showStockWarningToast(stockInfo.warningMessage, `Cảnh báo: ${dish.name}`);
-    }
-
     this.orderItemsArray.push(
       this.fb.group({
         dishId: [dish.id, Validators.required],
         quantity: [1, [Validators.required, Validators.min(1)]],
-        unitPrice: [dish.price || 0, [Validators.required, Validators.min(0)]],
+        unitPrice: [dish.price || 0],
       })
     );
     this.calculateTotal();
+    this.triggerStockCheck();
   }
 
   increaseQuantity(index: number) {
-    if (this.isOrderCompleted) return;
+    if (this.isOrderLocked) return;
     const row = this.orderItemsArray.at(index);
     const current = Number(row.get('quantity')?.value || 1);
-    const dishId = row.get('dishId')?.value;
-    const newQty = current + 1;
-
-    const initialQty = this.initialDishQuantities.get(dishId) || 0;
-    if (newQty > initialQty) {
-      const stockInfo = this.getDishStockInfo(dishId, newQty);
-      if (stockInfo.isShortage && stockInfo.warningMessage) {
-        this.showStockWarningToast(stockInfo.warningMessage, `Cảnh báo: ${this.getDishName(dishId)}`);
-      }
-    }
-
-    row.patchValue({ quantity: newQty });
+    row.patchValue({ quantity: current + 1 });
     this.calculateTotal();
+    this.triggerStockCheck();
   }
 
   decreaseQuantity(index: number) {
-    if (this.isOrderCompleted) return;
+    if (this.isOrderLocked) return;
     const row = this.orderItemsArray.at(index);
     const current = Number(row.get('quantity')?.value || 1);
     if (current > 1) {
@@ -648,18 +551,21 @@ export class OrderComponent implements OnInit, AfterViewInit, OnDestroy {
     } else {
       this.removeOrderItem(index);
     }
+    this.triggerStockCheck();
   }
 
   removeOrderItem(index: number) {
-    if (this.isOrderCompleted) return;
+    if (this.isOrderLocked) return;
     this.orderItemsArray.removeAt(index);
     this.calculateTotal();
+    this.triggerStockCheck();
   }
 
   clearAllOrderItems() {
-    if (this.isOrderCompleted) return;
+    if (this.isOrderLocked) return;
     this.orderItemsArray.clear();
     this.calculateTotal();
+    this.triggerStockCheck();
   }
 
   calculateTotal() {
@@ -667,8 +573,8 @@ export class OrderComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.orderItemsArray) {
       const items = this.orderItemsArray.controls;
       for (const item of items) {
-        const q = item.get('quantity')?.value || 0;
-        const p = item.get('unitPrice')?.value || 0;
+        const q = Number(item.get('quantity')?.value || 0);
+        const p = Number(item.get('unitPrice')?.value || 0);
         total += q * p;
       }
     }
@@ -706,9 +612,17 @@ export class OrderComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  isStatusLocked(status?: OrderStatus): boolean {
+    return status === OrderStatus.Completed || status === OrderStatus.Cancelled;
+  }
+
   save() {
-    if (this.isOrderCompleted) {
-      this.toaster.warn(this.localizationService.instant('::OrderCompletedLocked'));
+    if (this.isOrderLocked) {
+      this.toaster.warn(
+        this.localizationService.instant(
+          this.isOrderCancelled ? '::OrderCancelledLocked' : '::OrderCompletedLocked'
+        )
+      );
       return;
     }
 
@@ -719,45 +633,40 @@ export class OrderComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const formVal = { ...this.form.value };
     if (formVal.orderDate) {
-      formVal.orderDate = new Date(formVal.orderDate).toISOString();
+      const parts = formVal.orderDate.split('-').map(Number);
+      if (parts.length === 3) {
+        formVal.orderDate = new Date(parts[0], parts[1] - 1, parts[2], 12, 0, 0).toISOString();
+      }
     }
     formVal.status = Number(formVal.status);
 
     const isEdit = !!this.selectedItem.id;
 
-    const shortages: string[] = [];
-    for (const item of this.orderItemsArray.controls) {
-      const dId = item.get('dishId')?.value;
-      const q = Number(item.get('quantity')?.value || 1);
-      const initialQty = this.initialDishQuantities.get(dId) || 0;
+    // Check stock trước khi lưu
+    const itemsToCheck = (this.orderItemsArray.controls || [])
+      .map(c => ({
+        dishId: c.get('dishId')?.value,
+        quantity: Number(c.get('quantity')?.value || 1),
+      }))
+      .filter(x => {
+        const initialQty = this.initialDishQuantities.get(x.dishId) || 0;
+        return initialQty === 0 || x.quantity > initialQty;
+      });
 
-      if (initialQty > 0 && q <= initialQty) {
-        continue;
-      }
-
-      const s = this.getDishStockInfo(dId, q);
-      if (s.isShortage && s.warningMessage) {
-        const line = this.localizationService.instant(
-          '::StockShortageDishLine',
-          this.getDishName(dId),
-          q.toString(),
-          s.warningMessage
-        );
-        shortages.push(line);
-      }
-    }
-
-    const executeSave = () => {
+    const proceedSave = () => {
       const request = isEdit
-        ? this.orderService.update(this.selectedItem.id!, formVal)
-        : this.orderService.create(formVal);
+        ? this.orderService.update(this.selectedItem.id!, formVal, { skipHandleError: true })
+        : this.orderService.create(formVal, { skipHandleError: true });
 
       request.subscribe({
-        next: () => {
+        next: (savedOrder) => {
           const msgKey = isEdit ? '::OrderUpdatedSuccessfully' : '::OrderCreatedSuccessfully';
-          this.toaster.success(this.localizationService.instant(msgKey, formVal.orderNumber));
+          this.toaster.success(this.localizationService.instant(msgKey, savedOrder.orderNumber || formVal.orderNumber));
           if (formVal.status === OrderStatus.Completed) {
-            this.toaster.info('Đã tự động tính tiêu hao và khấu trừ nguyên liệu theo FEFO.', 'Tiêu hao kho');
+            this.toaster.info(
+              this.localizationService.instant('::StockDeductionFefoSuccess'),
+              this.localizationService.instant('::StockDeductionTitle')
+            );
           }
           this.isModalOpen = false;
           this.form.reset();
@@ -765,32 +674,41 @@ export class OrderComponent implements OnInit, AfterViewInit, OnDestroy {
           this.cdr.markForCheck();
         },
         error: (err) => {
-          this.toaster.error(err?.error?.message || 'Có lỗi xảy ra khi lưu đơn hàng!');
+          const errMsg = err?.error?.error?.message || err?.error?.message || this.localizationService.instant('::OrderSaveErrorDefault');
+          this.toaster.error(errMsg);
         },
       });
     };
 
-    if (shortages.length > 0) {
-      const alertList = shortages.join('<br>');
-      const alertMsg = this.localizationService.instant('::OrderHasStockShortageAlert', alertList);
-      this.confirmation.warn(
-        alertMsg,
-        this.localizationService.instant('::StockShortageWarningTitle'),
-        {
-          hideCancelBtn: true,
-          yesText: '::Close',
-        }
-      );
-      return;
+    if (itemsToCheck.length > 0) {
+      this.orderService.validateStock({ items: itemsToCheck }, { skipHandleError: true }).subscribe({
+        next: stockRes => {
+          if (!stockRes.isValid && stockRes.shortages && stockRes.shortages.length > 0) {
+            const shortages = stockRes.shortages.map(s => {
+              const dishName = s.dishName || this.getDishName(s.dishId);
+              return this.localizationService.instant('::StockShortageDishLine', dishName, s.requestedQuantity?.toString() || '1', s.warningMessage || '');
+            });
+            const alertMsg = this.localizationService.instant('::OrderHasStockShortageAlert', shortages.join('\n'));
+            this.confirmation.warn(
+              alertMsg,
+              this.localizationService.instant('::StockShortageWarningTitle'),
+              { hideCancelBtn: true, yesText: '::Close' }
+            );
+            return;
+          }
+          proceedSave();
+        },
+        error: () => proceedSave(),
+      });
+    } else {
+      proceedSave();
     }
-
-    executeSave();
   }
 
   delete(id: string) {
     const orderToDelete = this.data.items?.find(x => x.id === id);
     if (orderToDelete && orderToDelete.status === OrderStatus.Completed) {
-      this.toaster.warn('Đơn hàng đã hoàn thành và đã khóa, không thể xóa để bảo toàn dữ liệu kế toán!');
+      this.toaster.warn(this.localizationService.instant('::OrderCompletedLockedWarning'));
       return;
     }
 

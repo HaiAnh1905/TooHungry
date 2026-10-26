@@ -1,4 +1,4 @@
-import type { CancelOrderInputDto, CompletePaymentInputDto, CreateUpdateOrderDto, OrderDto, StockValidationResultDto, SubmitOrderInputDto, ValidateOrderStockInputDto } from './models';
+import type { CancelOrderInputDto, CompletePaymentInputDto, CreateUpdateOrderDto, GetOrdersInputDto, OrderDto, StockValidationResultDto, SubmitOrderInputDto, ValidateOrderStockInputDto } from './models';
 import { RestService, Rest } from '@abp/ng.core';
 import type { PagedAndSortedResultRequestDto, PagedResultDto } from '@abp/ng.core';
 import { Injectable, inject } from '@angular/core';
@@ -55,12 +55,12 @@ export class OrderService {
     { apiName: this.apiName,...config });
   
 
-  getList = (input: PagedAndSortedResultRequestDto, config?: Partial<Rest.Config>) =>
+  getList = (input: GetOrdersInputDto, config?: Partial<Rest.Config>) =>
     this.restService.request<any, PagedResultDto<OrderDto>>({
       method: 'GET',
       headers: { Accept: 'application/json' },
       url: '/api/app/order',
-      params: { sorting: input.sorting, skipCount: input.skipCount, maxResultCount: input.maxResultCount },
+      params: { filter: input.filter, status: input.status, sorting: input.sorting, skipCount: input.skipCount, maxResultCount: input.maxResultCount },
     },
     { apiName: this.apiName,...config });
   

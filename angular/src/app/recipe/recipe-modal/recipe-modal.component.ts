@@ -5,7 +5,7 @@ import { CoreModule, PermissionService } from '@abp/ng.core';
 import { ThemeSharedModule, ToasterService } from '@abp/ng.theme.shared';
 import { RecipeService } from '../../proxy/recipes/recipe.service';
 import { RecipeDto, RecipeIngredientDto } from '../../proxy/recipes/models';
-import { IngredientService } from '../../proxy/ingredients/ingredient.service';
+import { ExtendedIngredientService } from '../../shared/services/extended-ingredient.service';
 import { IngredientDto } from '../../proxy/ingredients/models';
 import { UnitService } from '../../proxy/units/unit.service';
 import { UnitDto } from '../../proxy/units/models';
@@ -21,7 +21,7 @@ import { CustomSelectComponent, CustomSelectOption } from '../../shared/componen
 export class RecipeModalComponent implements OnInit, OnChanges {
   private readonly fb = inject(FormBuilder);
   private readonly recipeService = inject(RecipeService);
-  private readonly ingredientService = inject(IngredientService);
+  private readonly ingredientService = inject(ExtendedIngredientService);
   private readonly unitService = inject(UnitService);
   private readonly permissionService = inject(PermissionService);
   private readonly toaster = inject(ToasterService);

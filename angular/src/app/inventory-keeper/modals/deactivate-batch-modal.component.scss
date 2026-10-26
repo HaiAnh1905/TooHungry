@@ -1,0 +1,29 @@
+.modal-header-icon-box {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+
+  &.bg-amber-50 {
+    background: #fef3c7;
+  }
+}
+
+.text-amber-600 {
+  color: #d97706 !important;
+}
+
+.btn-warning {
+  background: #f59e0b;
+  border-color: #f59e0b;
+  color: #ffffff;
+  font-weight: 600;
+
+  &:hover:not(:disabled) {
+    background: #d97706;
+    border-color: #d97706;
+  }
+}

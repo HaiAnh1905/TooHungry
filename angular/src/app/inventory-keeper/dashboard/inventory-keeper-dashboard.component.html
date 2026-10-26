@@ -1,0 +1,327 @@
+<div class="dashboard-cockpit-container">
+  <!-- 1. HÀNG 4 THẺ BENTO CARDS TỔNG QUAN CHỈ SỐ -->
+  <div class="bento-kpi-grid">
+    <!-- Card 1: Tổng số lô đang lưu trữ -->
+    <div class="bento-card kpi-total-batches" (click)="goToBatchesWithFilter('InUse')">
+      <div class="card-top">
+        <span class="kpi-title">{{ '::TotalActiveBatches' | abpLocalization }}</span>
+        <div class="kpi-icon-pill bg-orange">
+          <i class="fas fa-boxes-stacked"></i>
+        </div>
+      </div>
+      <div class="kpi-value-row">
+        <span class="kpi-number">{{ alertStateService.kpiSummary().totalActiveBatchesCount }}</span>
+        <span class="kpi-unit">{{ '::BatchesUnit' | abpLocalization }}</span>
+      </div>
+      <div class="card-bottom">
+        <span class="sub-hint text-success">
+          <i class="fas fa-circle-check me-1"></i>
+          {{ '::InStorage' | abpLocalization }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Card 2: Lô cận date (<= 7 ngày) -->
+    <div class="bento-card kpi-expiring" (click)="goToBatchesWithFilter('ExpiringSoon')">
+      <div class="card-top">
+        <span class="kpi-title">{{ '::KeeperAlertExpiringSoon' | abpLocalization }}</span>
+        <div class="kpi-icon-pill bg-amber">
+          <i class="fas fa-hourglass-half"></i>
+        </div>
+      </div>
+      <div class="kpi-value-row">
+        <span class="kpi-number text-amber">
+          {{ alertStateService.kpiSummary().expiringSoonCount }}
+        </span>
+        <span class="kpi-unit">{{ '::BatchesUnit' | abpLocalization }}</span>
+      </div>
+      <div class="card-bottom">
+        <span class="sub-hint text-amber">
+          <i class="fas fa-arrow-trend-up me-1"></i>
+          {{ '::NeedFefoPriority' | abpLocalization }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Card 3: Lô quá hạn cần xuất hủy -->
+    <div class="bento-card kpi-expired" (click)="goToBatchesWithFilter('Expired')">
+      <div class="card-top">
+        <span class="kpi-title">{{ '::KeeperAlertExpired' | abpLocalization }}</span>
+        <div class="kpi-icon-pill bg-red">
+          <i class="fas fa-ban"></i>
+        </div>
+      </div>
+      <div class="kpi-value-row">
+        <span class="kpi-number text-red">
+          {{ alertStateService.kpiSummary().expiredCount }}
+        </span>
+        <span class="kpi-unit">{{ '::BatchesUnit' | abpLocalization }}</span>
+      </div>
+      <div class="card-bottom">
+        <span class="sub-hint text-red">
+          <i class="fas fa-triangle-exclamation me-1"></i>
+          {{ '::ImmediateDiscardAction' | abpLocalization }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Card 4: Thiếu tồn kho an toàn -->
+    <div class="bento-card kpi-lowstock" (click)="alertStateService.refreshAlerts()">
+      <div class="card-top">
+        <span class="kpi-title">{{ '::KeeperAlertLowStock' | abpLocalization }}</span>
+        <div class="kpi-icon-pill bg-slate">
+          <i class="fas fa-triangle-exclamation"></i>
+        </div>
+      </div>
+      <div class="kpi-value-row">
+        <span class="kpi-number">
+          {{ alertStateService.kpiSummary().lowStockCount }}
+        </span>
+        <span class="kpi-unit">{{ '::ItemsUnit' | abpLocalization }}</span>
+      </div>
+      <div class="card-bottom">
+        <span class="sub-hint text-muted">
+          <i class="fas fa-rotate me-1"></i>
+          {{ '::ClickToRefresh' | abpLocalization }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. KHỐI TÁC VỤ NHANH 1 CHẠM TẠI QUẦY KHO (QUICK ACTIONS DOCK) -->
+  <div class="quick-actions-bento-dock mt-4">
+    <div class="dock-header">
+      <h6 class="m-0 fw-bold d-flex align-items-center gap-2">
+        <i class="fas fa-bolt text-primary-orange"></i>
+        {{ '::QuickActionsTitle' | abpLocalization }}
+      </h6>
+      <small class="text-muted">{{ '::QuickActionsSubtitle' | abpLocalization }}</small>
+    </div>
+    <div class="dock-buttons-row">
+      <!-- Nút 1: Nhập lô mới -->
+      <button
+        type="button"
+        class="dock-action-btn btn-action-inbound"
+        (click)="isCreateBatchModalOpen.set(true)"
+      >
+        <div class="action-icon-circle">
+          <i class="fas fa-boxes-packing"></i>
+        </div>
+        <div class="action-text-meta">
+          <span class="action-title">{{ '::QuickInboundBatch' | abpLocalization }}</span>
+          <span class="action-desc">{{ '::QuickInboundBatchDesc' | abpLocalization }}</span>
+        </div>
+      </button>
+
+      <!-- Nút 2: Quét mã vạch Camera -->
+      <button
+        type="button"
+        class="dock-action-btn btn-action-scan"
+        (click)="isCameraModalOpen.set(true)"
+      >
+        <div class="action-icon-circle">
+          <i class="fas fa-qrcode"></i>
+        </div>
+        <div class="action-text-meta">
+          <span class="action-title">{{ '::KeeperScanBarcode' | abpLocalization }}</span>
+          <span class="action-desc">{{ '::KeeperScanBarcodeDesc' | abpLocalization }}</span>
+        </div>
+      </button>
+
+      <!-- Nút 3: Nhật ký & Kiểm kê -->
+      <button
+        type="button"
+        class="dock-action-btn btn-action-audit"
+        [routerLink]="['/inventory-keeper/transactions']"
+      >
+        <div class="action-icon-circle">
+          <i class="fas fa-clipboard-check"></i>
+        </div>
+        <div class="action-text-meta">
+          <span class="action-title">{{ '::KeeperTransactionsTab' | abpLocalization }}</span>
+          <span class="action-desc">{{ '::KeeperAuditStockDesc' | abpLocalization }}</span>
+        </div>
+      </button>
+
+      <!-- Nút 4: Làm mới toàn bộ số liệu -->
+      <button
+        type="button"
+        class="dock-action-btn btn-action-refresh"
+        (click)="alertStateService.refreshAlerts()"
+      >
+        <div class="action-icon-circle">
+          <i class="fas fa-arrows-rotate"></i>
+        </div>
+        <div class="action-text-meta">
+          <span class="action-title">{{ '::RefreshData' | abpLocalization }}</span>
+          <span class="action-desc">{{ '::RefreshDataDesc' | abpLocalization }}</span>
+        </div>
+      </button>
+    </div>
+  </div>
+
+  <!-- 3. BẢNG ƯU TIÊN XUẤT KHO THEO NGUYÊN TẮC FEFO (FIRST-EXPIRED, FIRST-OUT) -->
+  <div class="fefo-table-bento-card mt-4">
+    <div class="table-card-header">
+      <div class="header-left">
+        <h5 class="m-0 fw-bold d-flex align-items-center gap-2">
+          <i class="fas fa-fire-flame-curved text-primary-orange"></i>
+          {{ '::FefoPriorityTitle' | abpLocalization }}
+        </h5>
+        <small class="text-muted">{{ '::FefoPrioritySubtitle' | abpLocalization }}</small>
+      </div>
+      <button
+        type="button"
+        class="btn btn-sm btn-outline-secondary"
+        [routerLink]="['/inventory-keeper/batches']"
+      >
+        {{ '::ViewAllBatches' | abpLocalization }}
+        <i class="fas fa-arrow-right ms-1"></i>
+      </button>
+    </div>
+
+    <div class="table-card-body">
+      @if (isLoading()) {
+        <div class="text-center py-5">
+          <i class="fas fa-spinner fa-spin fa-2x text-primary-orange mb-2"></i>
+          <p class="text-muted m-0">{{ '::Loading' | abpLocalization }}</p>
+        </div>
+      } @else if (fefoBatches().length === 0) {
+        <div class="text-center py-5 empty-fefo-state">
+          <i class="fas fa-shield-heart fa-3x text-success mb-3"></i>
+          <h6 class="fw-bold">{{ '::SafeInventorySubtitle' | abpLocalization }}</h6>
+          <p class="text-muted small m-0">{{ '::NoCriticalBatches' | abpLocalization }}</p>
+        </div>
+      } @else {
+        <!-- THANH TÁC VỤ ĐỒNG LOẠT (BULK ACTION BAR) -->
+        @if (selectedBatchIds().size > 0) {
+          <div class="fefo-bulk-action-bar animate-fade-in d-flex align-items-center justify-content-between p-2 px-3 m-3 rounded-3 border">
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge bg-danger rounded-pill px-2 py-1">
+                {{ selectedBatchIds().size }}
+              </span>
+              <span class="fw-bold text-dark small">
+                {{ '::BatchesSelected' | abpLocalization : (selectedBatchIds().size + '') }}
+              </span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary"
+                (click)="clearSelection()"
+              >
+                <i class="fas fa-times me-1"></i>
+                {{ '::DeselectAll' | abpLocalization }}
+              </button>
+              <button
+                type="button"
+                class="btn btn-sm btn-danger shadow-sm d-flex align-items-center gap-1"
+                (click)="openBulkDiscardModal()"
+              >
+                <i class="fas fa-trash-can me-1"></i>
+                <span>{{ '::BulkDiscardAction' | abpLocalization : (selectedBatchIds().size + '') }}</span>
+              </button>
+            </div>
+          </div>
+        }
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle m-0 custom-fefo-table">
+            <thead>
+              <tr>
+                <th class="checkbox-col" style="width: 44px;">
+                  <div class="form-check m-0">
+                    <input
+                      type="checkbox"
+                      class="form-check-input"
+                      [checked]="isAllFefoSelected()"
+                      [indeterminate]="isFefoIndeterminate()"
+                      (change)="toggleSelectAllFefo($event)"
+                      [title]="'::SelectAll' | abpLocalization"
+                    />
+                  </div>
+                </th>
+                <th>{{ '::BatchCode' | abpLocalization }}</th>
+                <th>{{ '::Ingredient' | abpLocalization }}</th>
+                <th>{{ '::ExpiryDate' | abpLocalization }}</th>
+                <th>{{ '::Status' | abpLocalization }}</th>
+                <th class="text-end">{{ '::RemainingQuantity' | abpLocalization }}</th>
+                <th class="text-end">{{ '::Actions' | abpLocalization }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (batch of fefoBatches(); track batch.id) {
+                <tr [class.table-active]="isBatchSelected(batch.id)">
+                  <td class="checkbox-col" (click)="$event.stopPropagation()">
+                    <div class="form-check m-0">
+                      <input
+                        type="checkbox"
+                        class="form-check-input"
+                        [checked]="isBatchSelected(batch.id)"
+                        (change)="toggleBatchSelection(batch)"
+                      />
+                    </div>
+                  </td>
+                  <td>
+                    <span class="font-monospace fw-bold text-dark">{{ batch.batchCode }}</span>
+                  </td>
+                  <td>
+                    <div class="fw-bold text-dark">{{ batch.ingredientName || 'Nguyên liệu' }}</div>
+                  </td>
+                  <td>
+                    <span class="text-muted font-monospace">
+                      {{ batch.expiryDate | date:'yyyy-MM-dd' }}
+                    </span>
+                  </td>
+                  <td>
+                    <app-expiration-badge
+                      [expiryDate]="batch.expiryDate"
+                      [storageType]="batch.storageType"
+                      [allowDiscard]="false"
+                    ></app-expiration-badge>
+                  </td>
+                  <td class="text-end">
+                    <span class="fw-bold text-dark fs-6">{{ batch.remainingQuantity }}</span>
+                    <span class="text-muted ms-1 small">{{ batch.purchaseUnit || '' }}</span>
+                  </td>
+                  <td class="text-end">
+                    <div class="btn-group btn-group-sm">
+                      <button
+                        type="button"
+                        class="btn btn-outline-danger btn-sm"
+                        (click)="openDiscardModal(batch)"
+                        [title]="'::QuickDiscardBatch' | abpLocalization"
+                      >
+                        <i class="fas fa-trash-can me-1"></i>
+                        {{ '::ActionDiscard' | abpLocalization }}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<app-barcode-camera-modal
+  [(visible)]="isCameraModalOpen"
+  (scanned)="onScanned($event)"
+></app-barcode-camera-modal>
+
+<app-create-batch-modal
+  [(visible)]="isCreateBatchModalOpen"
+  (created)="onBatchCreated()"
+></app-create-batch-modal>
+
+<app-discard-batch-modal
+  [(visible)]="isDiscardModalOpen"
+  [batch]="batchToDiscard() || undefined"
+  [batches]="batchesToDiscard()"
+  [isSubmitting]="isSubmittingDiscard()"
+  (confirmed)="onDiscardConfirmed($event)"
+></app-discard-batch-modal>

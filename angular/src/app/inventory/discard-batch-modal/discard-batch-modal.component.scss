@@ -31,3 +31,45 @@
     color: #ffffff;
   }
 }
+
+.preset-chips-group {
+  .preset-chip-btn {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    border-radius: 9999px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+    display: inline-flex;
+    align-items: center;
+    transition: all 0.15s ease;
+
+    &:hover {
+      background: #fff1f2;
+      border-color: #fecdd3;
+      color: #dc2626;
+    }
+
+    &.active {
+      background: #ffe4e6;
+      border-color: #f43f5e;
+      color: #e11d48;
+      font-weight: 700;
+    }
+  }
+}
+
+.bulk-batches-preview-list {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+  }
+}
+

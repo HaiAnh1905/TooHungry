@@ -1,0 +1,54 @@
+@if (suggestions.length > 0) {
+  <div class="bento-replenishment-card">
+    <div class="card-header-row">
+      <div class="header-left">
+        <div class="icon-wrap">
+          <i class="fa fa-chart-line"></i>
+        </div>
+        <div>
+          <h4 class="card-title">{{ '::DashboardInventory:ReplenishmentTitle' | abpLocalization }}</h4>
+          <p class="card-desc">{{ '::ReplenishmentSubtitle' | abpLocalization }}</p>
+        </div>
+      </div>
+      <span class="badge-suggestions-count">
+        {{ suggestions.length }} {{ '::ItemsUnit' | abpLocalization }}
+      </span>
+    </div>
+
+    <div class="suggestions-list">
+      @for (item of suggestions; track item.ingredientId) {
+        <div class="suggestion-item">
+          <div class="item-info">
+            <span class="item-name">{{ item.ingredientName }}</span>
+            <div class="item-stock-comparison">
+              <span class="stock-current">
+                {{ '::CurrentStock' | abpLocalization }}: <strong>{{ item.currentStock }} {{ item.unitName }}</strong>
+              </span>
+              <span class="stock-divider">/</span>
+              <span class="stock-target text-muted">
+                {{ '::MinStockHeader' | abpLocalization }}: {{ item.forecastDemand }} {{ item.unitName }}
+              </span>
+            </div>
+          </div>
+
+          <div class="item-action-wrap">
+            <div class="suggested-qty-box">
+              <span class="qty-label">{{ '::DashboardInventory:SuggestedQty' | abpLocalization }}</span>
+              <span class="qty-value font-monospace">+{{ item.suggestedQuantity }} {{ item.unitName }}</span>
+            </div>
+
+            <button
+              type="button"
+              class="btn-quick-inbound"
+              (click)="onQuickInbound(item)"
+              [title]="'::DashboardInventory:QuickInbound' | abpLocalization"
+            >
+              <i class="fa fa-truck-ramp-box me-1"></i>
+              <span>{{ '::DashboardInventory:QuickInbound' | abpLocalization }}</span>
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+}

@@ -58,7 +58,7 @@ public abstract class OrderAppService_ActiveOrder_Tests<TStartupModule> : TooHun
                 TableId = table.Id,
                 Items = new List<SubmitOrderItemDto>
                 {
-                    new() { DishId = dish1.Id, Quantity = 1, UnitPrice = 120000m, Note = "Ít sốt" }
+                    new() { DishId = dish1.Id, Quantity = 1, Note = "Ít sốt" }
                 }
             });
 
@@ -80,8 +80,8 @@ public abstract class OrderAppService_ActiveOrder_Tests<TStartupModule> : TooHun
                 TableId = table.Id,
                 Items = new List<SubmitOrderItemDto>
                 {
-                    new() { DishId = dish1.Id, Quantity = 1, UnitPrice = 120000m, Note = "Ít sốt" },
-                    new() { DishId = dish2.Id, Quantity = 2, UnitPrice = 45000m, Note = "Ít ngọt" }
+                    new() { DishId = dish1.Id, Quantity = 1, Note = "Ít sốt" },
+                    new() { DishId = dish2.Id, Quantity = 2, Note = "Ít ngọt" }
                 }
             });
 

@@ -65,7 +65,7 @@ public abstract class OrderAppService_Consumption_Tests<TStartupModule> : TooHun
                 OrderNumber = "ORD-001",
                 Items = new List<CreateUpdateOrderItemDto>
                 {
-                    new() { DishId = dish.Id, Quantity = 2, UnitPrice = 200000m }
+                    new() { DishId = dish.Id, Quantity = 2 }
                 }
             });
 
@@ -76,7 +76,7 @@ public abstract class OrderAppService_Consumption_Tests<TStartupModule> : TooHun
                 Status = OrderStatus.Completed,
                 Items = new List<CreateUpdateOrderItemDto>
                 {
-                    new() { DishId = dish.Id, Quantity = 2, UnitPrice = 200000m }
+                    new() { DishId = dish.Id, Quantity = 2 }
                 }
             });
 
@@ -111,7 +111,7 @@ public abstract class OrderAppService_Consumption_Tests<TStartupModule> : TooHun
                 OrderNumber = "ORD-002",
                 Items = new List<CreateUpdateOrderItemDto>
                 {
-                    new() { DishId = dish.Id, Quantity = 5, UnitPrice = 20000m }
+                    new() { DishId = dish.Id, Quantity = 5 }
                 }
             });
 
@@ -121,7 +121,7 @@ public abstract class OrderAppService_Consumption_Tests<TStartupModule> : TooHun
                 Status = OrderStatus.Completed,
                 Items = new List<CreateUpdateOrderItemDto>
                 {
-                    new() { DishId = dish.Id, Quantity = 5, UnitPrice = 20000m }
+                    new() { DishId = dish.Id, Quantity = 5 }
                 }
             });
 
@@ -163,7 +163,7 @@ public abstract class OrderAppService_Consumption_Tests<TStartupModule> : TooHun
                 OrderNumber = "ORD-003",
                 Items = new List<CreateUpdateOrderItemDto>
                 {
-                    new() { DishId = dish.Id, Quantity = 2, UnitPrice = 300000m }
+                    new() { DishId = dish.Id, Quantity = 2 }
                 }
             });
 
@@ -174,7 +174,7 @@ public abstract class OrderAppService_Consumption_Tests<TStartupModule> : TooHun
                 Status = OrderStatus.Completed,
                 Items = new List<CreateUpdateOrderItemDto>
                 {
-                    new() { DishId = dish.Id, Quantity = 2, UnitPrice = 300000m }
+                    new() { DishId = dish.Id, Quantity = 2 }
                 }
             });
 

@@ -13,6 +13,7 @@
     </div>
     <div>
       <button
+        *abpPermission="'TooHungry.Dishes.Create'"
         id="create-dish"
         class="btn btn-primary btn-add-dish"
         type="button"
@@ -352,6 +353,7 @@
           <ng-template let-row="row" ngx-datatable-cell-template>
             <div class="actions-container">
               <button
+                *abpPermission="'TooHungry.Recipes.Default'"
                 type="button"
                 class="icon-action-btn btn-recipe"
                 (click)="openRecipeModal(row)"
@@ -360,6 +362,7 @@
                 <i class="fa fa-book-open"></i>
               </button>
               <button
+                *abpPermission="'TooHungry.Dishes.Edit'"
                 type="button"
                 class="icon-action-btn btn-edit"
                 (click)="editDish(row.id)"
@@ -368,6 +371,7 @@
                 <i class="fa fa-pen"></i>
               </button>
               <button
+                *abpPermission="'TooHungry.Dishes.Delete'"
                 type="button"
                 class="icon-action-btn btn-delete"
                 (click)="openDeleteModal(row)"
@@ -381,81 +385,12 @@
       </ngx-datatable>
     </div>
 
-    <!-- 5. CUSTOM FOOTER PAGINATION BAR -->
-    <div
-      class="custom-table-footer d-flex align-items-center justify-content-between flex-wrap gap-3"
-    >
-      <!-- Bên trái: Số lượng bản ghi + Select số dòng -->
-      <div class="d-flex align-items-center flex-wrap gap-3">
-        <span class="records-summary-text">
-          {{ '::ShowingRecords' | abpLocalization }}
-          <strong>{{ fromRecord }} - {{ toRecord }}</strong>
-          {{ '::OfTotal' | abpLocalization }}
-          <strong>{{ dish.totalCount }}</strong>
-          {{ '::DishCount' | abpLocalization }}
-        </span>
-
-        <div class="d-flex align-items-center gap-2 page-size-box">
-          <span class="page-size-label">{{ '::Display' | abpLocalization }}:</span>
-          <app-custom-select
-            [options]="pageSizeOptions"
-            [ngModel]="list.maxResultCount"
-            (selectionChange)="changePageSize($event)"
-            size="sm"
-            placement="top"
-            minWidth="140px"
-          ></app-custom-select>
-        </div>
-      </div>
-
-      <!-- Bên phải: Dãy nút điều hướng phân trang -->
-      <div class="d-flex align-items-center pagination-btn-group" style="gap: 5px">
-        <button
-          type="button"
-          class="btn-page-nav"
-          [disabled]="currentPage === 1"
-          (click)="firstPage()"
-          [title]="'::FirstPage' | abpLocalization"
-        >
-          <i class="fa fa-angle-double-left"></i>
-        </button>
-
-        <button
-          type="button"
-          class="btn-page-nav btn-text-nav"
-          [disabled]="currentPage === 1"
-          (click)="prevPage()"
-        >
-          <i class="fa fa-angle-left me-1"></i>
-          <span>{{ '::PreviousPage' | abpLocalization }}</span>
-        </button>
-
-        <span class="current-page-badge">
-          {{ '::Page' | abpLocalization }}
-          <strong>{{ currentPage }}</strong> / {{ totalPages }}
-        </span>
-
-        <button
-          type="button"
-          class="btn-page-nav btn-text-nav"
-          [disabled]="currentPage === totalPages"
-          (click)="nextPage()"
-        >
-          <span>{{ '::NextPage' | abpLocalization }}</span>
-          <i class="fa fa-angle-right ms-1"></i>
-        </button>
-
-        <button
-          type="button"
-          class="btn-page-nav"
-          [disabled]="currentPage === totalPages"
-          (click)="lastPage()"
-          [title]="'::LastPage' | abpLocalization"
-        >
-          <i class="fa fa-angle-double-right"></i>
-        </button>
-      </div>
-    </div>
+    <!-- 5. PAGER COMPONENT -->
+    <app-pager
+      [list]="list"
+      [totalCount]="dish.totalCount"
+      unitKey="::DishCount"
+    ></app-pager>
   </div>
 </div>
 

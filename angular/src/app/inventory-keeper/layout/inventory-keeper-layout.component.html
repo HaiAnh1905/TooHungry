@@ -1,0 +1,363 @@
+<div class="keeper-app-wrapper" (click)="closeDropdowns()">
+  <!-- 1. TOPBAR CỐ ĐỊNH TRÊN CÙNG (64px) -->
+  <header class="keeper-topbar">
+    <div class="topbar-left">
+      <!-- Nút mở Drawer lọc & quét mã trên Mobile/Tablet (< 992px) -->
+      <button
+        type="button"
+        class="btn-toggle-drawer d-lg-none"
+        (click)="sidebarService.toggleMobileDrawer(); $event.stopPropagation()"
+        [title]="'::KeeperScanBarcode' | abpLocalization"
+        aria-label="Toggle Keeper Filters"
+      >
+        <i class="fas fa-filter"></i>
+      </button>
+
+      <!-- Logo thương hiệu Acme.TooHungry & Phân hệ Quầy Kho -->
+      <div class="brand-logo" (click)="navigateToTab('dashboard')">
+        <div class="brand-icon-wrapper">
+          <i class="fas fa-boxes-stacked brand-icon"></i>
+        </div>
+        <div class="brand-text-group">
+          <span class="brand-name">Acme.TooHungry</span>
+          <span class="portal-badge">{{ '::InventoryKeeperPortal' | abpLocalization }}</span>
+        </div>
+      </div>
+
+      <!-- Phân cách dọc nhẹ nhàng -->
+      <div class="topbar-divider d-none d-sm-block"></div>
+
+      <!-- 1. SHIFT QUA BÊN TRÁI: Huy hiệu ca trực tự động theo giờ -->
+      <div class="shift-badge d-none d-sm-inline-flex" [ngClass]="userInfo().shiftType">
+        <i class="far fa-clock me-1"></i>
+        <span>{{ userInfo().shiftLocalizationKey | abpLocalization }}</span>
+      </div>
+    </div>
+
+    <!-- 2. ONLINE Ở GIỮA: Trạng thái kết nối trực tuyến cân đối chính giữa -->
+    <div class="topbar-center d-none d-md-flex">
+      <div class="status-indicator">
+        <span class="status-dot"></span>
+        <span class="status-text">{{ '::RealtimeConnected' | abpLocalization }}</span>
+      </div>
+    </div>
+
+    <!-- 3. PHẦN TÊN QUA BÊN PHẢI: Hồ sơ thủ kho cùng các nút chức năng -->
+    <div class="topbar-right">
+      <!-- Hồ sơ thủ kho đang đăng nhập (Tên + Avatar + Vai trò) -->
+      <div class="keeper-profile d-none d-sm-flex">
+        <div class="avatar-circle">{{ userInitials() }}</div>
+        <div class="user-meta">
+          <span class="user-name">{{ userInfo().fullName }}</span>
+          <span class="user-role">{{ ('::Role:' + primaryRole()) | abpLocalization }}</span>
+        </div>
+      </div>
+
+      <div class="topbar-divider d-none d-sm-block"></div>
+      <!-- Biểu tượng Thông báo Kho Hàng (Thay thế các alert rời rạc trên topbar) -->
+      <div class="notification-dropdown-wrapper">
+        <button
+          type="button"
+          class="btn-icon-topbar btn-notification"
+          (click)="toggleNotificationDropdown($event)"
+          [class.active]="isNotificationDropdownOpen()"
+          [class.has-alerts]="totalAlertsCount() > 0"
+          [title]="'::KeeperNotifications' | abpLocalization"
+          aria-label="Warehouse Notifications"
+        >
+          <i class="fas fa-bell"></i>
+          @if (totalAlertsCount() > 0) {
+            <span class="notification-count-badge">
+              {{ totalAlertsCount() > 99 ? '99+' : totalAlertsCount() }}
+            </span>
+          }
+        </button>
+
+        @if (isNotificationDropdownOpen()) {
+          <div class="notification-dropdown-menu shadow-lg" (click)="$event.stopPropagation()">
+            <!-- Header menu thông báo -->
+            <div class="notification-header">
+              <div class="d-flex align-items-center gap-2">
+                <i class="fas fa-bell text-primary-orange"></i>
+                <span class="notification-title">{{ '::KeeperNotifications' | abpLocalization }}</span>
+              </div>
+              @if (totalAlertsCount() > 0) {
+                <span class="notification-total-badge">{{ totalAlertsCount() }}</span>
+              }
+            </div>
+
+            <!-- Body: Danh sách các cảnh báo tổng hợp -->
+            <div class="notification-body">
+              @if (totalAlertsCount() === 0) {
+                <div class="notification-empty">
+                  <div class="empty-icon-circle">
+                    <i class="fas fa-shield-halved"></i>
+                  </div>
+                  <span class="empty-title">{{ '::KeeperNoAlerts' | abpLocalization }}</span>
+                  <span class="empty-subtitle">{{ '::KeeperNoAlertsDesc' | abpLocalization }}</span>
+                </div>
+              } @else {
+                <!-- 1. Cảnh báo Lô Cận Date -->
+                @if (alertStateService.kpiSummary().expiringSoonCount > 0) {
+                  <div
+                    class="notification-item item-expiring"
+                    (click)="navigateToTab('batches', { status: 'ExpiringSoon' }); isNotificationDropdownOpen.set(false)"
+                  >
+                    <div class="item-icon-box">
+                      <i class="fas fa-hourglass-half"></i>
+                    </div>
+                    <div class="item-content">
+                      <div class="item-heading">
+                        <span class="item-title">{{ '::BatchStatusExpiringSoon' | abpLocalization }}</span>
+                        <span class="item-count-pill badge-expiring">{{ alertStateService.kpiSummary().expiringSoonCount }}</span>
+                      </div>
+                      <p class="item-desc">
+                        {{ alertStateService.kpiSummary().expiringSoonCount }} {{ '::KeeperAlertExpiringDesc' | abpLocalization }}
+                      </p>
+                    </div>
+                  </div>
+                }
+
+                <!-- 2. Cảnh báo Thiếu Tồn An Toàn -->
+                @if (alertStateService.kpiSummary().lowStockCount > 0) {
+                  <div
+                    class="notification-item item-lowstock"
+                    (click)="navigateToTab('dashboard'); isNotificationDropdownOpen.set(false)"
+                  >
+                    <div class="item-icon-box">
+                      <i class="fas fa-triangle-exclamation"></i>
+                    </div>
+                    <div class="item-content">
+                      <div class="item-heading">
+                        <span class="item-title">{{ '::KeeperAlertLowStock' | abpLocalization }}</span>
+                        <span class="item-count-pill badge-lowstock">{{ alertStateService.kpiSummary().lowStockCount }}</span>
+                      </div>
+                      <p class="item-desc">
+                        {{ alertStateService.kpiSummary().lowStockCount }} {{ '::KeeperAlertLowStockDesc' | abpLocalization }}
+                      </p>
+                    </div>
+                  </div>
+                }
+
+                <!-- 3. Cảnh báo Lô Quá Hạn -->
+                @if (alertStateService.kpiSummary().expiredCount > 0) {
+                  <div
+                    class="notification-item item-expired"
+                    (click)="navigateToTab('batches', { status: 'Expired' }); isNotificationDropdownOpen.set(false)"
+                  >
+                    <div class="item-icon-box">
+                      <i class="fas fa-ban"></i>
+                    </div>
+                    <div class="item-content">
+                      <div class="item-heading">
+                        <span class="item-title">{{ '::BatchStatusExpired' | abpLocalization }}</span>
+                        <span class="item-count-pill badge-expired">{{ alertStateService.kpiSummary().expiredCount }}</span>
+                      </div>
+                      <p class="item-desc">
+                        {{ alertStateService.kpiSummary().expiredCount }} {{ '::KeeperAlertExpiredDesc' | abpLocalization }}
+                      </p>
+                    </div>
+                  </div>
+                }
+              }
+            </div>
+
+            <!-- Footer: Xem chi tiết -->
+            <div class="notification-footer">
+              <button
+                type="button"
+                class="btn-footer-link"
+                (click)="navigateToTab('batches'); isNotificationDropdownOpen.set(false)"
+              >
+                <span>{{ '::KeeperViewAllBatches' | abpLocalization }}</span>
+                <i class="fas fa-arrow-right ms-1"></i>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Nút Làm mới số liệu (Reactive Refresh với hiệu ứng xoay) -->
+      <button
+        type="button"
+        class="btn-icon-topbar btn-refresh"
+        (click)="refreshData()"
+        [class.spinning]="isRefreshing()"
+        [title]="'::RefreshData' | abpLocalization"
+        aria-label="Refresh Data"
+      >
+        <i class="fas fa-rotate-right"></i>
+      </button>
+
+      <!-- Bộ chuyển đổi ngôn ngữ (VI / EN) -->
+      <div class="language-dropdown-wrapper">
+        <button
+          type="button"
+          class="btn-lang-switcher"
+          (click)="toggleLanguageDropdown($event)"
+          [title]="'::ChangeLanguage' | abpLocalization"
+          aria-label="Change Language"
+        >
+          <i class="fas fa-globe lang-icon"></i>
+          <span class="lang-text">{{ currentLangItem().shortName }}</span>
+          <i class="fas fa-chevron-down lang-chevron ms-1" [class.rotated]="isLanguageDropdownOpen()"></i>
+        </button>
+
+        @if (isLanguageDropdownOpen()) {
+          <div class="language-dropdown-menu shadow-lg">
+            @for (lang of supportedLanguages; track lang.code) {
+              <button
+                type="button"
+                class="dropdown-item-lang"
+                [class.active]="currentLanguage() === lang.code"
+                (click)="switchLanguage(lang.code)"
+              >
+                <span class="dropdown-lang-name">{{ lang.displayName | abpLocalization }}</span>
+                <span class="dropdown-lang-badge">{{ lang.shortName }}</span>
+                @if (currentLanguage() === lang.code) {
+                  <i class="fas fa-check text-primary-orange ms-2"></i>
+                }
+              </button>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Nút quay lại Quản trị (Dành riêng cho Manager / Admin) -->
+      @if (userInfo().canReturnToAdmin) {
+        <button
+          type="button"
+          class="btn btn-outline-admin"
+          (click)="returnToAdmin()"
+          [title]="'::ReturnToAdmin' | abpLocalization"
+        >
+          <i class="fas fa-arrow-left"></i>
+          <span class="d-none d-lg-inline ms-1">{{ '::ReturnToAdmin' | abpLocalization }}</span>
+        </button>
+      }
+
+      <!-- Nút Đăng xuất nhanh -->
+      <button
+        type="button"
+        class="btn-icon-topbar btn-logout"
+        (click)="logout()"
+        [title]="'::Logout' | abpLocalization"
+        aria-label="Logout"
+      >
+        <i class="fas fa-arrow-right-from-bracket"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- 2. THÂN GIAO DIỆN CHÍNH (SIDEBAR NGỮ CẢNH + MAIN CONTENT) -->
+  <div class="keeper-body-layout">
+    <!-- SIDEBAR CỐ ĐỊNH TRÊN DESKTOP (>= 992px) -->
+    <aside class="keeper-desktop-sidebar d-none d-lg-block">
+      <div class="sidebar-inner-content">
+        <app-inventory-keeper-sidebar
+          [activeTab]="currentActiveTab()"
+          [userInfo]="userInfo()"
+        ></app-inventory-keeper-sidebar>
+      </div>
+    </aside>
+
+    <!-- KHÔNG GIAN TÁC NGHIỆP TRUNG TÂM -->
+    <main class="keeper-main-content">
+      <!-- THANH ĐIỀU HƯỚNG TAB PHÂN HỆ THỦ KHO -->
+      <div class="keeper-tabs-bar">
+        <div class="tabs-container">
+          <!-- Tab 1: Tổng quan & FEFO -->
+          <button
+            type="button"
+            class="tab-btn"
+            [class.active]="currentActiveTab() === 'dashboard'"
+            (click)="navigateToTab('dashboard')"
+          >
+            <i class="fas fa-chart-pie me-2"></i>
+            <span>{{ '::KeeperDashboardTab' | abpLocalization }}</span>
+          </button>
+
+          <!-- Tab 2: Danh mục Lô hàng -->
+          <button
+            type="button"
+            class="tab-btn"
+            [class.active]="currentActiveTab() === 'batches'"
+            (click)="navigateToTab('batches')"
+          >
+            <i class="fas fa-boxes-stacked me-2"></i>
+            <span>{{ '::KeeperBatchesTab' | abpLocalization }}</span>
+          </button>
+
+          <!-- Tab 3: Nhật ký biến động & Kiểm kê -->
+          <button
+            type="button"
+            class="tab-btn"
+            [class.active]="currentActiveTab() === 'transactions'"
+            (click)="navigateToTab('transactions')"
+          >
+            <i class="fas fa-clock-rotate-left me-2"></i>
+            <span>{{ '::KeeperTransactionsTab' | abpLocalization }}</span>
+          </button>
+        </div>
+
+        <div class="tabs-meta-info d-none d-md-flex">
+          <span class="meta-item">
+            <i class="fas fa-warehouse me-1 text-primary-orange"></i>
+            {{ '::TotalActiveBatches' | abpLocalization }}:
+            <strong>{{ alertStateService.kpiSummary().totalActiveBatchesCount }}</strong>
+          </span>
+        </div>
+      </div>
+
+      <!-- VÙNG NỘI DUNG VIEW CON CUỘN ĐỘC LẬP -->
+      <div class="keeper-view-viewport">
+        <router-outlet></router-outlet>
+      </div>
+    </main>
+  </div>
+
+  <!-- 3. MOBILE/TABLET OFFCANVAS DRAWER (< 992px) -->
+  <div
+    class="keeper-drawer-backdrop d-lg-none"
+    [class.show]="sidebarService.isMobileDrawerOpen$() | async"
+    (click)="sidebarService.setMobileDrawerOpen(false)"
+  ></div>
+
+  <aside
+    class="keeper-mobile-drawer d-lg-none"
+    [class.open]="sidebarService.isMobileDrawerOpen$() | async"
+  >
+    <div class="drawer-header">
+      <div class="d-flex align-items-center gap-2">
+        <div class="drawer-header-icon">
+          <i class="fas fa-filter text-primary-orange"></i>
+        </div>
+        <h5 class="drawer-title m-0">
+          {{ '::KeeperSearchPlaceholder' | abpLocalization }}
+        </h5>
+      </div>
+      <button
+        type="button"
+        class="btn-close-drawer"
+        (click)="sidebarService.setMobileDrawerOpen(false)"
+        [title]="'::CloseFilters' | abpLocalization"
+        aria-label="Close Drawer"
+      >
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="drawer-body">
+      <app-inventory-keeper-sidebar
+        [activeTab]="currentActiveTab()"
+        [userInfo]="userInfo()"
+      ></app-inventory-keeper-sidebar>
+    </div>
+  </aside>
+
+  <!-- 4. MODAL QUÉT MÃ VẠCH TOÀN CỤC CHO PHÂN HỆ QUẦY KHO -->
+  <app-barcode-camera-modal
+    [(visible)]="sidebarService.isCameraModalOpen"
+    (scanned)="onBarcodeScanned($event)"
+  ></app-barcode-camera-modal>
+</div>

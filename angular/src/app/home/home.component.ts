@@ -28,6 +28,8 @@ import {
 } from '../proxy/dashboard/models';
 import { InventoryAlertDto } from '../proxy/inventories/models';
 import { TableSignalrService } from '../shared/services/table-signalr.service';
+import { RESTAURANT_BUSINESS_HOURS } from '../shared/constants/business-hours.constant';
+import { UserRoleNavigationService } from '../shared/services/user-role-navigation.service';
 
 Chart.register(...registerables);
 
@@ -41,6 +43,7 @@ Chart.register(...registerables);
 export class HomeComponent implements OnInit, OnDestroy {
   public authService = inject(AuthService);
   public permissionService = inject(PermissionService);
+  private userRoleNav = inject(UserRoleNavigationService);
   private configState = inject(ConfigStateService);
   private router = inject(Router);
   private dashboardService = inject(DashboardService);
@@ -76,7 +79,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   readonly isRestaurantOpen$: Observable<boolean> = this.time$.pipe(
     map(date => {
       const hours = date.getHours();
-      return hours >= 9 && hours < 23;
+      return hours >= RESTAURANT_BUSINESS_HOURS.OPEN_HOUR && hours < RESTAURANT_BUSINESS_HOURS.CLOSE_HOUR;
     })
   );
 
@@ -96,16 +99,25 @@ export class HomeComponent implements OnInit, OnDestroy {
     };
   });
 
+  // Tối đa 4 cảnh báo hiển thị trên Dashboard (User request: chỉ hiển thị nhiều nhất 4 warning)
+  readonly displayedAlerts = computed(() => {
+    return (this.summary()?.alerts || []).slice(0, 4);
+  });
+
+  readonly remainingAlertsCount = computed(() => {
+    const total = this.summary()?.alerts?.length || 0;
+    return Math.max(0, total - 4);
+  });
+
   ngOnInit() {
     if (this.hasLoggedIn) {
-      const currentUser = this.configState.getOne('currentUser') as any;
-      const roles: string[] = currentUser?.roles || [];
-      const isManagerOrAdmin = roles.some(r =>
-        ['Manager', 'Administrator', 'admin'].includes(r)
-      );
-
-      if (roles.includes('Waiter') && !isManagerOrAdmin) {
-        this.router.navigate(['/waiter/tables']);
+      if (!this.permissionService.getGrantedPolicy('TooHungry.Dashboard')) {
+        const targetRoute = this.userRoleNav.getDefaultHomeRoute();
+        if (targetRoute && targetRoute !== '/') {
+          this.router.navigate([targetRoute]);
+        } else {
+          this.router.navigate(['/error/403']);
+        }
         return;
       }
 
@@ -205,9 +217,14 @@ export class HomeComponent implements OnInit, OnDestroy {
         }, 50);
       },
       error: err => {
-        console.error('Failed to load dashboard data:', err);
         this.isLoading.set(false);
         this.cdr.markForCheck();
+        if (err?.status === 403) {
+          this.router.navigate(['/error/403']);
+        } else if (err?.status === 500) {
+          const traceId = err?.headers?.get?.('x-correlation-id') || err?.error?.error?.data?.traceId || '';
+          this.router.navigate(['/error/500'], { queryParams: traceId ? { traceId } : undefined });
+        }
       },
     });
   }
@@ -400,9 +417,6 @@ export class HomeComponent implements OnInit, OnDestroy {
       alert.alertType === 'EXPIRING_SOON' ||
       !!alert.batchCode;
     const queryParams: any = {};
-    if (alert.ingredientName) {
-      queryParams.search = alert.ingredientName;
-    }
     if (alert.ingredientId) {
       queryParams.ingredientId = alert.ingredientId;
     }

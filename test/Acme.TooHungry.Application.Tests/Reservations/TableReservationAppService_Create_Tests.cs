@@ -54,13 +54,10 @@ public abstract class TableReservationAppService_Create_Tests<TStartupModule> : 
         result.CustomerName.ShouldBe("Nguyễn Văn A");
         result.Status.ShouldBe(ReservationStatus.Confirmed);
 
-        // Check table status in DB
+        // Check table status in DB: Bàn chưa đến khung giờ hẹn trước 60 phút nên vẫn giữ nguyên là Available
         var tableInDb = await _tableRepository.GetAsync(table.Id);
-        tableInDb.Status.ShouldBe(TableStatus.Reserved);
-        tableInDb.ReservedCustomerName.ShouldBe("Nguyễn Văn A");
-        tableInDb.ReservedCustomerPhone.ShouldBe("0901234567");
-        tableInDb.ReservedGuestCount.ShouldBe(3);
-        tableInDb.ReservedNote.ShouldBe("Bàn gần cửa sổ");
+        tableInDb.Status.ShouldBe(TableStatus.Available);
+        tableInDb.ReservedCustomerName.ShouldBeNull();
     }
 
     [Fact]

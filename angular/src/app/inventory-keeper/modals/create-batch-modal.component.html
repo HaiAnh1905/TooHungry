@@ -1,0 +1,240 @@
+<abp-modal
+  [(visible)]="visible"
+  [suppressUnsavedChangesWarning]="true"
+  (visibleChange)="visibleChange.emit($event)"
+  (disposed)="close()"
+  (init)="onModalOpen()"
+>
+  <ng-template #abpHeader>
+    <div class="d-flex align-items-center gap-2">
+      <div class="modal-header-icon-box">
+        <i class="fas fa-boxes-packing text-primary-orange"></i>
+      </div>
+      <div>
+        <h5 class="m-0 fw-bold">{{ '::QuickInboundBatch' | abpLocalization }}</h5>
+        <small class="text-muted">{{ '::QuickInboundBatchSubtitle' | abpLocalization }}</small>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #abpBody>
+    <form (ngSubmit)="submit()">
+      <div class="mb-3 position-relative" #dropdownContainer>
+        <label class="form-label fw-bold d-flex align-items-center justify-content-between mb-1.5">
+          <span>
+            {{ '::Ingredient' | abpLocalization }}
+            <span class="text-danger ms-1">*</span>
+          </span>
+          @if (selectedIngredient) {
+            <span class="small text-muted">
+              {{ '::StorageCondition' | abpLocalization }}:
+              <strong class="text-dark">{{ getStorageTypeLabel(selectedIngredient.storageType) | abpLocalization }}</strong>
+            </span>
+          }
+        </label>
+
+        <!-- Custom Dropdown Trigger -->
+        <div class="ingredient-custom-dropdown">
+          <button
+            type="button"
+            class="ingredient-dropdown-trigger"
+            [class.open]="isDropdownOpen"
+            (click)="toggleDropdown($event)"
+            [disabled]="isSubmitting"
+          >
+            <div class="trigger-info">
+              @if (selectedIngredient) {
+                <div class="d-flex align-items-center justify-content-between gap-2 w-100">
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="ingredient-name text-truncate">{{ selectedIngredient.name }}</span>
+                    @if (selectedIngredient.code) {
+                      <span class="ingredient-code">{{ selectedIngredient.code }}</span>
+                    }
+                  </div>
+                  <span class="stock-pill flex-shrink-0">
+                    <i class="fas fa-boxes-stacked me-1 small"></i>
+                    {{ selectedIngredient.currentStock || 0 }} {{ selectedIngredient.baseUnit || selectedIngredient.unitName || '' }}
+                  </span>
+                </div>
+              } @else {
+                <span class="ingredient-placeholder">{{ '::SelectIngredient' | abpLocalization }}</span>
+              }
+            </div>
+            <i class="fas fa-chevron-down trigger-chevron" [class.rotated]="isDropdownOpen"></i>
+          </button>
+
+          <!-- Dropdown Menu Popup -->
+          @if (isDropdownOpen) {
+            <div class="ingredient-dropdown-menu shadow-lg" (click)="$event.stopPropagation()">
+              <!-- Ô tìm kiếm nhanh -->
+              <div class="dropdown-search-header">
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-white border-end-0 py-1.5">
+                    <i class="fas fa-search small text-muted"></i>
+                  </span>
+                  <input
+                    #searchInput
+                    type="text"
+                    class="form-control form-control-sm border-start-0 ps-0 py-1.5"
+                    [placeholder]="'::FilterIngredientPlaceholder' | abpLocalization"
+                    [(ngModel)]="searchKeyword"
+                    [ngModelOptions]="{ standalone: true }"
+                  />
+                  @if (searchKeyword) {
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary border-start-0 py-1.5"
+                      (click)="clearSearch($event)"
+                    >
+                      <i class="fas fa-times small"></i>
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <!-- Danh sách lựa chọn -->
+              <div class="dropdown-options-list">
+                @for (ing of filteredIngredients; track ing.id) {
+                  <div
+                    class="dropdown-option-item"
+                    [class.selected]="ing.id === batchModel.ingredientId"
+                    (click)="selectIngredient(ing, $event)"
+                  >
+                    <div class="option-main">
+                      <div class="d-flex align-items-center gap-1.5">
+                        <span class="option-name text-truncate">{{ ing.name }}</span>
+                        @if (ing.code) {
+                          <span class="option-code">{{ ing.code }}</span>
+                        }
+                      </div>
+                    </div>
+                    <div class="option-meta">
+                      <span class="option-stock" [class.stock-zero]="(ing.currentStock || 0) <= 0">
+                        {{ ing.currentStock || 0 }} {{ ing.baseUnit || ing.unitName || '' }}
+                      </span>
+                      @if (ing.id === batchModel.ingredientId) {
+                        <i class="fas fa-check option-check text-primary-orange ms-1"></i>
+                      }
+                    </div>
+                  </div>
+                }
+                @if (filteredIngredients.length === 0) {
+                  <div class="dropdown-empty-state">
+                    <i class="fas fa-circle-question text-muted mb-1"></i>
+                    <span>{{ '::NoIngredientMatches' | abpLocalization }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <label class="form-label fw-bold">
+            {{ '::BatchCode' | abpLocalization }}
+            <span class="text-danger ms-1">*</span>
+          </label>
+          <input
+            type="text"
+            class="form-control font-monospace"
+            [(ngModel)]="batchModel.batchCode"
+            name="batchCode"
+            required
+          />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-bold">
+            {{ '::InitialQuantity' | abpLocalization }}
+            <span class="text-danger ms-1">*</span>
+          </label>
+          <input
+            type="number"
+            class="form-control"
+            [(ngModel)]="batchModel.initialQuantity"
+            name="initialQuantity"
+            min="0.1"
+            step="0.1"
+            required
+          />
+        </div>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <label class="form-label fw-bold">{{ '::UnitPrice' | abpLocalization }} (VNĐ)</label>
+          <input
+            type="number"
+            class="form-control"
+            [(ngModel)]="batchModel.unitPrice"
+            name="unitPrice"
+            min="0"
+          />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-bold d-flex align-items-center justify-content-between mb-1">
+            <span>
+              {{ '::ExpiryDate' | abpLocalization }}
+              <span class="text-danger ms-1">*</span>
+            </span>
+            @if (isFresh) {
+              <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle small fw-semibold">
+                {{ '::FreshSameDayOnly' | abpLocalization }}
+              </span>
+            }
+          </label>
+          <input
+            type="date"
+            class="form-control"
+            [class.bg-light]="isFresh"
+            [(ngModel)]="batchModel.expiryDate"
+            name="expiryDate"
+            [min]="getTodayDateString()"
+            [disabled]="isFresh || isSubmitting"
+            required
+          />
+          @if (isFresh) {
+            <small class="text-muted d-block mt-1">
+              <i class="fas fa-info-circle text-primary-orange me-1"></i>
+              {{ '::FreshIngredientExpiryNotice' | abpLocalization }}
+            </small>
+          }
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-bold">{{ '::StorageCondition' | abpLocalization }}</label>
+        <select
+          class="form-select"
+          [(ngModel)]="batchModel.storageType"
+          (ngModelChange)="onStorageTypeChange($event)"
+          name="storageType"
+        >
+          @for (type of storageTypes; track type.value) {
+            <option [ngValue]="type.value">{{ type.label | abpLocalization }}</option>
+          }
+        </select>
+      </div>
+    </form>
+  </ng-template>
+
+  <ng-template #abpFooter>
+    <button type="button" class="btn btn-outline-secondary" (click)="close()" [disabled]="isSubmitting">
+      {{ '::Cancel' | abpLocalization }}
+    </button>
+    <button
+      type="button"
+      class="btn btn-primary-orange"
+      (click)="submit()"
+      [disabled]="isSubmitting || !batchModel.ingredientId || !batchModel.batchCode"
+    >
+      @if (isSubmitting) {
+        <i class="fas fa-spinner fa-spin me-1"></i>
+      } @else {
+        <i class="fas fa-check me-1"></i>
+      }
+      {{ '::Save' | abpLocalization }}
+    </button>
+  </ng-template>
+</abp-modal>

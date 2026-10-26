@@ -42,7 +42,7 @@ public abstract class UnitManager_Tests<TStartupModule> : TooHungryDomainTestBas
             await _unitRepository.InsertAsync(unit1);
         });
 
-        await Assert.ThrowsAsync<UserFriendlyException>(async () =>
+        await Assert.ThrowsAsync<BusinessException>(async () =>
         {
             await WithUnitOfWorkAsync(async () =>
             {
