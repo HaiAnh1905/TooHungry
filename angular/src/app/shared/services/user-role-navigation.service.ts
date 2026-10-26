@@ -1,6 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService, ConfigStateService, PermissionService } from '@abp/ng.core';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 export interface IUserRoleNavigationService {
   /**
@@ -24,7 +26,31 @@ export interface IUserRoleNavigationService {
    * Kiểm tra xem người dùng hiện tại có vai trò cụ thể hay không
    */
   hasRole(roleName: string): boolean;
+
+  /**
+   * Kiểm tra xem người dùng có ít nhất một quyền quản trị hệ thống hay không
+   */
+  canNavigateToAdmin(): boolean;
+
+  /**
+   * Luồng phản ứng kiểm tra quyền quản trị của người dùng
+   */
+  canNavigateToAdmin$(): Observable<boolean>;
 }
+
+export const ADMIN_POLICIES: string[] = [
+  'TooHungry.Dashboard',
+  'TooHungry.Dishes',
+  'TooHungry.DishCategories',
+  'TooHungry.Recipes',
+  'TooHungry.DiningAreas',
+  'TooHungry.Forecasts',
+  'TooHungry.Tables.Create',
+  'TooHungry.Tables.Edit',
+  'TooHungry.Tables.Delete',
+  'AbpIdentity.Users',
+  'AbpIdentity.Roles',
+];
 
 export const MANAGER_ADMIN_PERMISSIONS_FALLBACK: { policy: string; route: string; labelKey: string }[] = [
   { policy: 'TooHungry.Dashboard', route: '/', labelKey: 'ErrorPages.BackToDashboard' },
@@ -45,10 +71,24 @@ export class UserRoleNavigationService implements IUserRoleNavigationService {
   private readonly router = inject(Router);
 
   /**
-   * Kiểm tra người dùng có một trong các vai trò quản trị cấp cao hay không
+   * Kiểm tra xem người dùng có quyền quản trị (theo policy hoặc role quản trị)
    */
-  private isManagerOrAdmin(roles: string[]): boolean {
+  canNavigateToAdmin(): boolean {
+    if (ADMIN_POLICIES.some(p => this.permissionService.getGrantedPolicy(p))) {
+      return true;
+    }
+    const currentUser = this.configState.getOne('currentUser') as any;
+    const roles: string[] = currentUser?.roles || [];
     return roles.some(r => ['Manager', 'Administrator', 'admin'].includes(r));
+  }
+
+  /**
+   * Luồng phản xạ kiểm tra quyền điều hướng sang quản trị
+   */
+  canNavigateToAdmin$(): Observable<boolean> {
+    return this.configState.getOne$('currentUser').pipe(
+      map(() => this.canNavigateToAdmin())
+    );
   }
 
   /**
@@ -61,7 +101,7 @@ export class UserRoleNavigationService implements IUserRoleNavigationService {
   }
 
   /**
-   * Phân giải route trang làm việc mặc định theo ma trận vai trò & quyền hạn
+   * Phân giải route trang làm việc mặc định theo ma trận quyền hạn & vai trò
    */
   getDefaultHomeRoute(): string {
     if (!this.authService.isAuthenticated) {
@@ -71,8 +111,8 @@ export class UserRoleNavigationService implements IUserRoleNavigationService {
     const currentUser = this.configState.getOne('currentUser') as any;
     const roles: string[] = currentUser?.roles || [];
 
-    // Ưu tiên 1: Quản lý hoặc Quản trị viên
-    if (this.isManagerOrAdmin(roles)) {
+    // Ưu tiên 1: Người dùng có quyền Quản trị / Quản lý
+    if (this.canNavigateToAdmin()) {
       if (this.permissionService.getGrantedPolicy('TooHungry.Dashboard')) {
         return '/';
       }
@@ -95,12 +135,16 @@ export class UserRoleNavigationService implements IUserRoleNavigationService {
 
     // Ưu tiên 3: Nhân viên thu ngân (Cashier)
     if (roles.includes('Cashier')) {
-      return '/table/layout';
+      const canAdminTables =
+        this.permissionService.getGrantedPolicy('TooHungry.Tables.Create') ||
+        this.permissionService.getGrantedPolicy('TooHungry.Tables') ||
+        roles.some(r => ['Administrator', 'admin'].includes(r));
+      return canAdminTables ? '/tables' : '/waiter/tables';
     }
 
     // Ưu tiên 4: Nhân viên kho (InventoryStaff)
     if (roles.includes('InventoryStaff')) {
-      return '/inventory';
+      return '/inventory-keeper/dashboard';
     }
 
     return '/';
@@ -129,12 +173,13 @@ export class UserRoleNavigationService implements IUserRoleNavigationService {
         return 'ErrorPages.BackToDishes';
       case '/inventory':
         return 'ErrorPages.BackToInventory';
+      case '/inventory-keeper/dashboard':
+      case '/inventory-keeper':
+        return '::InventoryKeeperPortal';
       case '/identity/users':
         return 'ErrorPages.BackToUserManagement';
       case '/account/login':
         return 'ErrorPages.BackToLogin';
-      case '/table/layout':
-        return 'ErrorPages.BackToHome';
       default:
         return 'ErrorPages.BackToHome';
     }

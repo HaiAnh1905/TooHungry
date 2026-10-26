@@ -61,22 +61,19 @@ export const dashboardGuard: CanActivateFn = () => {
 
 /**
  * Guard bảo vệ trang Quản lý bàn của Admin ('/tables'):
- * - Nếu người dùng có vai trò 'Waiter' (và không có vai trò Quản lý/Admin):
+ * - Nếu người dùng không có quyền quản trị hệ thống:
  *   Tự động chuyển hướng sang trang danh sách bàn của Waiter ('/waiter/tables').
  */
 export const adminTableGuard: CanActivateFn = () => {
   const router = inject(Router);
-  const configState = inject(ConfigStateService);
+  const userRoleNav = inject(UserRoleNavigationService);
+  const permissionService = inject(PermissionService);
 
-  const currentUser = configState.getOne('currentUser') as any;
-  const roles: string[] = currentUser?.roles || [];
-  const isManagerOrAdmin = roles.some(r =>
-    ['Manager', 'Administrator', 'admin'].includes(r)
-  );
-
-  if (roles.includes('Waiter') && !isManagerOrAdmin) {
-    return router.parseUrl('/waiter/tables');
+  // Nếu người dùng có quyền quản trị hoặc tạo/sửa bàn, cho phép truy cập trang quản lý bàn Admin
+  if (userRoleNav.canNavigateToAdmin() || permissionService.getGrantedPolicy('TooHungry.Tables.Create')) {
+    return true;
   }
 
-  return true;
+  // Nếu chỉ có quyền phục vụ (Waiter), chuyển hướng sang cổng nhân viên phục vụ
+  return router.parseUrl('/waiter/tables');
 };

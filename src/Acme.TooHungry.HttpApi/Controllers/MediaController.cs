@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using System.ComponentModel.DataAnnotations;
+using Acme.TooHungry.Permissions;
 using Volo.Abp;
 
 namespace Acme.TooHungry.Controllers;
@@ -24,8 +25,6 @@ public class UploadImageInput
 public class MediaController : TooHungryController
 {
     private readonly IConfiguration _configuration;
-    private static readonly string[] AllowedExtensions = [".jpg", ".jpeg", ".png", ".webp", ".gif"];
-    private const long MaxFileSizeInBytes = 5 * 1024 * 1024; // 5MB
 
     public MediaController(IConfiguration configuration)
     {
@@ -33,30 +32,16 @@ public class MediaController : TooHungryController
     }
 
     /// <summary>
-    /// Tải hình ảnh món ăn lên máy chủ CDN Cloudinary
+    /// Tải hình ảnh món ăn lên máy chủ CDN Cloudinary an toàn
     /// </summary>
     /// <param name="file">File ảnh được chọn từ máy tính</param>
     /// <returns>Đối tượng JSON chứa URL hình ảnh an toàn (SecureUrl) từ Cloudinary</returns>
     [HttpPost("upload-dish-image")]
+    [Authorize(TooHungryPermissions.Dishes.Edit)]
     public virtual async Task<IActionResult> UploadDishImageAsync(IFormFile file)
     {
-        
-        // 1. Kiểm tra tính hợp lệ của file upload
-        if (file == null || file.Length == 0)
-        {
-            throw new UserFriendlyException("Vui lòng chọn một file ảnh hợp lệ để tải lên!");
-        }
-
-        if (file.Length > MaxFileSizeInBytes)
-        {
-            throw new UserFriendlyException("Dung lượng ảnh vượt quá giới hạn cho phép (tối đa 5MB)!");
-        }
-
-        var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
-        if (string.IsNullOrEmpty(ext) || !AllowedExtensions.Contains(ext))
-        {
-            throw new UserFriendlyException("Định dạng file không được hỗ trợ! Vui lòng chọn ảnh JPG, JPEG, PNG, WEBP hoặc GIF.");
-        }
+        // 1. Kiểm tra an toàn 3 lớp (Extension, MIME, Magic Bytes)
+        await SafeImageFileValidator.ValidateAsync(file);
 
         // 2. Lấy thông tin cấu hình Cloudinary (từ Configuration hoặc Biến môi trường .env)
         var cloudName = _configuration["Cloudinary:CloudName"] ?? Environment.GetEnvironmentVariable("CLOUDINARY_CLOUD_NAME");
@@ -76,16 +61,19 @@ public class MediaController : TooHungryController
         }
         else
         {
-            throw new UserFriendlyException("Hệ thống chưa được cấu hình thông tin tài khoản Cloudinary. Vui lòng kiểm tra lại file .env hoặc cấu hình ứng dụng!");
+            throw new BusinessException("TooHungry:Security:CloudinaryNotConfigured");
         }
 
         cloudinary.Api.Secure = true;
 
-        // 3. Tiến hành tải ảnh lên Cloudinary vào thư mục toohungry/dishes
+        // 3. Tiến hành tải ảnh lên Cloudinary vào thư mục toohungry/dishes với tên GUID ngẫu nhiên duy nhất
+        var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+        var safeFileName = $"{Guid.NewGuid():N}{ext}";
+
         await using var stream = file.OpenReadStream();
         var uploadParams = new ImageUploadParams
         {
-            File = new FileDescription(file.FileName, stream),
+            File = new FileDescription(safeFileName, stream),
             Folder = "toohungry/dishes",
             UseFilename = false,
             UniqueFilename = true,
@@ -97,7 +85,7 @@ public class MediaController : TooHungryController
 
         if (uploadResult.Error != null)
         {
-            throw new UserFriendlyException($"Tải ảnh lên Cloudinary không thành công: {uploadResult.Error.Message}");
+            throw new BusinessException(TooHungryDomainErrorCodes.MediaUploadFailed).WithData("0", uploadResult.Error.Message);
         }
 
         // 4. Trả về URL HTTPS của ảnh vừa upload

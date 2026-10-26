@@ -3,18 +3,19 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Injector } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService, ConfigStateService, PermissionService } from '@abp/ng.core';
+import { of } from 'rxjs';
 import { UserRoleNavigationService } from './user-role-navigation.service';
 
 describe('UserRoleNavigationService', () => {
   let service: UserRoleNavigationService;
   let mockAuthService: { isAuthenticated: boolean };
-  let mockConfigState: { getOne: ReturnType<typeof vi.fn> };
+  let mockConfigState: { getOne: ReturnType<typeof vi.fn>; getOne$: ReturnType<typeof vi.fn> };
   let mockPermissionService: { getGrantedPolicy: ReturnType<typeof vi.fn> };
   let mockRouter: { navigate: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     mockAuthService = { isAuthenticated: true };
-    mockConfigState = { getOne: vi.fn() };
+    mockConfigState = { getOne: vi.fn(), getOne$: vi.fn() };
     mockPermissionService = { getGrantedPolicy: vi.fn() };
     mockRouter = { navigate: vi.fn() };
 
@@ -112,14 +113,23 @@ describe('UserRoleNavigationService', () => {
       expect(service.getDefaultHomeRoute()).toBe('/');
     });
 
-    it('should return "/table/layout" for Cashier role', () => {
+    it('should return "/tables" for Cashier role when granted TooHungry.Tables.Create permission', () => {
       mockConfigState.getOne.mockReturnValue({ roles: ['Cashier'] });
-      expect(service.getDefaultHomeRoute()).toBe('/table/layout');
+      mockPermissionService.getGrantedPolicy.mockImplementation(
+        (p: string) => p === 'TooHungry.Tables.Create'
+      );
+      expect(service.getDefaultHomeRoute()).toBe('/tables');
     });
 
-    it('should return "/inventory" for InventoryStaff role', () => {
+    it('should return "/waiter/tables" for Cashier role when not granted table admin permission', () => {
+      mockConfigState.getOne.mockReturnValue({ roles: ['Cashier'] });
+      mockPermissionService.getGrantedPolicy.mockReturnValue(false);
+      expect(service.getDefaultHomeRoute()).toBe('/waiter/tables');
+    });
+
+    it('should return "/inventory-keeper/dashboard" for InventoryStaff role', () => {
       mockConfigState.getOne.mockReturnValue({ roles: ['InventoryStaff'] });
-      expect(service.getDefaultHomeRoute()).toBe('/inventory');
+      expect(service.getDefaultHomeRoute()).toBe('/inventory-keeper/dashboard');
     });
 
     it('should return "/" default fallback for generic roles', () => {
@@ -132,6 +142,11 @@ describe('UserRoleNavigationService', () => {
     it('should return "ErrorPages.BackToLogin" for unauthenticated users', () => {
       mockAuthService.isAuthenticated = false;
       expect(service.getDefaultHomeLabelKey()).toBe('ErrorPages.BackToLogin');
+    });
+
+    it('should return "::InventoryKeeperPortal" for InventoryStaff', () => {
+      mockConfigState.getOne.mockReturnValue({ roles: ['InventoryStaff'] });
+      expect(service.getDefaultHomeLabelKey()).toBe('::InventoryKeeperPortal');
     });
 
     it('should return "ErrorPages.BackToTableList" for Waiter', () => {
@@ -200,6 +215,49 @@ describe('UserRoleNavigationService', () => {
       expect(service.hasRole('waiter')).toBe(true);
       expect(service.hasRole('Cashier')).toBe(true);
       expect(service.hasRole('Manager')).toBe(false);
+    });
+  });
+
+  describe('canNavigateToAdmin', () => {
+    it('should return true when user has TooHungry.Dashboard policy', () => {
+      mockPermissionService.getGrantedPolicy.mockImplementation(
+        (p: string) => p === 'TooHungry.Dashboard'
+      );
+      expect(service.canNavigateToAdmin()).toBe(true);
+    });
+
+    it('should return true when user has TooHungry.Dishes policy', () => {
+      mockPermissionService.getGrantedPolicy.mockImplementation(
+        (p: string) => p === 'TooHungry.Dishes'
+      );
+      expect(service.canNavigateToAdmin()).toBe(true);
+    });
+
+    it('should return true when user has AbpIdentity.Users policy', () => {
+      mockPermissionService.getGrantedPolicy.mockImplementation(
+        (p: string) => p === 'AbpIdentity.Users'
+      );
+      expect(service.canNavigateToAdmin()).toBe(true);
+    });
+
+    it('should return false when user has only Waiter role and no admin policies', () => {
+      mockConfigState.getOne.mockReturnValue({ roles: ['Waiter'] });
+      mockPermissionService.getGrantedPolicy.mockReturnValue(false);
+      expect(service.canNavigateToAdmin()).toBe(false);
+    });
+
+    it('should emit correct boolean via canNavigateToAdmin$ stream', async () => {
+      mockConfigState.getOne$.mockReturnValue(of({ roles: ['Waiter'] }));
+      mockPermissionService.getGrantedPolicy.mockImplementation(
+        (p: string) => p === 'TooHungry.Dashboard'
+      );
+
+      let result: boolean | undefined;
+      service.canNavigateToAdmin$().subscribe(val => {
+        result = val;
+      });
+
+      expect(result).toBe(true);
     });
   });
 });

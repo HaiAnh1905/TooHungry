@@ -15,6 +15,8 @@ public interface IInventoryAppService : IApplicationService
     Task AdjustStockAsync(StockAdjustmentRequestDto input);
 
     Task DiscardBatchAsync(Guid id, DiscardBatchInputDto input);
+
+    Task BulkDiscardBatchesAsync(BulkDiscardBatchesInputDto input);
  
     Task<InventoryBatchDto> DeactivateBatchAsync(Guid id, DeactivateBatchDto input);
 
@@ -22,5 +24,5 @@ public interface IInventoryAppService : IApplicationService
 
     Task<List<InventoryAlertDto>> GetAlertsAsync();
 
-    Task<List<InventoryTransactionDto>> GetTransactionsAsync(Guid ingredientId);
+    Task<PagedResultDto<InventoryTransactionDto>> GetTransactionsAsync(Guid ingredientId, PagedAndSortedResultRequestDto input);
 }

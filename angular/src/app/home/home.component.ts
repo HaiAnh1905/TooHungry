@@ -28,6 +28,7 @@ import {
 } from '../proxy/dashboard/models';
 import { InventoryAlertDto } from '../proxy/inventories/models';
 import { TableSignalrService } from '../shared/services/table-signalr.service';
+import { RESTAURANT_BUSINESS_HOURS } from '../shared/constants/business-hours.constant';
 import { UserRoleNavigationService } from '../shared/services/user-role-navigation.service';
 
 Chart.register(...registerables);
@@ -78,7 +79,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   readonly isRestaurantOpen$: Observable<boolean> = this.time$.pipe(
     map(date => {
       const hours = date.getHours();
-      return hours >= 9 && hours < 23;
+      return hours >= RESTAURANT_BUSINESS_HOURS.OPEN_HOUR && hours < RESTAURANT_BUSINESS_HOURS.CLOSE_HOUR;
     })
   );
 
@@ -96,6 +97,16 @@ export class HomeComponent implements OnInit, OnDestroy {
       cleaning: (t.cleaningTables / total) * 100,
       disabled: (t.disabledTables / total) * 100,
     };
+  });
+
+  // Tối đa 4 cảnh báo hiển thị trên Dashboard (User request: chỉ hiển thị nhiều nhất 4 warning)
+  readonly displayedAlerts = computed(() => {
+    return (this.summary()?.alerts || []).slice(0, 4);
+  });
+
+  readonly remainingAlertsCount = computed(() => {
+    const total = this.summary()?.alerts?.length || 0;
+    return Math.max(0, total - 4);
   });
 
   ngOnInit() {
@@ -206,7 +217,6 @@ export class HomeComponent implements OnInit, OnDestroy {
         }, 50);
       },
       error: err => {
-        console.error('Failed to load dashboard data:', err);
         this.isLoading.set(false);
         this.cdr.markForCheck();
         if (err?.status === 403) {
@@ -407,9 +417,6 @@ export class HomeComponent implements OnInit, OnDestroy {
       alert.alertType === 'EXPIRING_SOON' ||
       !!alert.batchCode;
     const queryParams: any = {};
-    if (alert.ingredientName) {
-      queryParams.search = alert.ingredientName;
-    }
     if (alert.ingredientId) {
       queryParams.ingredientId = alert.ingredientId;
     }

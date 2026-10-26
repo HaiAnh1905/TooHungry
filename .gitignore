@@ -5,6 +5,8 @@
 .env
 .env.*
 *.env
+appsettings.secrets.json
+*.secrets.json
 
 # User-specific files
 *.suo

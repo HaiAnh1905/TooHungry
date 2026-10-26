@@ -62,6 +62,7 @@ public class TooHungryDomainSharedModule : AbpModule
             options.MapCodeNamespace("InventoryBatch", typeof(TooHungryResource));
             options.MapCodeNamespace("Ingredient", typeof(TooHungryResource));
             options.MapCodeNamespace("Recipe", typeof(TooHungryResource));
+            options.MapCodeNamespace("RecipeIngredient", typeof(TooHungryResource));
             options.MapCodeNamespace("StockAdjustment", typeof(TooHungryResource));
             options.MapCodeNamespace("Inventory", typeof(TooHungryResource));
         });

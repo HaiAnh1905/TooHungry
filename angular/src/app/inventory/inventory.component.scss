@@ -1,412 +1,162 @@
-// Brand Theme Tokens (Điều VI Hiến pháp Acme.TooHungry)
-$theme-primary: #ea580c;
-$theme-primary-hover: #c2410c;
-$theme-primary-light: #fff3e8;
-$theme-primary-border: #fed7aa;
-$theme-text-dark: #1f293b;
-$theme-text-muted: #64748b;
-$theme-bg-surface: #ffffff;
+.inventory-dashboard-page {
+  padding: 1.5rem 0;
 
-.inventory-management-page {
-  padding: 1.5rem;
-}
-
-.page-title {
-  font-size: 1.6rem;
-  font-weight: 700;
-  color: $theme-text-dark;
-  letter-spacing: -0.02em;
-}
-
-.page-subtitle {
-  font-size: 0.9rem;
-  color: $theme-text-muted;
-}
-
-.text-orange {
-  color: $theme-primary !important;
-}
-
-.btn-orange {
-  background-color: $theme-primary;
-  border-color: $theme-primary;
-  color: #ffffff;
-  font-weight: 600;
-  border-radius: 10px;
-  padding: 0.55rem 1.15rem;
-  transition: all 0.2s ease;
-
-  &:hover, &:focus {
-    background-color: $theme-primary-hover;
-    border-color: $theme-primary-hover;
-    color: #ffffff;
-    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.25);
-  }
-}
-
-.btn-outline-orange {
-  border-color: $theme-primary;
-  color: $theme-primary;
-  font-weight: 600;
-  border-radius: 10px;
-  padding: 0.55rem 1.15rem;
-  transition: all 0.2s ease;
-
-  &:hover, &:focus {
-    background-color: $theme-primary;
-    border-color: $theme-primary;
-    color: #ffffff;
-    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.2);
-  }
-}
-
-.btn-action-icon {
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  font-size: 0.85rem;
-  transition: all 0.15s ease;
-
-  &:hover {
-    transform: translateY(-1px);
-  }
-}
-
-/* KPI Cards (US1) */
-.kpi-card {
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  border: 1px solid rgba(226, 232, 240, 0.8) !important;
-
-  &:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-  }
-
-  .kpi-label {
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-    font-size: 0.78rem;
-  }
-
-  .kpi-value {
-    font-size: 1.85rem;
-    line-height: 1.2;
-    letter-spacing: -0.02em;
-  }
-
-  .kpi-icon-box {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
+  .dashboard-header-row {
     display: flex;
     align-items: center;
-    justify-content: center;
-    font-size: 1.3rem;
+    justify-content: space-between;
+    gap: 1.5rem;
+    flex-wrap: wrap;
 
-    &.kpi-icon-total {
-      background-color: #f1f5f9;
-      color: #334155;
-    }
-
-    &.kpi-icon-safe {
-      background-color: #f0fdf4;
-      color: #16a34a;
-    }
-
-    &.kpi-icon-warning {
-      background-color: #fffbeb;
-      color: #d97706;
-    }
-
-    &.kpi-icon-danger {
-      background-color: #fef2f2;
-      color: #dc2626;
-    }
-  }
-}
-
-/* Smart Alerts Banner (US1 & US3) */
-.inventory-alerts-banner {
-  background: #fff5f5 !important;
-  border-left: 4px solid #dc2626 !important;
-  animation: fadeInDown 0.25s ease-out;
-
-  .alert-banner-icon {
-    font-size: 1.25rem;
-  }
-
-  .expanded-alerts-list {
-    .alert-item-card {
-      transition: background-color 0.15s ease;
-
-      &:hover {
-        background-color: #fef2f2 !important;
-      }
-    }
-  }
-}
-
-@keyframes fadeInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Tabs Bar */
-.tabs-bar-wrapper {
-  .custom-tab-btn {
-    border: 1.5px solid #e2e8f0;
-    background-color: #ffffff;
-    padding: 0.55rem 1.2rem;
-    border-radius: 12px;
-    font-weight: 600;
-    color: #64748b;
-    display: inline-flex;
-    align-items: center;
-    transition: all 0.2s ease;
-
-    .tab-badge {
-      background-color: #f1f5f9;
-      color: #475569;
-      padding: 0.15rem 0.5rem;
-      border-radius: 20px;
-      font-size: 0.75rem;
-      margin-left: 0.5rem;
-    }
-
-    &.active {
-      border-color: $theme-primary;
-      background-color: rgba(234, 88, 12, 0.08);
-      color: $theme-primary;
-
-      .tab-badge {
-        background-color: $theme-primary;
+    .header-left {
+      .header-brand-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 3rem;
+        height: 3rem;
+        border-radius: 0.875rem;
+        background: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
         color: #ffffff;
-      }
-    }
-
-    &:hover:not(.active) {
-      background-color: #f8fafc;
-      border-color: #cbd5e1;
-      color: #334155;
-    }
-  }
-}
-
-.modal-header-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: rgba(234, 88, 12, 0.12);
-  color: $theme-primary;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.25rem;
-}
-
-.modal-title-text {
-  font-weight: 700;
-  color: $theme-text-dark;
-}
-
-.modal-subtitle-text {
-  font-size: 0.85rem;
-  color: $theme-text-muted;
-}
-
-/* Modern Bright Search Input */
-.search-input-wrapper {
-  position: relative;
-  width: 100%;
-
-  .search-icon {
-    position: absolute;
-    left: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: $theme-primary;
-    font-size: 0.95rem;
-    pointer-events: none;
-    z-index: 2;
-  }
-
-  .modern-search-input {
-    width: 100%;
-    background-color: #ffffff !important;
-    border: 1.5px solid #e2e8f0 !important;
-    border-radius: 12px;
-    padding: 0.68rem 2.6rem 0.68rem 2.75rem;
-    font-size: 0.92rem;
-    font-weight: 500;
-    color: $theme-text-dark !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
-    transition: all 0.2s ease;
-
-    &::placeholder {
-      color: #94a3b8 !important;
-      font-weight: 400;
-    }
-
-    &:hover {
-      background-color: #ffffff !important;
-      border-color: #cbd5e1 !important;
-    }
-
-    &:focus {
-      background-color: #ffffff !important;
-      border-color: $theme-primary !important;
-      box-shadow: 0 0 0 3.5px rgba(234, 88, 12, 0.15) !important;
-      outline: none;
-    }
-  }
-
-  .btn-clear-search {
-    position: absolute;
-    right: 0.85rem;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    color: #94a3b8;
-    font-size: 1.05rem;
-    cursor: pointer;
-    padding: 2px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: color 0.15s ease;
-    z-index: 2;
-
-    &:hover {
-      color: $theme-primary;
-    }
-  }
-}
-
-.btn-reset-filter {
-  height: 42px;
-  width: 42px;
-  min-width: 42px;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  border: 1.5px solid #e2e8f0;
-  background-color: #ffffff;
-  color: #64748b;
-  transition: all 0.2s ease;
-
-  &:hover {
-    background-color: #fff7ed;
-    border-color: $theme-primary;
-    color: $theme-primary;
-  }
-}
-
-/* Custom Table Footer & Pagination */
-.custom-table-footer {
-  padding: 0.9rem 1.5rem;
-  border-top: 1px solid #f1f5f9;
-  background-color: #ffffff;
-
-  .records-summary-text {
-    font-weight: 500;
-    color: #64748b;
-    font-size: 0.88rem;
-
-    strong {
-      color: $theme-primary;
-      font-weight: 700;
-    }
-  }
-
-  .page-size-box {
-    .page-size-label {
-      font-weight: 600;
-      color: #64748b;
-      font-size: 0.84rem;
-    }
-  }
-
-  .pagination-btn-group {
-    .btn-page-nav {
-      height: 34px;
-      min-width: 34px;
-      border-radius: 8px;
-      border: 1px solid #e2e8f0;
-      background-color: #ffffff;
-      color: #475569;
-      font-size: 0.84rem;
-      font-weight: 600;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 8px;
-      transition: all 0.2s ease;
-      cursor: pointer;
-
-      &:hover:not([disabled]) {
-        border-color: $theme-primary;
-        color: $theme-primary;
-        background-color: rgba(234, 88, 12, 0.08);
+        font-size: 1.375rem;
+        box-shadow: 0 4px 6px -1px rgba(234, 88, 12, 0.25);
       }
 
-      &[disabled] {
-        opacity: 0.45;
-        cursor: not-allowed;
-        background-color: #f8fafc;
-        border-color: #e2e8f0;
-        color: #94a3b8;
-      }
-
-      &.btn-text-nav {
-        padding: 0 12px;
-      }
-    }
-
-    .current-page-badge {
-      font-size: 0.88rem;
-      font-weight: 500;
-      color: #475569;
-      padding: 0 8px;
-      white-space: nowrap;
-
-      strong {
-        color: $theme-primary;
+      .page-title {
+        font-size: 1.5rem;
         font-weight: 800;
+        color: #0f172a;
+        letter-spacing: -0.025em;
+      }
+
+      .page-subtitle {
+        font-size: 0.875rem;
+        color: #64748b;
+        margin-top: 0.25rem;
+      }
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+
+      .btn-header-action {
+        height: 2.5rem;
+        padding: 0 1rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        border-radius: 0.625rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+      }
+
+      .btn-keeper-portal {
+        height: 2.5rem;
+        padding: 0 1rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        border-radius: 0.625rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #fff7ed;
+        color: #ea580c;
+        border: 1px solid #fed7aa;
+        transition: all 0.2s;
+
+        &:hover {
+          background: #ea580c;
+          color: #ffffff;
+          border-color: #ea580c;
+        }
+      }
+
+      .btn-orange {
+        background: #ea580c;
+        color: #ffffff;
+        border: none;
+
+        &:hover {
+          background: #c2410c;
+        }
+      }
+
+      .btn-outline-orange {
+        background: transparent;
+        color: #ea580c;
+        border: 1px solid #ea580c;
+
+        &:hover {
+          background: #fff7ed;
+        }
+      }
+    }
+  }
+
+  /* Bento Tabs Navigation */
+  .bento-tabs-nav {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.875rem;
+    padding: 0.375rem;
+    display: inline-block;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+
+    .tabs-list {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      flex-wrap: wrap;
+
+      .tab-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1.125rem;
+        border-radius: 0.625rem;
+        border: none;
+        background: transparent;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #64748b;
+        cursor: pointer;
+        user-select: none;
+        -webkit-user-select: none;
+        transition: all 0.2s;
+
+        &:hover {
+          color: #1e293b;
+          background: #f8fafc;
+        }
+
+        &.active {
+          background: #ea580c;
+          color: #ffffff;
+          box-shadow: 0 2px 4px rgba(234, 88, 12, 0.2);
+
+          .tab-pill {
+            background: rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+          }
+        }
+
+        .tab-pill {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0.125rem 0.5rem;
+          border-radius: 9999px;
+          font-size: 0.75rem;
+          font-weight: 700;
+          background: #f1f5f9;
+          color: #64748b;
+          transition: all 0.2s;
+        }
       }
     }
   }
 }
-
-.highlighted-alert-row {
-  background-color: #fff9e6 !important;
-  box-shadow: inset 4px 0 0 #ff9800;
-  animation: alertRowPulse 2s ease-in-out infinite alternate;
-
-  td {
-    background-color: transparent !important;
-  }
-}
-
-@keyframes alertRowPulse {
-  0% {
-    background-color: #fff9e6;
-  }
-  100% {
-    background-color: #fff0c2;
-  }
-}
-

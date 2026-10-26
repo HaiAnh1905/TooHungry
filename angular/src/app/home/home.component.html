@@ -301,9 +301,9 @@
             </a>
           </div>
 
-          <!-- Danh Sách Cảnh Báo Lưới 2 Cột -->
+          <!-- Danh Sách Cảnh Báo Lưới 2 Cột (Tối đa 4 cảnh báo) -->
           <div class="row g-3">
-            <div *ngFor="let alert of (summary()?.alerts || [])" class="col-md-6">
+            <div *ngFor="let alert of displayedAlerts()" class="col-md-6">
               <div
                 class="inventory-alert-card rounded-4 border d-flex align-items-center justify-content-between gap-3 h-100"
                 [ngClass]="alert.severity === 'danger' ? 'alert-danger-border' : 'alert-warning-border'"
@@ -344,6 +344,25 @@
                 </div>
               </div>
             </div>
+          </div>
+
+          <!-- Chú thích bên dưới phải khi có nhiều hơn 4 cảnh báo -->
+          <div *ngIf="remainingAlertsCount() > 0" class="alerts-footer-note d-flex justify-content-end align-items-center mt-3 pt-2">
+            <a
+              routerLink="/inventory"
+              class="remaining-alerts-link d-inline-flex align-items-center gap-2 text-decoration-none"
+            >
+              <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1 fw-bold">
+                +{{ remainingAlertsCount() }}
+              </span>
+              <span class="alerts-note-text small">
+                {{ { key: '::MoreInventoryAlertsNote', defaultValue: 'cảnh báo khác cần xử lý' } | abpLocalization : (remainingAlertsCount() + '') }}
+              </span>
+              <span class="view-all-link fw-semibold small d-inline-flex align-items-center gap-1 ms-1">
+                <span>{{ { key: '::ViewAllAlerts', defaultValue: 'Xem tất cả trong Quản lý kho' } | abpLocalization }}</span>
+                <i class="fas fa-arrow-right fs-xs"></i>
+              </span>
+            </a>
           </div>
         </div>
       </div>

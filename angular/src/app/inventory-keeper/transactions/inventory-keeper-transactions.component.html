@@ -1,0 +1,249 @@
+<div class="transactions-cockpit-container">
+  <!-- 1. THANH TIÊU ĐỀ & TÌM KIẾM NHANH & NÚT LẬP BIÊN BẢN KIỂM KÊ -->
+  <div class="transactions-top-action-bar">
+    <div class="bar-left">
+      <h5 class="m-0 fw-bold d-flex align-items-center gap-2">
+        <i class="fas fa-clock-rotate-left text-primary-orange"></i>
+        {{ '::KeeperTransactionsTab' | abpLocalization }}
+      </h5>
+      @if (selectedIngredient()) {
+        <span class="badge bg-slate-soft text-dark d-none d-md-inline-block">
+          {{ selectedIngredient()?.name }} ({{ '::CurrentStock' | abpLocalization }}: {{ selectedIngredient()?.currentStock }} {{ selectedIngredient()?.baseUnit || '' }})
+        </span>
+      }
+    </div>
+
+    <div class="bar-right">
+      <!-- Nút Lập biên bản kiểm kê cân đối kho -->
+      <button
+        type="button"
+        class="btn btn-primary-orange"
+        (click)="openAdjustmentModal()"
+        [disabled]="!selectedIngredient()"
+      >
+        <i class="fas fa-clipboard-check me-1"></i>
+        <span>{{ '::ActionStockAdjustment' | abpLocalization }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- THANH BÁO KẾT QUẢ TÌM KIẾM (NẾU CÓ TỪ KHÓA) -->
+  @if (searchQuery()) {
+    <div class="search-result-hint mt-2">
+      <span class="small text-muted">
+        <i class="fas fa-filter me-1 text-primary-orange"></i>
+        {{ '::FoundSearchResults' | abpLocalization }}:
+        <strong>{{ filteredTransactions().length }}</strong> {{ '::TransactionsUnit' | abpLocalization }}
+        {{ '::ForKeyword' | abpLocalization }} "<strong>{{ searchQuery() }}</strong>"
+      </span>
+      <button type="button" class="btn-clear-filter ms-auto" (click)="clearSearch()">
+        <i class="fas fa-times-circle me-1"></i>
+        {{ '::ClearSearch' | abpLocalization }}
+      </button>
+    </div>
+  }
+
+  <!-- 2. BẢNG NHẬT KÝ BIẾN ĐỘNG KHO BENTO -->
+  <div class="transactions-table-card mt-3">
+    @if (isLoading()) {
+      <div class="text-center py-5">
+        <i class="fas fa-spinner fa-spin fa-2x text-primary-orange mb-2"></i>
+        <p class="text-muted m-0">{{ '::Loading' | abpLocalization }}</p>
+      </div>
+    } @else if (filteredTransactions().length === 0) {
+      <div class="text-center py-5 empty-transactions-state">
+        @if (searchQuery()) {
+          <i class="fas fa-magnifying-glass fa-3x text-muted mb-3"></i>
+          <h6 class="fw-bold">{{ '::NoMatchingTransactions' | abpLocalization }}</h6>
+          <p class="text-muted small m-0">{{ '::NoMatchingTransactionsDesc' | abpLocalization }} "{{ searchQuery() }}"</p>
+          <button type="button" class="btn btn-outline-orange btn-sm mt-3" (click)="clearSearch()">
+            <i class="fas fa-rotate-left me-1"></i>
+            {{ '::ResetSearch' | abpLocalization }}
+          </button>
+        } @else {
+          <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
+          <h6 class="fw-bold">{{ '::NoTransactionsFound' | abpLocalization }}</h6>
+          <p class="text-muted small m-0">{{ '::NoTransactionsDesc' | abpLocalization }}</p>
+        }
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table table-hover align-middle m-0 custom-transactions-table">
+          <thead>
+            <tr>
+              <th>{{ '::CreationTime' | abpLocalization }}</th>
+              <th>{{ '::TransactionType' | abpLocalization }}</th>
+              <th>{{ '::BatchCode' | abpLocalization }}</th>
+              <th class="text-end">{{ '::Quantity' | abpLocalization }}</th>
+              <th>{{ '::Reason' | abpLocalization }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (tx of pagedTransactions(); track tx.id) {
+              <tr>
+                <td>
+                  <span class="font-monospace text-muted small">
+                    {{ tx.creationTime | date:'yyyy-MM-dd HH:mm:ss' }}
+                  </span>
+                </td>
+                <td>
+                  @if (tx.transactionType === 1 || tx.type === 1) {
+                    <span class="badge bg-emerald-soft text-emerald">
+                      <i class="fas fa-arrow-down-long me-1"></i>
+                      {{ '::TransactionTypeIn' | abpLocalization }}
+                    </span>
+                  } @else if (tx.transactionType === 2 || tx.type === 2) {
+                    <span class="badge bg-rose-soft text-rose">
+                      <i class="fas fa-arrow-up-long me-1"></i>
+                      {{ '::TransactionTypeOut' | abpLocalization }}
+                    </span>
+                  } @else if (tx.transactionType === 3 || tx.type === 3) {
+                    <span class="badge bg-blue-soft text-blue">
+                      <i class="fas fa-plus me-1"></i>
+                      {{ '::TransactionTypeAdjIn' | abpLocalization }}
+                    </span>
+                  } @else {
+                    <span class="badge bg-amber-soft text-amber">
+                      <i class="fas fa-minus me-1"></i>
+                      {{ '::TransactionTypeAdjOut' | abpLocalization }}
+                    </span>
+                  }
+                </td>
+                <td>
+                  <span class="font-monospace small text-dark">
+                    {{ tx.batchCode || '—' }}
+                  </span>
+                </td>
+                <td class="text-end">
+                  <span
+                    class="fw-bold font-monospace fs-6"
+                    [class.text-success]="(tx.transactionType === 1 || tx.transactionType === 3 || tx.type === 1 || tx.type === 3)"
+                    [class.text-danger]="(tx.transactionType === 2 || tx.transactionType === 4 || tx.type === 2 || tx.type === 4)"
+                  >
+                    {{ (tx.transactionType === 1 || tx.transactionType === 3 || tx.type === 1 || tx.type === 3) ? '+' : '-' }}{{ tx.quantity }}
+                  </span>
+                  <span class="text-muted ms-1 small">{{ selectedIngredient()?.baseUnit || '' }}</span>
+                </td>
+                <td>
+                  <span class="text-muted small">
+                    {{ tx.reason || '—' }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- FOOTER PAGINATION BAR (Transactions - 10 items/page) -->
+      @if (totalTransactions() > 0) {
+        <div class="custom-table-footer d-flex align-items-center justify-content-between flex-wrap gap-3 p-3 border-top bg-light-subtle">
+          <div class="d-flex align-items-center flex-wrap gap-2 text-muted small">
+            <span class="records-summary-text">
+              {{ '::ShowingRecords' | abpLocalization }}
+              <strong class="text-dark">{{ fromRecord() }} - {{ toRecord() }}</strong>
+              {{ '::OfTotal' | abpLocalization }}
+              <strong class="text-dark">{{ totalTransactions() }}</strong>
+              {{ '::TransactionCount' | abpLocalization }}
+            </span>
+          </div>
+
+          <div class="d-flex align-items-center pagination-btn-group gap-1">
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-secondary btn-page-nav"
+              [disabled]="currentPage() === 1"
+              (click)="firstPage()"
+              [title]="'::FirstPage' | abpLocalization"
+            >
+              <i class="fa fa-angle-double-left"></i>
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-secondary btn-page-nav"
+              [disabled]="currentPage() === 1"
+              (click)="prevPage()"
+              [title]="'::PreviousPage' | abpLocalization"
+            >
+              <i class="fa fa-angle-left"></i>
+            </button>
+
+            <!-- Trang 1 -->
+            <button
+              type="button"
+              class="btn btn-sm"
+              [class.btn-primary-orange]="currentPage() === 1"
+              [class.btn-outline-secondary]="currentPage() !== 1"
+              (click)="goToPage(1)"
+            >
+              1
+            </button>
+
+            @if (currentPage() > 4 && totalPages() > 5) {
+              <span class="px-1 text-muted">...</span>
+            }
+
+            @for (p of pagesList(); track p) {
+              <button
+                type="button"
+                class="btn btn-sm"
+                [class.btn-primary-orange]="currentPage() === p"
+                [class.btn-outline-secondary]="currentPage() !== p"
+                (click)="goToPage(p)"
+              >
+                {{ p }}
+              </button>
+            }
+
+            @if (currentPage() < totalPages() - 3 && totalPages() > 5) {
+              <span class="px-1 text-muted">...</span>
+            }
+
+            <!-- Trang cuối nếu > 1 -->
+            @if (totalPages() > 1) {
+              <button
+                type="button"
+                class="btn btn-sm"
+                [class.btn-primary-orange]="currentPage() === totalPages()"
+                [class.btn-outline-secondary]="currentPage() !== totalPages()"
+                (click)="goToPage(totalPages())"
+              >
+                {{ totalPages() }}
+              </button>
+            }
+
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-secondary btn-page-nav"
+              [disabled]="currentPage() === totalPages()"
+              (click)="nextPage()"
+              [title]="'::NextPage' | abpLocalization"
+            >
+              <i class="fa fa-angle-right"></i>
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-secondary btn-page-nav"
+              [disabled]="currentPage() === totalPages()"
+              (click)="lastPage()"
+              [title]="'::LastPage' | abpLocalization"
+            >
+              <i class="fa fa-angle-double-right"></i>
+            </button>
+          </div>
+        </div>
+      }
+    }
+  </div>
+</div>
+
+
+
+<!-- MODAL KIỂM KÊ ĐIỀU CHỈNH KHO (RM-011) -->
+<app-stock-adjustment-modal
+  [(visible)]="isAdjustmentModalOpen"
+  [ingredient]="selectedIngredient() || undefined"
+  (adjusted)="onStockAdjusted()"
+></app-stock-adjustment-modal>

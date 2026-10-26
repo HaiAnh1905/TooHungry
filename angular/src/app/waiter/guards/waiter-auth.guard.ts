@@ -1,45 +1,36 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { AuthService, ConfigStateService } from '@abp/ng.core';
+import { AuthService, PermissionService } from '@abp/ng.core';
+import { UserRoleNavigationService } from '../../shared/services/user-role-navigation.service';
 
 /**
  * Gác cổng tuyến đường phân hệ Waiter
- * Chỉ cho phép người dùng có vai trò Waiter, Manager, Administrator/admin
- * hoặc có quyền TooHungry.Tables / TooHungry.Orders truy cập.
+ * Cho phép người dùng có quyền TooHungry.Tables hoặc TooHungry.Orders truy cập.
  */
 export const waiterAuthGuard: CanActivateFn = (route, state) => {
   const router = inject(Router);
   const authService = inject(AuthService);
-  const configState = inject(ConfigStateService);
+  const permissionService = inject(PermissionService);
+  const userRoleNav = inject(UserRoleNavigationService);
 
   if (!authService.isAuthenticated) {
     router.navigate(['/account/login'], { queryParams: { returnUrl: state.url } });
     return false;
   }
 
-  const currentUser = configState.getOne('currentUser');
-  const roles = currentUser?.roles || [];
-  const allowedRoles = ['Waiter', 'Manager', 'Administrator', 'admin'];
+  // Cho phép nếu có quyền xem bàn hoặc phục vụ đơn hàng, hoặc có quyền quản trị
+  const hasTablePermission = permissionService.getGrantedPolicy('TooHungry.Tables');
+  const hasOrderPermission = permissionService.getGrantedPolicy('TooHungry.Orders');
 
-  const hasAllowedRole = roles.some(r => allowedRoles.includes(r));
-  if (hasAllowedRole) {
+  if (hasTablePermission || hasOrderPermission || userRoleNav.canNavigateToAdmin() || userRoleNav.hasRole('Waiter')) {
     return true;
   }
 
-  // Quyền dự phòng
-  const permissions = (configState.getOne('auth') as any)?.grantedPolicies || {};
-  if (permissions['TooHungry.Tables'] || permissions['TooHungry.Orders']) {
-    return true;
+  // Từ chối truy cập và chuyển hướng về trang tương ứng của người dùng
+  const defaultRoute = userRoleNav.getDefaultHomeRoute();
+  if (defaultRoute && defaultRoute !== '/waiter/tables' && defaultRoute !== '/') {
+    return router.parseUrl(defaultRoute);
   }
 
-  // Từ chối truy cập và chuyển hướng về trang tương ứng của vai trò
-  if (roles.includes('InventoryStaff')) {
-    router.navigate(['/inventory']);
-  } else if (roles.includes('Cashier')) {
-    router.navigate(['/table/layout']);
-  } else {
-    router.navigate(['/']);
-  }
-
-  return false;
+  return router.parseUrl('/error/403');
 };

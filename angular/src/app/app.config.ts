@@ -18,11 +18,9 @@ import {
 } from '@abp/ng.theme.shared';
 import { CustomToasterService } from './shared/services/custom-toaster.service';
 import { AppHttpErrorHandlerService } from './shared/services/app-http-error-handler.service';
-import { ApplicationConfig, importProvidersFrom } from '@angular/core';
+import { ApplicationConfig } from '@angular/core';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { NZ_I18N, vi_VN } from 'ng-zorro-antd/i18n';
-import { FormsModule } from '@angular/forms';
-import { HttpClientModule } from '@angular/common/http';
 import { registerLocaleData } from '@angular/common';
 import vi from '@angular/common/locales/vi';
 
@@ -32,12 +30,14 @@ import { environment } from '../environments/environment';
 import { APP_ROUTES } from './app.routes';
 import { APP_ROUTE_PROVIDER } from './route.provider';
 import { FOOTER_PROVIDER } from './footer/footer.config';
+import { LOCAL_LOCALIZATION_PROVIDER } from './shared/init/local-localization.init';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(APP_ROUTES),
     APP_ROUTE_PROVIDER,
     FOOTER_PROVIDER,
+    LOCAL_LOCALIZATION_PROVIDER,
     provideAnimations(),
     provideAbpCore(
       withOptions({
@@ -65,7 +65,6 @@ export const appConfig: ApplicationConfig = {
       multi: true,
     },
     { provide: ToasterService, useClass: CustomToasterService },
-    importProvidersFrom(FormsModule, HttpClientModule),
     { provide: NZ_I18N, useValue: vi_VN }
   ],
 };

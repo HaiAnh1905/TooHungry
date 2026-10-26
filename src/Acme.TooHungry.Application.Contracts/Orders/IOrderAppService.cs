@@ -8,7 +8,7 @@ namespace Acme.TooHungry.Orders;
 public interface IOrderAppService : IApplicationService
 {
     Task<OrderDto> GetAsync(Guid id);
-    Task<PagedResultDto<OrderDto>> GetListAsync(PagedAndSortedResultRequestDto input);
+    Task<PagedResultDto<OrderDto>> GetListAsync(GetOrdersInputDto input);
     Task<OrderDto> CreateAsync(CreateUpdateOrderDto input);
     Task<OrderDto> UpdateAsync(Guid id, CreateUpdateOrderDto input);
     Task DeleteAsync(Guid id);

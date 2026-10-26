@@ -1,11 +1,10 @@
 import type { OrderStatus } from './order-status.enum';
-import type { AuditedEntityDto, EntityDto } from '@abp/ng.core';
+import type { AuditedEntityDto, EntityDto, PagedAndSortedResultRequestDto } from '@abp/ng.core';
 
 export interface CreateUpdateOrderDto {
   orderNumber?: string;
   orderDate?: string;
   status?: OrderStatus;
-  totalAmount?: number;
   note?: string | null;
   tableId?: string | null;
   items?: CreateUpdateOrderItemDto[];
@@ -14,7 +13,7 @@ export interface CreateUpdateOrderDto {
 export interface CreateUpdateOrderItemDto {
   dishId?: string;
   quantity?: number;
-  unitPrice?: number;
+  note?: string | null;
 }
 
 export interface OrderDto extends AuditedEntityDto<string> {
@@ -42,7 +41,6 @@ export interface OrderItemDto extends EntityDto<string> {
 export interface SubmitOrderItemDto {
   dishId?: string;
   quantity?: number;
-  unitPrice?: number;
   note?: string | null;
 }
 
@@ -67,8 +65,10 @@ export interface StockShortageItemDto {
   dishName?: string;
   ingredientName?: string;
   requiredQuantity?: number;
+  requestedQuantity?: number;
   availableQuantity?: number;
   unitName?: string;
+  warningMessage?: string;
 }
 
 export interface StockValidationResultDto {
@@ -86,3 +86,9 @@ export interface CompletePaymentInputDto {
   cashGiven?: number;
   paymentNote?: string | null;
 }
+
+export interface GetOrdersInputDto extends Partial<PagedAndSortedResultRequestDto> {
+  filter?: string;
+  status?: OrderStatus;
+}
+

@@ -1,0 +1,375 @@
+<div class="batches-cockpit-container">
+  <!-- 1. THANH TIÊU ĐỀ BẢNG & PHÍM TÁC VỤ 1 CHẠM -->
+  <div class="batches-top-action-bar">
+    <div class="bar-left">
+      <h5 class="m-0 fw-bold d-flex align-items-center gap-2">
+        <i class="fas fa-boxes-stacked text-primary-orange"></i>
+        {{ '::KeeperBatchesTab' | abpLocalization }}
+      </h5>
+      <span class="badge bg-slate-soft text-dark">
+        {{ filteredBatches().length }} {{ '::BatchesUnit' | abpLocalization }}
+      </span>
+    </div>
+
+    <div class="bar-right">
+      <!-- Nút Quét mã vạch nhanh -->
+      <button
+        type="button"
+        class="btn btn-outline-orange"
+        (click)="isCameraModalOpen.set(true)"
+      >
+        <i class="fas fa-barcode me-1"></i>
+        <span>{{ '::KeeperScanBarcode' | abpLocalization }}</span>
+      </button>
+
+      <!-- Nút Nhập lô mới 1 chạm -->
+      <button
+        type="button"
+        class="btn btn-primary-orange"
+        (click)="isCreateBatchModalOpen.set(true)"
+      >
+        <i class="fas fa-plus me-1"></i>
+        <span>{{ '::QuickInboundBatch' | abpLocalization }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 2. BẢNG DANH MỤC LÔ HÀNG BENTO -->
+  <div class="batches-table-card mt-3">
+    @if (isLoading()) {
+      <div class="text-center py-5">
+        <i class="fas fa-spinner fa-spin fa-2x text-primary-orange mb-2"></i>
+        <p class="text-muted m-0">{{ '::Loading' | abpLocalization }}</p>
+      </div>
+    } @else if (filteredBatches().length === 0) {
+      <div class="text-center py-5 empty-batches-state">
+        <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+        <h6 class="fw-bold">{{ '::NoBatchesFound' | abpLocalization }}</h6>
+        <p class="text-muted small m-0">{{ '::TryAdjustingFilters' | abpLocalization }}</p>
+      </div>
+    } @else {
+      <!-- THANH TÁC VỤ ĐỒNG LOẠT (BULK ACTION BAR) -->
+      @if (selectedBatchIds().size > 0) {
+        <div class="batches-bulk-action-bar animate-fade-in d-flex align-items-center justify-content-between p-2 px-3 m-3 mb-2 rounded-3 border">
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-danger rounded-pill px-2 py-1">
+              {{ selectedBatchIds().size }}
+            </span>
+            <span class="fw-bold text-dark small">
+              {{ '::BatchesSelected' | abpLocalization : (selectedBatchIds().size + '') }}
+            </span>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-secondary"
+              (click)="clearSelection()"
+            >
+              <i class="fas fa-times me-1"></i>
+              {{ '::DeselectAll' | abpLocalization }}
+            </button>
+            <button
+              type="button"
+              class="btn btn-sm btn-danger shadow-sm d-flex align-items-center gap-1"
+              (click)="openBulkDiscardModal()"
+            >
+              <i class="fas fa-trash-can me-1"></i>
+              <span>{{ '::BulkDiscardAction' | abpLocalization : (selectedBatchIds().size + '') }}</span>
+            </button>
+          </div>
+        </div>
+      }
+
+      <div class="table-responsive">
+        <table class="table table-hover align-middle m-0 custom-batches-table">
+          <thead>
+            <tr>
+              <th class="checkbox-col" style="width: 44px;">
+                <div class="form-check m-0">
+                  <input
+                    type="checkbox"
+                    class="form-check-input"
+                    [checked]="isAllPageSelected()"
+                    [indeterminate]="isPageIndeterminate()"
+                    (change)="toggleSelectAllPage($event)"
+                    [title]="'::SelectAll' | abpLocalization"
+                  />
+                </div>
+              </th>
+              <th>{{ '::BatchCode' | abpLocalization }}</th>
+              <th>{{ '::Ingredient' | abpLocalization }}</th>
+              <th>{{ '::StorageCondition' | abpLocalization }}</th>
+              <th>{{ '::ExpiryDate' | abpLocalization }}</th>
+              <th>{{ '::Status' | abpLocalization }}</th>
+              <th class="text-end">{{ '::RemainingQuantity' | abpLocalization }}</th>
+              <th class="text-end">{{ '::UnitPrice' | abpLocalization }}</th>
+              <th class="text-end">{{ '::Actions' | abpLocalization }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (batch of pagedBatches(); track batch.id) {
+              <tr
+                [id]="'batch-row-' + batch.batchCode"
+                [class.batch-row-deactivated]="batch.isActive === false"
+                [class.table-active]="isBatchSelected(batch.id)"
+              >
+                <!-- Cột chọn đồng loạt -->
+                <td class="checkbox-col" style="width: 44px;">
+                  <div class="form-check m-0">
+                    <input
+                      type="checkbox"
+                      class="form-check-input"
+                      [checked]="isBatchSelected(batch.id)"
+                      (change)="toggleBatchSelection(batch.id, $event)"
+                    />
+                  </div>
+                </td>
+
+                <!-- Mã lô -->
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="font-monospace fw-bold text-dark batch-code-pill">
+                      {{ batch.batchCode }}
+                    </span>
+                    @if (batch.isActive === false) {
+                      <span class="badge bg-secondary" [title]="batch.deactivationReason || ''">
+                        <i class="fas fa-lock me-1"></i>
+                        {{ '::BatchStatusDeactivated' | abpLocalization }}
+                      </span>
+                    }
+                  </div>
+                </td>
+
+                <!-- Tên nguyên liệu -->
+                <td>
+                  <div class="fw-bold text-dark">{{ batch.ingredientName || 'Nguyên liệu' }}</div>
+                </td>
+
+                <!-- Điều kiện bảo quản -->
+                <td>
+                  @if (batch.storageType === 0) {
+                    <span class="badge bg-emerald-soft text-emerald">
+                      <i class="fas fa-snowflake me-1"></i>
+                      {{ '::StorageConditionChilled' | abpLocalization }}
+                    </span>
+                  } @else if (batch.storageType === 1) {
+                    <span class="badge bg-sky-soft text-sky">
+                      <i class="fas fa-icicles me-1"></i>
+                      {{ '::StorageConditionFrozen' | abpLocalization }}
+                    </span>
+                  } @else {
+                    <span class="badge bg-amber-soft text-amber">
+                      <i class="fas fa-box me-1"></i>
+                      {{ '::StorageConditionDry' | abpLocalization }}
+                    </span>
+                  }
+                </td>
+
+                <!-- Hạn dùng -->
+                <td>
+                  <span class="font-monospace text-muted">
+                    {{ batch.expiryDate ? (batch.expiryDate | date:'yyyy-MM-dd') : '—' }}
+                  </span>
+                </td>
+
+                <!-- Expiration Badge -->
+                <td>
+                  @if (batch.isActive !== false) {
+                    <app-expiration-badge
+                      [expiryDate]="batch.expiryDate"
+                      [storageType]="batch.storageType"
+                      [allowDiscard]="false"
+                    ></app-expiration-badge>
+                  } @else {
+                    <span class="text-muted small italic">
+                      {{ batch.deactivationReason || ('::BatchStatusDeactivated' | abpLocalization) }}
+                    </span>
+                  }
+                </td>
+
+                <!-- Tồn kho -->
+                <td class="text-end">
+                  <span class="fw-bold text-dark fs-6">{{ batch.remainingQuantity }}</span>
+                  <span class="text-muted ms-1 small">{{ batch.purchaseUnit || '' }}</span>
+                </td>
+
+                <!-- Đơn giá -->
+                <td class="text-end">
+                  <span class="text-muted font-monospace small">
+                    {{ batch.unitPrice | number:'1.0-0' }} đ
+                  </span>
+                </td>
+
+                <!-- Thao tác 1 chạm -->
+                <td class="text-end">
+                  <div class="btn-group btn-group-sm">
+                    <!-- Xuất hủy nhanh -->
+                    @if (batch.isActive !== false) {
+                      <button
+                        type="button"
+                        class="btn btn-outline-danger btn-sm"
+                        (click)="openDiscard(batch)"
+                        [title]="'::QuickDiscardBatch' | abpLocalization"
+                      >
+                        <i class="fas fa-trash-can"></i>
+                      </button>
+                    }
+
+                    <!-- Khóa / Mở khóa lô (RM-013) -->
+                    @if (batch.isActive !== false) {
+                      <button
+                        type="button"
+                        class="btn btn-outline-warning btn-sm"
+                        (click)="openDeactivate(batch)"
+                        [title]="'::QuickDeactivateBatch' | abpLocalization"
+                      >
+                        <i class="fas fa-lock"></i>
+                      </button>
+                    } @else {
+                      <button
+                        type="button"
+                        class="btn btn-outline-success btn-sm"
+                        (click)="reactivate(batch)"
+                        [title]="'::QuickReactivateBatch' | abpLocalization"
+                      >
+                        <i class="fas fa-lock-open"></i>
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- FOOTER PAGINATION BAR (Batches - 10 items/page) -->
+      @if (totalBatches() > 0) {
+        <div class="custom-table-footer d-flex align-items-center justify-content-between flex-wrap gap-3 p-3 border-top bg-light-subtle">
+          <div class="d-flex align-items-center flex-wrap gap-2 text-muted small">
+            <span class="records-summary-text">
+              {{ '::ShowingRecords' | abpLocalization }}
+              <strong class="text-dark">{{ fromRecord() }} - {{ toRecord() }}</strong>
+              {{ '::OfTotal' | abpLocalization }}
+              <strong class="text-dark">{{ totalBatches() }}</strong>
+              {{ '::BatchCount' | abpLocalization }}
+            </span>
+          </div>
+
+          <div class="d-flex align-items-center pagination-btn-group gap-1">
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-secondary btn-page-nav"
+              [disabled]="currentPage() === 1"
+              (click)="firstPage()"
+              [title]="'::FirstPage' | abpLocalization"
+            >
+              <i class="fa fa-angle-double-left"></i>
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-secondary btn-page-nav"
+              [disabled]="currentPage() === 1"
+              (click)="prevPage()"
+              [title]="'::PreviousPage' | abpLocalization"
+            >
+              <i class="fa fa-angle-left"></i>
+            </button>
+
+            <!-- Trang 1 -->
+            <button
+              type="button"
+              class="btn btn-sm"
+              [class.btn-primary-orange]="currentPage() === 1"
+              [class.btn-outline-secondary]="currentPage() !== 1"
+              (click)="goToPage(1)"
+            >
+              1
+            </button>
+
+            @if (currentPage() > 4 && totalPages() > 5) {
+              <span class="px-1 text-muted">...</span>
+            }
+
+            @for (p of pagesList(); track p) {
+              <button
+                type="button"
+                class="btn btn-sm"
+                [class.btn-primary-orange]="currentPage() === p"
+                [class.btn-outline-secondary]="currentPage() !== p"
+                (click)="goToPage(p)"
+              >
+                {{ p }}
+              </button>
+            }
+
+            @if (currentPage() < totalPages() - 3 && totalPages() > 5) {
+              <span class="px-1 text-muted">...</span>
+            }
+
+            <!-- Trang cuối nếu > 1 -->
+            @if (totalPages() > 1) {
+              <button
+                type="button"
+                class="btn btn-sm"
+                [class.btn-primary-orange]="currentPage() === totalPages()"
+                [class.btn-outline-secondary]="currentPage() !== totalPages()"
+                (click)="goToPage(totalPages())"
+              >
+                {{ totalPages() }}
+              </button>
+            }
+
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-secondary btn-page-nav"
+              [disabled]="currentPage() === totalPages()"
+              (click)="nextPage()"
+              [title]="'::NextPage' | abpLocalization"
+            >
+              <i class="fa fa-angle-right"></i>
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-secondary btn-page-nav"
+              [disabled]="currentPage() === totalPages()"
+              (click)="lastPage()"
+              [title]="'::LastPage' | abpLocalization"
+            >
+              <i class="fa fa-angle-double-right"></i>
+            </button>
+          </div>
+        </div>
+      }
+    }
+  </div>
+</div>
+
+
+
+<!-- MODALS -->
+<app-barcode-camera-modal
+  [(visible)]="isCameraModalOpen"
+  (scanned)="onBarcodeScanned($event)"
+></app-barcode-camera-modal>
+
+<app-create-batch-modal
+  [(visible)]="isCreateBatchModalOpen"
+  (created)="onBatchCreated()"
+></app-create-batch-modal>
+
+<app-deactivate-batch-modal
+  [(visible)]="isDeactivateModalOpen"
+  [batch]="batchToAct()"
+  (deactivated)="onDeactivated()"
+></app-deactivate-batch-modal>
+
+<app-discard-batch-modal
+  [(visible)]="isDiscardModalOpen"
+  [batch]="batchToAct() || undefined"
+  [batches]="batchesToAct()"
+  [isSubmitting]="isSubmittingAction()"
+  (confirmed)="onDiscardConfirmed($event)"
+></app-discard-batch-modal>

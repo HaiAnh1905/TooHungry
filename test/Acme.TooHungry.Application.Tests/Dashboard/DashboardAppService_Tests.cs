@@ -39,22 +39,10 @@ public abstract class DashboardAppService_Tests<TStartupModule> : TooHungryAppli
             var now = DateTime.UtcNow;
 
             // Đơn hoàn tất hôm nay
-            var completedOrder = await _orderRepository.InsertAsync(new Order
-            {
-                OrderNumber = "ORD-TEST-001",
-                OrderDate = now,
-                Status = OrderStatus.Completed,
-                TotalAmount = 500000m
-            }, autoSave: true);
+            var completedOrder = await _orderRepository.InsertAsync(new Order("ORD-TEST-001", now, OrderStatus.Completed, 500000m), autoSave: true);
 
             // Đơn đang phục vụ hôm nay
-            var pendingOrder = await _orderRepository.InsertAsync(new Order
-            {
-                OrderNumber = "ORD-TEST-002",
-                OrderDate = now,
-                Status = OrderStatus.Processing,
-                TotalAmount = 300000m
-            }, autoSave: true);
+            var pendingOrder = await _orderRepository.InsertAsync(new Order("ORD-TEST-002", now, OrderStatus.Processing, 300000m), autoSave: true);
 
             var summary = await _dashboardAppService.GetSummaryAsync(new GetDashboardInput
             {
@@ -74,19 +62,9 @@ public abstract class DashboardAppService_Tests<TStartupModule> : TooHungryAppli
     {
         await WithUnitOfWorkAsync(async () =>
         {
-            await _tableRepository.InsertAsync(new RestaurantTable
-            {
-                Name = "Table T1",
-                Capacity = 4,
-                Status = TableStatus.Occupied
-            }, autoSave: true);
+            await _tableRepository.InsertAsync(new RestaurantTable("Table T1", 4, TableStatus.Occupied), autoSave: true);
 
-            await _tableRepository.InsertAsync(new RestaurantTable
-            {
-                Name = "Table T2",
-                Capacity = 2,
-                Status = TableStatus.Available
-            }, autoSave: true);
+            await _tableRepository.InsertAsync(new RestaurantTable("Table T2", 2, TableStatus.Available), autoSave: true);
 
             var summary = await _dashboardAppService.GetSummaryAsync(new GetDashboardInput
             {
@@ -130,13 +108,7 @@ public abstract class DashboardAppService_Tests<TStartupModule> : TooHungryAppli
                 IsActive = true
             }, autoSave: true);
 
-            var order = await _orderRepository.InsertAsync(new Order
-            {
-                OrderNumber = "ORD-TOP-001",
-                OrderDate = now,
-                Status = OrderStatus.Completed,
-                TotalAmount = 550000m
-            }, autoSave: true);
+            var order = await _orderRepository.InsertAsync(new Order("ORD-TOP-001", now, OrderStatus.Completed, 550000m), autoSave: true);
 
             await _orderItemRepository.InsertAsync(new OrderItem
             {

@@ -26,6 +26,7 @@ public class ReservationAutoCancelBackgroundWorker : AsyncPeriodicBackgroundWork
         await ProcessOverdueReservationsAsync(workerContext.ServiceProvider);
     }
 
+    [Volo.Abp.Uow.UnitOfWork]
     public virtual async Task ProcessOverdueReservationsAsync(IServiceProvider serviceProvider)
     {
         var clock = serviceProvider.GetRequiredService<IClock>();
@@ -51,12 +52,7 @@ public class ReservationAutoCancelBackgroundWorker : AsyncPeriodicBackgroundWork
             var table = await tableRepository.FindAsync(reservation.TableId);
             if (table != null && table.Status == TableStatus.Reserved)
             {
-                table.Status = TableStatus.Available;
-                table.ReservedCustomerName = null;
-                table.ReservedCustomerPhone = null;
-                table.ReservedTime = null;
-                table.ReservedGuestCount = null;
-                table.ReservedNote = null;
+                table.Release();
                 await tableRepository.UpdateAsync(table, autoSave: true);
 
                 await realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name, table.DiningAreaId);

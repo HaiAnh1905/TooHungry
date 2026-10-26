@@ -1,0 +1,123 @@
+<div class="row g-3">
+  <!-- Thẻ 1: Tổng số mặt hàng -->
+  <div class="col-12 col-sm-6 col-xl-3">
+    <div
+      class="bento-kpi-card kpi-total"
+      [class.active]="activeFilter === 'all'"
+      (click)="onSelect('all')"
+      role="button"
+      tabindex="0"
+      (keydown.enter)="onSelect('all')"
+    >
+      <div class="kpi-content">
+        <span class="kpi-label">
+          {{ '::TotalIngredients' | abpLocalization }}
+        </span>
+        <div class="kpi-number-wrap">
+          <span class="kpi-value text-slate-800">
+            {{ kpiSummary?.totalIngredients || 0 }}
+          </span>
+          <span class="kpi-unit">{{ '::ItemsUnit' | abpLocalization }}</span>
+        </div>
+        @if (kpiSummary?.estimatedTotalValue) {
+          <span class="kpi-subtext">
+            ≈ {{ kpiSummary.estimatedTotalValue | number:'1.0-0' }} ₫
+          </span>
+        }
+      </div>
+      <div class="kpi-icon-wrap icon-total">
+        <i class="fa fa-cubes"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- Thẻ 2: Tồn kho an toàn -->
+  <div class="col-12 col-sm-6 col-xl-3">
+    <div
+      class="bento-kpi-card kpi-safe"
+      [class.active]="activeFilter === 'safe'"
+      (click)="onSelect('safe')"
+      role="button"
+      tabindex="0"
+      (keydown.enter)="onSelect('safe')"
+    >
+      <div class="kpi-content">
+        <span class="kpi-label">
+          {{ '::SafeStockCount' | abpLocalization }}
+        </span>
+        <div class="kpi-number-wrap">
+          <span class="kpi-value text-emerald-600">
+            {{ kpiSummary?.safeIngredients || 0 }}
+          </span>
+          <span class="kpi-unit text-emerald-600">{{ '::ItemsUnit' | abpLocalization }}</span>
+        </div>
+        <span class="kpi-badge badge-safe">
+          <i class="fa fa-circle-check me-1"></i>{{ '::StockStatusSafe' | abpLocalization }}
+        </span>
+      </div>
+      <div class="kpi-icon-wrap icon-safe">
+        <i class="fa fa-shield-halved"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- Thẻ 3: Cảnh báo thiếu hụt -->
+  <div class="col-12 col-sm-6 col-xl-3">
+    <div
+      class="bento-kpi-card kpi-warning"
+      [class.active]="activeFilter === 'lowStock'"
+      (click)="onSelect('lowStock')"
+      role="button"
+      tabindex="0"
+      (keydown.enter)="onSelect('lowStock')"
+    >
+      <div class="kpi-content">
+        <span class="kpi-label">
+          {{ '::LowStockCount' | abpLocalization }}
+        </span>
+        <div class="kpi-number-wrap">
+          <span class="kpi-value text-amber-600">
+            {{ kpiSummary?.lowStockIngredients || 0 }}
+          </span>
+          <span class="kpi-unit text-amber-600">{{ '::ItemsUnit' | abpLocalization }}</span>
+        </div>
+        <span class="kpi-badge badge-warning">
+          <i class="fa fa-triangle-exclamation me-1"></i>{{ '::NeedsReplenishment' | abpLocalization }}
+        </span>
+      </div>
+      <div class="kpi-icon-wrap icon-warning">
+        <i class="fa fa-triangle-exclamation"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- Thẻ 4: Lô quá hạn cần hủy -->
+  <div class="col-12 col-sm-6 col-xl-3">
+    <div
+      class="bento-kpi-card kpi-danger"
+      [class.active]="activeFilter === 'expired'"
+      (click)="onSelect('expired')"
+      role="button"
+      tabindex="0"
+      (keydown.enter)="onSelect('expired')"
+    >
+      <div class="kpi-content">
+        <span class="kpi-label">
+          {{ '::CriticalExpiredCount' | abpLocalization }}
+        </span>
+        <div class="kpi-number-wrap">
+          <span class="kpi-value text-rose-600">
+            {{ kpiSummary?.expiredBatchesCount || 0 }}
+          </span>
+          <span class="kpi-unit text-rose-600">{{ '::BatchesUnit' | abpLocalization }}</span>
+        </div>
+        <span class="kpi-badge badge-danger">
+          <i class="fa fa-ban me-1"></i>{{ '::ActionRequired' | abpLocalization }}
+        </span>
+      </div>
+      <div class="kpi-icon-wrap icon-danger">
+        <i class="fa fa-ban"></i>
+      </div>
+    </div>
+  </div>
+</div>

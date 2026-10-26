@@ -86,7 +86,7 @@ public abstract class UnitAppService_Tests<TStartupModule> : TooHungryApplicatio
         });
 
         // Thử tạo lại với chữ thường/hoa
-        await Should.ThrowAsync<UserFriendlyException>(async () =>
+        await Should.ThrowAsync<BusinessException>(async () =>
         {
             await _unitAppService.CreateAsync(new CreateUpdateUnitDto
             {
@@ -108,12 +108,12 @@ public abstract class UnitAppService_Tests<TStartupModule> : TooHungryApplicatio
             kgUnit = await _unitAppService.CreateAsync(new CreateUpdateUnitDto { Name = "Kilogram", Abbreviation = "Kg" });
         }
 
-        var ex = await Should.ThrowAsync<UserFriendlyException>(async () =>
+        var ex = await Should.ThrowAsync<BusinessException>(async () =>
         {
             await _unitAppService.DeleteAsync(kgUnit.Id);
         });
 
-        ex.Message.ShouldContain("mặc định");
+        ex.Code.ShouldBe(TooHungryDomainErrorCodes.UnitCannotDeleteDefault);
     }
 
     [Fact]

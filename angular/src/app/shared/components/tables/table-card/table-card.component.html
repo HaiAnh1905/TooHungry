@@ -1,0 +1,302 @@
+<div
+  class="table-card"
+  [class.status-available]="table.status === TableStatus.Available"
+  [class.status-occupied]="table.status === TableStatus.Occupied"
+  [class.status-reserved]="table.status === TableStatus.Reserved"
+  [class.status-cleaning]="table.status === TableStatus.Cleaning"
+  [class.status-disabled]="table.status === TableStatus.Disabled"
+>
+  <!-- Card Header -->
+  <div class="card-head">
+    <div class="d-flex align-items-center justify-content-between">
+      <h3 class="table-name m-0" [title]="table.name">{{ table.name }}</h3>
+      <!-- Status Badge -->
+      <div class="status-badge" [ngClass]="table.status | tableStatus:'badgeClass'">
+        <i class="fas me-1" [ngClass]="table.status | tableStatus:'icon'"></i>
+        <span>{{ (table.status | tableStatus:'label') | abpLocalization }}</span>
+      </div>
+    </div>
+
+    <!-- Meta Pills: Location & Capacity -->
+    <div class="table-meta-pills d-flex align-items-center flex-wrap gap-2 mt-2">
+      @if (table.diningAreaName || table.location) {
+        <span class="area-pill" [title]="table.location || table.diningAreaName">
+          <i class="fas fa-map-pin me-1"></i>
+          <span class="area-name-text">{{ table.diningAreaName || table.location }}</span>
+        </span>
+      }
+      <span class="capacity-pill">
+        <i class="fas fa-user-group me-1"></i>
+        <span>{{ table.capacity }} {{ '::Seats' | abpLocalization }}</span>
+      </span>
+    </div>
+  </div>
+
+  <!-- Card Body: Status specific information -->
+  <div class="card-info my-3">
+    @if (table.status === TableStatus.Reserved) {
+      <div
+        class="reserved-info-box cursor-pointer"
+        role="button"
+        (click)="openReservationDetails.emit(table)"
+        [title]="'::ClickToViewReservationDetails' | abpLocalization"
+      >
+        <div class="d-flex align-items-center justify-content-between mb-1">
+          <span class="guest-name font-weight-bold">
+            <i class="fas fa-user me-1 text-warning"></i>
+            {{ table.reservedCustomerName || ('::UnassignedGuest' | abpLocalization) }}
+          </span>
+          <div class="d-flex align-items-center gap-1">
+            @if (table.reservedGuestCount) {
+              <span class="guest-count badge bg-warning text-dark">
+                {{ table.reservedGuestCount }} {{ '::Guests' | abpLocalization }}
+              </span>
+            }
+            <span class="badge bg-light text-secondary border">
+              <i class="fas fa-pen-to-square"></i>
+            </span>
+          </div>
+        </div>
+        @if (table.reservedCustomerPhone) {
+          <div class="guest-phone text-muted small">
+            <i class="fas fa-phone me-1"></i>
+            {{ table.reservedCustomerPhone }}
+          </div>
+        }
+        @if (table.reservedTime) {
+          <div class="guest-time text-warning small font-weight-bold mt-1">
+            <i class="fas fa-clock me-1"></i>
+            {{ table.reservedTime | date: 'HH:mm - dd/MM' }}
+          </div>
+        }
+        @if (table.reservedNote) {
+          <div class="guest-note text-muted small italic mt-1 text-truncate">
+            <i class="fas fa-note-sticky me-1"></i>
+            {{ table.reservedNote }}
+          </div>
+        }
+      </div>
+    } @else if (table.status === TableStatus.Occupied) {
+      <div class="occupied-info-box">
+        @if (table.hasActiveOrder) {
+          <div class="order-status-active d-flex align-items-center gap-2">
+            <i class="fas fa-receipt text-success"></i>
+            <span class="text-success small font-weight-bold">
+              {{ '::TableHasOpenOrder' | abpLocalization }}
+            </span>
+          </div>
+        } @else {
+          <div class="order-status-waiting d-flex align-items-center gap-2">
+            <i class="fas fa-bell text-warning"></i>
+            <span class="text-muted small">
+              {{ '::TableWaitingForOrder' | abpLocalization }}
+            </span>
+          </div>
+        }
+
+        @if (table.occupiedTime) {
+          <div class="meal-duration-info mt-2 pt-2 border-top d-flex align-items-center justify-content-between">
+            <div class="meal-start-time d-flex align-items-center gap-1 text-muted small" [title]="'::TableMealStartedAt' | abpLocalization">
+              <i class="fas fa-clock text-warning"></i>
+              <span>{{ '::TableSeatedAt' | abpLocalization }}:</span>
+              <strong class="text-dark">{{ table.occupiedTime | date: 'HH:mm' }}</strong>
+            </div>
+            <span
+              class="meal-duration-badge badge"
+              [ngClass]="getMealDurationWarningClass(table.occupiedTime)"
+              [title]="'::TableDiningDuration' | abpLocalization"
+            >
+              <i class="fas fa-hourglass-half me-1"></i>
+              {{ getMealDuration(table.occupiedTime) }}
+            </span>
+          </div>
+        }
+      </div>
+    } @else if (table.status === TableStatus.Cleaning) {
+      <div class="cleaning-info-box d-flex align-items-center gap-2">
+        <i class="fas fa-broom text-info"></i>
+        <span class="text-muted small">{{ '::TableUnderCleaning' | abpLocalization }}</span>
+      </div>
+    } @else if (table.status === TableStatus.Disabled) {
+      <div class="disabled-info-box d-flex align-items-center gap-2">
+        <i class="fas fa-ban text-secondary"></i>
+        <span class="text-muted small">{{ '::TableIsDisabled' | abpLocalization }}</span>
+      </div>
+    } @else {
+      <div class="available-info-box d-flex align-items-center gap-2">
+        <i class="fas fa-circle-check text-success"></i>
+        <span class="text-muted small">{{ '::TableReadyForGuests' | abpLocalization }}</span>
+      </div>
+    }
+  </div>
+
+  <!-- Card Actions Contextual Group -->
+  <div class="card-actions pt-2 border-top">
+    <!-- 1. Trạng thái AVAILABLE: [Đón khách], [Đặt lịch], [Vô hiệu hóa/Sửa/Xóa] -->
+    @if (table.status === TableStatus.Available) {
+      <div class="table-actions-2rows">
+        <button
+          type="button"
+          class="btn-action-main-full btn-seat-guests"
+          (click)="seatGuests.emit(table)"
+          [title]="'::SeatGuestsTooltip' | abpLocalization"
+        >
+          <i class="fas fa-user-check me-1"></i>
+          <span>{{ '::SeatGuests' | abpLocalization }}</span>
+        </button>
+        <div class="sub-actions-row">
+          <button
+            type="button"
+            class="btn-action-sub-pill btn-sub-reserve"
+            (click)="openReservation.emit(table)"
+            [title]="'::ReserveTable' | abpLocalization"
+          >
+            <i class="fas fa-calendar-plus me-1"></i>
+            <span>{{ '::Reserve' | abpLocalization }}</span>
+          </button>
+          @if (!isWaiterMode) {
+            <button
+              type="button"
+              class="btn-action-sub-pill btn-sub-edit"
+              (click)="editTable.emit(table)"
+              [title]="'::Edit' | abpLocalization"
+            >
+              <i class="fas fa-pen"></i>
+            </button>
+            <button
+              type="button"
+              class="btn-action-sub-pill btn-sub-delete"
+              (click)="deleteTable.emit(table)"
+              [title]="'::Delete' | abpLocalization"
+            >
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          }
+          <button
+            type="button"
+            class="btn-action-sub-pill btn-sub-disable"
+            (click)="disableTable.emit(table)"
+            [title]="'::DisableTable' | abpLocalization"
+          >
+            <i class="fas fa-ban me-1"></i>
+            <span>{{ '::Disable' | abpLocalization }}</span>
+          </button>
+        </div>
+      </div>
+    }
+
+    <!-- 2. Trạng thái OCCUPIED: [Order], [Kết thúc/Thanh toán], [Chuyển bàn], [Gộp bàn] -->
+    @if (table.status === TableStatus.Occupied) {
+      <div class="occupied-actions-grid">
+        <button
+          type="button"
+          class="btn-grid-action btn-grid-order"
+          (click)="goToOrder.emit(table)"
+          [title]="(table.hasActiveOrder ? '::ViewOrder' : '::TakeOrder') | abpLocalization"
+        >
+          <i class="fas fa-utensils"></i>
+          <span>{{ (table.hasActiveOrder ? '::ViewOrderShort' : '::TakeOrderShort') | abpLocalization }}</span>
+        </button>
+        @if (table.hasActiveOrder) {
+          <button
+            type="button"
+            class="btn-grid-action btn-grid-finish"
+            (click)="completeMeal.emit(table)"
+            [title]="'::FinishMealAndPay' | abpLocalization"
+          >
+            <i class="fas fa-credit-card"></i>
+            <span>{{ '::PayShort' | abpLocalization }}</span>
+          </button>
+        } @else {
+          <button
+            type="button"
+            class="btn-grid-action btn-grid-release"
+            (click)="completeMeal.emit(table)"
+            [title]="'::ConfirmFreeTable' | abpLocalization"
+          >
+            <i class="fas fa-arrow-rotate-left"></i>
+            <span>{{ '::ReleaseShort' | abpLocalization }}</span>
+          </button>
+        }
+        <button
+          type="button"
+          class="btn-grid-action btn-grid-transfer"
+          (click)="openTransfer.emit(table)"
+          [title]="'::TransferTable' | abpLocalization"
+        >
+          <i class="fas fa-arrow-right-arrow-left"></i>
+          <span>{{ '::TransferTableShort' | abpLocalization }}</span>
+        </button>
+        <button
+          type="button"
+          class="btn-grid-action btn-grid-merge"
+          (click)="openMerge.emit(table)"
+          [disabled]="!table.hasActiveOrder"
+          [class.disabled]="!table.hasActiveOrder"
+          [title]="(table.hasActiveOrder ? '::MergeTables' : '::CannotMergeWithoutOrder') | abpLocalization"
+        >
+          <i class="fas fa-object-group"></i>
+          <span>{{ '::MergeTablesShort' | abpLocalization }}</span>
+        </button>
+      </div>
+    }
+
+    <!-- 3. Trạng thái RESERVED: [Nhận bàn / Check-in], [Hủy đặt bàn / Xem chi tiết] -->
+    @if (table.status === TableStatus.Reserved) {
+      <div class="reserved-actions-grid d-flex gap-2">
+        <button
+          type="button"
+          class="btn-action-main-full btn-checkin flex-grow-1"
+          (click)="checkIn.emit(table)"
+          [title]="'::CheckInReservedGuests' | abpLocalization"
+        >
+          <i class="fas fa-check-double me-1"></i>
+          <span>{{ '::CheckIn' | abpLocalization }}</span>
+        </button>
+        <button
+          type="button"
+          class="btn-action-sub-pill btn-sub-cancel-reserve"
+          (click)="cancelReservation.emit(table)"
+          [title]="'::CancelReservation' | abpLocalization"
+        >
+          <i class="fas fa-times me-1"></i>
+          <span>{{ '::Cancel' | abpLocalization }}</span>
+        </button>
+        <button
+          type="button"
+          class="btn-action-sub-pill"
+          (click)="openReservationDetails.emit(table)"
+          [title]="'::ViewOrEditReservation' | abpLocalization"
+        >
+          <i class="fas fa-ellipsis-vertical"></i>
+        </button>
+      </div>
+    }
+
+    <!-- 4. Trạng thái CLEANING: [Hoàn tất dọn dẹp] -->
+    @if (table.status === TableStatus.Cleaning) {
+      <button
+        type="button"
+        class="btn-action-main-full btn-finish-cleaning w-100"
+        (click)="finishCleaning.emit(table)"
+        [title]="'::FinishCleaningTooltip' | abpLocalization"
+      >
+        <i class="fas fa-broom me-1"></i>
+        <span>{{ '::FinishCleaning' | abpLocalization }}</span>
+      </button>
+    }
+
+    <!-- 5. Trạng thái DISABLED: [Kích hoạt lại] -->
+    @if (table.status === TableStatus.Disabled) {
+      <button
+        type="button"
+        class="btn-action-main-full btn-enable-table w-100"
+        (click)="enableTable.emit(table)"
+        [title]="'::EnableTableTooltip' | abpLocalization"
+      >
+        <i class="fas fa-rotate-left me-1"></i>
+        <span>{{ '::EnableTable' | abpLocalization }}</span>
+      </button>
+    }
+  </div>
+</div>

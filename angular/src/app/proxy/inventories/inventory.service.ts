@@ -1,4 +1,4 @@
-import { RestService, Rest, PagedResultDto } from '@abp/ng.core';
+import { RestService, Rest, PagedResultDto, PagedAndSortedResultRequestDto } from '@abp/ng.core';
 import { Injectable, inject } from '@angular/core';
 import type {
   CreateInventoryBatchDto,
@@ -43,11 +43,16 @@ export class InventoryService {
     { apiName: this.apiName, ...config });
   };
 
-  getTransactions = (ingredientId: string, config?: Partial<Rest.Config>) =>
-    this.restService.request<any, InventoryTransactionDto[]>({
+  getTransactions = (ingredientId: string, input?: PagedAndSortedResultRequestDto, config?: Partial<Rest.Config>) =>
+    this.restService.request<any, PagedResultDto<InventoryTransactionDto>>({
       method: 'GET',
       headers: { Accept: 'application/json' },
       url: `/api/app/inventory/transactions/${ingredientId}`,
+      params: {
+        skipCount: input?.skipCount,
+        maxResultCount: input?.maxResultCount,
+        sorting: input?.sorting,
+      },
     },
     { apiName: this.apiName, ...config });
 
@@ -56,6 +61,15 @@ export class InventoryService {
       method: 'POST',
       headers: { Accept: 'application/json' },
       url: `/api/app/inventory/batches/${id}/discard`,
+      body: input,
+    },
+    { apiName: this.apiName, ...config });
+
+  bulkDiscardBatches = (input: { batchIds: string[]; reason: string }, config?: Partial<Rest.Config>) =>
+    this.restService.request<any, void>({
+      method: 'POST',
+      headers: { Accept: 'application/json' },
+      url: '/api/app/inventory/batches/bulk-discard',
       body: input,
     },
     { apiName: this.apiName, ...config });

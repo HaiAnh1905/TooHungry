@@ -1,29 +1,42 @@
-import { TestBed } from '@angular/core/testing';
+/** @vitest-environment jsdom */
+import '@angular/compiler';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { Injector } from '@angular/core';
 import { Router } from '@angular/router';
+import { CreateErrorComponentService } from '@abp/ng.theme.shared';
 import { AppHttpErrorHandlerService } from './app-http-error-handler.service';
 
 describe('AppHttpErrorHandlerService', () => {
   let service: AppHttpErrorHandlerService;
   let routerMock: { navigate: any };
+  let createErrorServiceMock: { execute: any };
 
   beforeEach(() => {
     routerMock = {
-      navigate: vi.fn(),
+      navigate: vi.fn().mockResolvedValue(true),
+    };
+    createErrorServiceMock = {
+      execute: vi.fn(),
     };
 
-    TestBed.configureTestingModule({
+    const injector = Injector.create({
       providers: [
-        AppHttpErrorHandlerService,
+        { provide: AppHttpErrorHandlerService, useClass: AppHttpErrorHandlerService },
         { provide: Router, useValue: routerMock },
+        { provide: CreateErrorComponentService, useValue: createErrorServiceMock },
       ],
     });
 
-    service = TestBed.inject(AppHttpErrorHandlerService);
+    service = injector.get(AppHttpErrorHandlerService);
   });
 
   it('nên được khởi tạo thành công', () => {
     expect(service).toBeTruthy();
     expect(service.priority).toBe(999);
+  });
+
+  it('canHandle() trả về true khi status là 0 (Network Error)', () => {
+    expect(service.canHandle({ status: 0 })).toBe(true);
   });
 
   it('canHandle() trả về true khi status là 403', () => {
@@ -35,10 +48,22 @@ describe('AppHttpErrorHandlerService', () => {
     expect(service.canHandle({ status: 505 })).toBe(true);
   });
 
-  it('canHandle() trả về false khi status khác 403/500/505', () => {
+  it('canHandle() trả về false khi status khác 0/403/500/505', () => {
     expect(service.canHandle({ status: 404 })).toBe(false);
     expect(service.canHandle({ status: 400 })).toBe(false);
     expect(service.canHandle({ status: 200 })).toBe(false);
+  });
+
+  it('execute() gọi createErrorComponentService.execute khi status là 0', () => {
+    service.canHandle({ status: 0, message: 'Http failure response' });
+    service.execute();
+
+    expect(createErrorServiceMock.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        isHomeShow: true,
+        details: 'Http failure response',
+      })
+    );
   });
 
   it('execute() điều hướng sang /error/403 khi status là 403', () => {

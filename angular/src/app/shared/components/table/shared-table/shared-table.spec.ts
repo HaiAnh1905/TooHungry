@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { SharedTable } from './shared-table';
+import { SharedTableComponent } from './shared-table';
 
-describe('SharedTable', () => {
-  let component: SharedTable;
-  let fixture: ComponentFixture<SharedTable>;
+describe('SharedTableComponent', () => {
+  let component: SharedTableComponent;
+  let fixture: ComponentFixture<SharedTableComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [SharedTable]
+      imports: [SharedTableComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(SharedTable);
+    fixture = TestBed.createComponent(SharedTableComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Acme.TooHungry.Permissions;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Domain.Entities;
@@ -10,6 +12,7 @@ using Volo.Abp.Domain.Repositories;
 
 namespace Acme.TooHungry.DailyMenus;
 
+[Authorize(TooHungryPermissions.Dishes.Default)]
 public class DailyMenuAppService : ApplicationService, IDailyMenuAppService
 {
     private readonly IRepository<DailyMenu, Guid> _dailyMenuRepository;

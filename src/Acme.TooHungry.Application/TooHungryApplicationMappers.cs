@@ -77,7 +77,10 @@ public partial class TooHungryOrderToOrderDtoMapper : MapperBase<Order, OrderDto
 [Mapper(RequiredMappingStrategy = RequiredMappingStrategy.Target)]
 public partial class TooHungryCreateUpdateOrderDtoToOrderMapper : MapperBase<CreateUpdateOrderDto, Order>
 {
+    [MapperIgnoreTarget(nameof(Order.TotalAmount))]
     public override partial Order Map(CreateUpdateOrderDto source);
+
+    [MapperIgnoreTarget(nameof(Order.TotalAmount))]
     public override partial void Map(CreateUpdateOrderDto source, Order destination);
 }
 
@@ -96,7 +99,18 @@ public partial class TooHungryOrderItemToOrderItemDtoMapper : MapperBase<OrderIt
 [Mapper(RequiredMappingStrategy = RequiredMappingStrategy.Target)]
 public partial class TooHungryCreateUpdateOrderItemDtoToOrderItemMapper : MapperBase<CreateUpdateOrderItemDto, OrderItem>
 {
+    [MapperIgnoreTarget(nameof(OrderItem.UnitPrice))]
+    [MapperIgnoreTarget(nameof(OrderItem.TotalPrice))]
+    [MapperIgnoreTarget(nameof(OrderItem.OrderId))]
+    [MapperIgnoreTarget(nameof(OrderItem.Order))]
+    [MapperIgnoreTarget(nameof(OrderItem.Dish))]
     public override partial OrderItem Map(CreateUpdateOrderItemDto source);
+
+    [MapperIgnoreTarget(nameof(OrderItem.UnitPrice))]
+    [MapperIgnoreTarget(nameof(OrderItem.TotalPrice))]
+    [MapperIgnoreTarget(nameof(OrderItem.OrderId))]
+    [MapperIgnoreTarget(nameof(OrderItem.Order))]
+    [MapperIgnoreTarget(nameof(OrderItem.Dish))]
     public override partial void Map(CreateUpdateOrderItemDto source, OrderItem destination);
 }
 #endregion

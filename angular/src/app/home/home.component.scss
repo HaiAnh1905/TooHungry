@@ -660,6 +660,40 @@ $color-slate: #64748B;
   }
 }
 
+.alerts-footer-note {
+  border-top: 1px dashed #e2e8f0;
+
+  .remaining-alerts-link {
+    padding: 0.35rem 0.85rem;
+    border-radius: 9999px;
+    background-color: #fffaf5;
+    border: 1px solid #fed7aa;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: #fff7ed;
+      border-color: #ea580c;
+      transform: translateY(-1px);
+      box-shadow: 0 3px 10px rgba(234, 88, 12, 0.12);
+
+      .view-all-link {
+        color: #c2410c;
+        text-decoration: underline;
+      }
+    }
+
+    .alerts-note-text {
+      color: #64748b;
+      font-weight: 500;
+    }
+
+    .view-all-link {
+      color: #ea580c;
+      transition: color 0.15s ease;
+    }
+  }
+}
+
 .text-truncate-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;

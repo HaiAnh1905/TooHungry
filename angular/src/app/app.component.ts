@@ -1,9 +1,10 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { DynamicLayoutComponent, ConfigStateService } from '@abp/ng.core';
+import { DynamicLayoutComponent, ConfigStateService, PermissionService } from '@abp/ng.core';
 import { LoaderBarComponent } from '@abp/ng.theme.shared';
 import { SidebarWidgetsComponent } from './sidebar-widgets/sidebar-widgets.component';
 import { OAuthService, OAuthEvent } from 'angular-oauth2-oidc';
 import { Router } from '@angular/router';
+import { filter, take } from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -18,6 +19,7 @@ import { Router } from '@angular/router';
 export class AppComponent {
   private oauthService = inject(OAuthService);
   private configState = inject(ConfigStateService);
+  private permissionService = inject(PermissionService);
   private router = inject(Router);
   private hasInitialNavigated = false;
 
@@ -48,7 +50,7 @@ export class AppComponent {
         this.hasInitialNavigated = true;
 
         // Fetch current user and redirect based on role CHỈ KHI vừa login xong
-        this.configState.getOne$('currentUser').subscribe(user => {
+        this.configState.getOne$('currentUser').pipe(take(1)).subscribe(user => {
           if (user?.isAuthenticated) {
             const roles = user.roles || [];
             if (roles.includes('Administrator') || roles.includes('admin')) {
@@ -56,11 +58,16 @@ export class AppComponent {
             } else if (roles.includes('Manager')) {
               this.router.navigate(['/']);
             } else if (roles.includes('InventoryStaff')) {
-              this.router.navigate(['/inventory']);
+              this.router.navigate(['/inventory-keeper/dashboard']);
             } else if (roles.includes('Waiter')) {
               this.router.navigate(['/waiter/tables']);
             } else if (roles.includes('Cashier')) {
-              this.router.navigate(['/table/layout']);
+              const canAdminTables =
+                this.permissionService.getGrantedPolicy('TooHungry.Tables.Create') ||
+                this.permissionService.getGrantedPolicy('TooHungry.Tables') ||
+                roles.includes('Administrator') ||
+                roles.includes('admin');
+              this.router.navigate([canAdminTables ? '/tables' : '/waiter/tables']);
             } else {
               this.router.navigate(['/']);
             }
@@ -77,10 +84,11 @@ export class AppComponent {
           const now = Date.now();
           if (now - lastRefreshTime > 4000) {
             lastRefreshTime = now;
-            this.configState.getOne$('currentUser').subscribe(user => {
-              if (user?.isAuthenticated) {
-                this.configState.refreshAppState().subscribe();
-              }
+            this.configState.getOne$('currentUser').pipe(
+              filter(user => !!user?.isAuthenticated),
+              take(1)
+            ).subscribe(() => {
+              this.configState.refreshAppState().subscribe();
             });
           }
         }

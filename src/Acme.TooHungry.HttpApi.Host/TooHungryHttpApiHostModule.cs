@@ -95,10 +95,27 @@ public class TooHungryHttpApiHostModule : AbpModule
         var configuration = context.Services.GetConfiguration();
         var hostingEnvironment = context.Services.GetHostingEnvironment();
 
-        if (!configuration.GetValue<bool>("App:DisablePII"))
+        if (hostingEnvironment.IsProduction())
+        {
+            var certPassphrase = configuration["AuthServer:CertificatePassPhrase"];
+            var encPassphrase = configuration["StringEncryption:DefaultPassPhrase"];
+
+            if (string.IsNullOrWhiteSpace(certPassphrase) || certPassphrase == "__CONFIGURE_VIA_ENV_OR_USER_SECRETS__" ||
+                string.IsNullOrWhiteSpace(encPassphrase) || encPassphrase == "__CONFIGURE_VIA_ENV_OR_USER_SECRETS__")
+            {
+                throw new InvalidOperationException("Production secrets are missing: AuthServer:CertificatePassPhrase and StringEncryption:DefaultPassPhrase must be configured via environment variables or secret store.");
+            }
+        }
+
+        if (hostingEnvironment.IsDevelopment() && !configuration.GetValue<bool>("App:DisablePII"))
         {
             Microsoft.IdentityModel.Logging.IdentityModelEventSource.ShowPII = true;
             Microsoft.IdentityModel.Logging.IdentityModelEventSource.LogCompleteSecurityArtifact = true;
+        }
+        else
+        {
+            Microsoft.IdentityModel.Logging.IdentityModelEventSource.ShowPII = false;
+            Microsoft.IdentityModel.Logging.IdentityModelEventSource.LogCompleteSecurityArtifact = false;
         }
 
         if (!configuration.GetValue<bool>("AuthServer:RequireHttpsMetadata"))
@@ -294,14 +311,17 @@ public class TooHungryHttpApiHostModule : AbpModule
         app.UseDynamicClaims();
         app.UseAuthorization();
 
-        app.UseSwagger();
-        app.UseAbpSwaggerUI(options =>
+        if (env.IsDevelopment())
         {
-            options.SwaggerEndpoint("/swagger/v1/swagger.json", "TooHungry API");
+            app.UseSwagger();
+            app.UseAbpSwaggerUI(options =>
+            {
+                options.SwaggerEndpoint("/swagger/v1/swagger.json", "TooHungry API");
 
-            var configuration = context.ServiceProvider.GetRequiredService<IConfiguration>();
-            options.OAuthClientId(configuration["AuthServer:SwaggerClientId"]);
-        });
+                var configuration = context.ServiceProvider.GetRequiredService<IConfiguration>();
+                options.OAuthClientId(configuration["AuthServer:SwaggerClientId"]);
+            });
+        }
         app.UseAuditing();
         app.UseAbpSerilogEnrichers();
         app.UseConfiguredEndpoints(endpoints =>

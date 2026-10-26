@@ -15,6 +15,8 @@ import { Subscription } from 'rxjs';
 import { WaiterSidebarService } from '../services/waiter-sidebar.service';
 import { WaiterShiftType, WaiterUserInfo } from '../models/waiter-layout.models';
 import { TableSignalrService } from '../../shared/services/table-signalr.service';
+import { UserRoleNavigationService } from '../../shared/services/user-role-navigation.service';
+import { RESTAURANT_BUSINESS_HOURS } from '../../shared/constants/business-hours.constant';
 
 @Component({
   selector: 'app-waiter-layout',
@@ -36,6 +38,7 @@ export class WaiterLayoutComponent implements OnInit, OnDestroy {
   readonly sidebarService = inject(WaiterSidebarService);
   readonly confirmationService = inject(ConfirmationService);
   readonly tableSignalr = inject(TableSignalrService);
+  readonly userRoleNav = inject(UserRoleNavigationService);
 
   readonly currentLanguage = signal<string>('vi');
   readonly isLanguageDropdownOpen = signal<boolean>(false);
@@ -163,9 +166,7 @@ export class WaiterLayoutComponent implements OnInit, OnDestroy {
     const applyUser = (currentUser: any) => {
       if (!currentUser) return;
       const roles: string[] = currentUser.roles || [];
-      const canReturnToAdmin = roles.some(
-        r => r === 'Manager' || r === 'Administrator' || r === 'admin'
-      );
+      const canReturnToAdmin = this.userRoleNav.canNavigateToAdmin();
       const shift = this.calculateShift();
 
       this.userInfo.set({
@@ -202,9 +203,9 @@ export class WaiterLayoutComponent implements OnInit, OnDestroy {
 
   private calculateShift(): { type: WaiterShiftType; key: string } {
     const hours = new Date().getHours();
-    if (hours >= 9 && hours < 15) {
+    if (hours >= RESTAURANT_BUSINESS_HOURS.OPEN_HOUR && hours < RESTAURANT_BUSINESS_HOURS.EVENING_SHIFT_START) {
       return { type: WaiterShiftType.Morning, key: '::ShiftMorning' };
-    } else if (hours >= 15 && hours < 23) {
+    } else if (hours >= RESTAURANT_BUSINESS_HOURS.EVENING_SHIFT_START && hours < RESTAURANT_BUSINESS_HOURS.CLOSE_HOUR) {
       return { type: WaiterShiftType.Evening, key: '::ShiftEvening' };
     } else {
       return { type: WaiterShiftType.OffShift, key: '::ShiftOff' };
@@ -248,9 +249,6 @@ export class WaiterLayoutComponent implements OnInit, OnDestroy {
     this.sessionState.setLanguage(langCode);
     this.currentLanguage.set(langCode);
     this.isLanguageDropdownOpen.set(false);
-    setTimeout(() => {
-      window.location.reload();
-    }, 150);
   }
 
   @HostListener('document:click', ['$event'])

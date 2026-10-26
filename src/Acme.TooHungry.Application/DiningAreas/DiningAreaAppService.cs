@@ -207,7 +207,7 @@ public class DiningAreaAppService : ApplicationService, IDiningAreaAppService
         {
             foreach (var table in tables)
             {
-                table.Status = TableStatus.Disabled;
+                table.SetStatus(TableStatus.Disabled);
             }
             await _tableRepository.UpdateManyAsync(tables, autoSave: true);
 
@@ -242,7 +242,7 @@ public class DiningAreaAppService : ApplicationService, IDiningAreaAppService
         {
             foreach (var table in disabledTables)
             {
-                table.Status = TableStatus.Available;
+                table.Release();
             }
             await _tableRepository.UpdateManyAsync(disabledTables, autoSave: true);
 

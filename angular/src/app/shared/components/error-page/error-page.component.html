@@ -75,6 +75,27 @@
           <path d="M78 116L82 124M82 116L78 124" stroke="#EA580C" stroke-width="2" stroke-linecap="round" />
         </svg>
       }
+
+      <!-- 0: Network Offline / Server Unreachable -->
+      @if (activeConfig().iconType === 'network-offline') {
+        <svg class="error-illustration float-animation" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <!-- Background Glow Circle -->
+          <circle cx="80" cy="80" r="70" fill="#FFF7ED" />
+          <circle cx="80" cy="80" r="58" stroke="#FDBA74" stroke-width="2" stroke-dasharray="4 4" />
+          <!-- Cloud Outline -->
+          <path d="M52 88C45.4 88 40 82.6 40 76C40 70.2 44.1 65.3 49.7 64.3C50.5 53.6 59.4 45 70.3 45C78.4 45 85.5 49.8 88.7 56.7C91 55.6 93.7 55 96.5 55C104.5 55 111 61.5 111 69.5C111 70.6 110.8 71.7 110.5 72.8C115.9 74.3 120 79.2 120 85C120 92.2 114.2 98 107 98H52" fill="#FFFFFF" stroke="#EA580C" stroke-width="3.5" stroke-linejoin="round" />
+          <!-- Server Box Mini below Cloud -->
+          <rect x="58" y="104" width="44" height="20" rx="4" fill="#FFFFFF" stroke="#EA580C" stroke-width="2.5" />
+          <circle cx="66" cy="114" r="2" fill="#EA580C" />
+          <circle cx="74" cy="114" r="2" fill="#FED7AA" />
+          <line x1="84" y1="114" x2="94" y2="114" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" />
+          <!-- Disconnect Slash Line -->
+          <line x1="38" y1="126" x2="122" y2="42" stroke="#EF4444" stroke-width="4" stroke-linecap="round" />
+          <circle cx="80" cy="84" r="14" fill="#FFF7ED" stroke="#EF4444" stroke-width="2.5" />
+          <!-- Warning Exclamation Mark inside Center Circle -->
+          <path d="M80 77V85M80 90H80.01" stroke="#EF4444" stroke-width="3" stroke-linecap="round" />
+        </svg>
+      }
     </div>
 
     <!-- Error Title -->

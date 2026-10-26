@@ -920,9 +920,17 @@ namespace Acme.TooHungry.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("OrderNumber")
+                        .IsUnique()
+                        .HasDatabaseName("IX_AppOrders_OrderNumber")
+                        .HasFilter("[IsDeleted] = 0");
+
                     b.HasIndex("TableId")
                         .IsUnique()
-                        .HasFilter("[TableId] IS NOT NULL AND [Status] = 0 AND [IsDeleted] = 0");
+                        .HasFilter("[TableId] IS NOT NULL AND [Status] <> 2 AND [Status] <> 3 AND [IsDeleted] = 0");
+
+                    b.HasIndex("Status", "OrderDate")
+                        .HasDatabaseName("IX_AppOrders_Status_OrderDate");
 
                     b.ToTable("AppOrders", (string)null);
                 });
@@ -1063,7 +1071,10 @@ namespace Acme.TooHungry.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DishId", "IsActive");
+                    b.HasIndex("DishId", "IsActive")
+                        .IsUnique()
+                        .HasDatabaseName("IX_AppRecipes_DishId_IsActive_Unique_Active")
+                        .HasFilter("[DishId] IS NOT NULL AND [IsActive] = 1 AND [IsDeleted] = 0");
 
                     b.ToTable("AppRecipes", (string)null);
                 });
@@ -1280,7 +1291,8 @@ namespace Acme.TooHungry.Migrations
                     b.HasIndex("DiningAreaId");
 
                     b.HasIndex("Name")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[IsDeleted] = 0");
 
                     b.ToTable("AppTables", (string)null);
                 });
@@ -1348,10 +1360,12 @@ namespace Acme.TooHungry.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("Abbreviation")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[IsDeleted] = 0");
 
                     b.HasIndex("Name")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[IsDeleted] = 0");
 
                     b.ToTable("AppUnits", (string)null);
                 });

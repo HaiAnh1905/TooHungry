@@ -9,6 +9,18 @@
         {{ '::ManageOrdersSubtitle' | abpLocalization }}
       </p>
     </div>
+    <div>
+      <button
+        *abpPermission="'TooHungry.Orders.Create'"
+        id="create-order"
+        class="btn btn-primary btn-add-theme"
+        type="button"
+        (click)="createOrder()"
+      >
+        <i class="fa fa-plus-circle"></i>
+        <span>{{ '::AddNewOrder' | abpLocalization }}</span>
+      </button>
+    </div>
   </div>
 
   <!-- 2. FILTER CARD -->
@@ -75,8 +87,8 @@
     >
       <!-- Cột 1: STT -->
       <ngx-datatable-column
-        [width]="70"
-        [minWidth]="60"
+        [width]="65"
+        [minWidth]="55"
         [maxWidth]="75"
         [canAutoResize]="false"
         [sortable]="false"
@@ -93,8 +105,8 @@
       <ngx-datatable-column
         [name]="'::OrderNumber' | abpLocalization"
         prop="orderNumber"
-        [minWidth]="160"
-        [flexGrow]="1.5"
+        [minWidth]="175"
+        [flexGrow]="1.8"
         [canAutoResize]="true"
       >
         <ng-template let-row="row" ngx-datatable-cell-template>
@@ -102,7 +114,7 @@
             <div class="theme-avatar-icon">
               <i class="fa fa-receipt"></i>
             </div>
-            <span class="main-name-text text-truncate" [title]="row.orderNumber">{{ row.orderNumber }}</span>
+            <span class="main-name-text text-truncate font-weight-bold" [title]="row.orderNumber">{{ row.orderNumber }}</span>
           </div>
         </ng-template>
       </ngx-datatable-column>
@@ -111,8 +123,9 @@
       <ngx-datatable-column
         [name]="'::OrderDate' | abpLocalization"
         prop="orderDate"
-        [minWidth]="140"
-        [flexGrow]="1"
+        [width]="160"
+        [minWidth]="145"
+        [flexGrow]="1.1"
         [canAutoResize]="true"
       >
         <ng-template let-row="row" ngx-datatable-cell-template>
@@ -127,12 +140,19 @@
         [name]="'::Status' | abpLocalization"
         prop="status"
         [width]="150"
-        [minWidth]="130"
-        [maxWidth]="170"
-        [canAutoResize]="false"
+        [minWidth]="135"
+        [flexGrow]="1"
+        [canAutoResize]="true"
       >
         <ng-template let-row="row" ngx-datatable-cell-template>
-          <span class="status-pill" [ngClass]="getStatusClass(row.status)">
+          <span
+            class="status-pill"
+            [ngClass]="getStatusClass(row.status)"
+            [title]="isStatusLocked(row.status) ? ('::OrderLockedTooltip' | abpLocalization) : ''"
+          >
+            @if (isStatusLocked(row.status)) {
+              <i class="fa fa-lock me-1 small opacity-75"></i>
+            }
             {{ getStatusLabel(row.status) | abpLocalization }}
           </span>
         </ng-template>
@@ -142,9 +162,8 @@
       <ngx-datatable-column
         [name]="'::TotalAmount' | abpLocalization"
         prop="totalAmount"
-        [width]="180"
+        [width]="170"
         [minWidth]="150"
-        [maxWidth]="200"
         [canAutoResize]="false"
       >
         <ng-template let-row="row" ngx-datatable-cell-template>
@@ -179,6 +198,7 @@
               </button>
             }
             <button
+              *abpPermission="'TooHungry.Orders.Edit'"
               type="button"
               class="icon-action-btn btn-edit"
               (click)="editOrder(row.id)"
@@ -188,6 +208,7 @@
             </button>
             @if (row.status !== OrderStatus.Completed) {
               <button
+                *abpPermission="'TooHungry.Orders.Cancel'"
                 type="button"
                 class="icon-action-btn btn-delete"
                 (click)="delete(row.id)"
@@ -201,77 +222,12 @@
       </ngx-datatable-column>
     </ngx-datatable>
 
-    <!-- 4. CUSTOM FOOTER PAGINATION BAR -->
-    <div class="custom-table-footer d-flex align-items-center justify-content-between flex-wrap gap-3">
-      <div class="d-flex align-items-center flex-wrap gap-3">
-        <span class="records-summary-text">
-          {{ '::ShowingRecords' | abpLocalization }}
-          <strong>{{ fromRecord }} - {{ toRecord }}</strong>
-          {{ '::OfTotal' | abpLocalization }}
-          <strong>{{ data.totalCount }}</strong>
-          {{ '::OrderCount' | abpLocalization }}
-        </span>
-
-        <div class="d-flex align-items-center gap-2 page-size-box">
-          <span class="page-size-label">{{ '::Display' | abpLocalization }}:</span>
-          <app-custom-select
-            [options]="pageSizeOptions"
-            [ngModel]="list.maxResultCount"
-            (selectionChange)="changePageSize($event)"
-            size="sm"
-            placement="top"
-            minWidth="140px"
-          ></app-custom-select>
-        </div>
-      </div>
-
-      <div class="d-flex align-items-center pagination-btn-group" style="gap: 5px;">
-        <button
-          type="button"
-          class="btn-page-nav"
-          [disabled]="currentPage === 1"
-          (click)="firstPage()"
-          [title]="'::FirstPage' | abpLocalization"
-        >
-          <i class="fa fa-angle-double-left"></i>
-        </button>
-
-        <button
-          type="button"
-          class="btn-page-nav btn-text-nav"
-          [disabled]="currentPage === 1"
-          (click)="prevPage()"
-        >
-          <i class="fa fa-angle-left me-1"></i>
-          <span>{{ '::PreviousPage' | abpLocalization }}</span>
-        </button>
-
-        <span class="current-page-badge">
-          {{ '::Page' | abpLocalization }}
-          <strong>{{ currentPage }}</strong> / {{ totalPages }}
-        </span>
-
-        <button
-          type="button"
-          class="btn-page-nav btn-text-nav"
-          [disabled]="currentPage === totalPages"
-          (click)="nextPage()"
-        >
-          <span>{{ '::NextPage' | abpLocalization }}</span>
-          <i class="fa fa-angle-right ms-1"></i>
-        </button>
-
-        <button
-          type="button"
-          class="btn-page-nav"
-          [disabled]="currentPage === totalPages"
-          (click)="lastPage()"
-          [title]="'::LastPage' | abpLocalization"
-        >
-          <i class="fa fa-angle-double-right"></i>
-        </button>
-      </div>
-    </div>
+    <!-- 4. PAGER COMPONENT -->
+    <app-pager
+      [list]="list"
+      [totalCount]="data.totalCount"
+      unitKey="::OrderCount"
+    ></app-pager>
   </div>
 </div>
 
@@ -285,7 +241,7 @@
       <div class="d-flex flex-column justify-content-center">
         <h5 class="m-0 modal-title-text" style="color: #ea580c; font-weight: 800; font-size: 1.15rem">
           @if (selectedItem?.id) {
-            @if (isOrderCompleted) {
+            @if (isOrderLocked) {
               {{ '::ViewOrder' | abpLocalization }} - {{ form?.get('orderNumber')?.value || selectedItem.orderNumber }}
             } @else {
               {{ '::EditOrder' | abpLocalization }} - {{ form?.get('orderNumber')?.value || selectedItem.orderNumber }}
@@ -309,12 +265,25 @@
             <i class="fa fa-lock text-success me-2 fs-5"></i>
             <div>
               <strong class="text-success">{{ '::OrderCompletedLocked' | abpLocalization }}</strong>
-              <div class="small text-muted">Đơn hàng này đã thanh toán xong, toàn bộ thông tin đã bị khóa chỉnh sửa.</div>
+              <div class="small text-muted">{{ '::OrderCompletedLockedDesc' | abpLocalization }}</div>
             </div>
           </div>
           <button type="button" class="btn btn-sm btn-outline-success font-bold" (click)="goToPayment(selectedItem.id)">
-            <i class="fa fa-receipt me-1"></i> Xem hóa đơn & QR
+            <i class="fa fa-receipt me-1"></i> {{ '::ViewReceiptAndQr' | abpLocalization }}
           </button>
+        </div>
+      } @else if (isOrderCancelled) {
+        <div class="alert alert-danger d-flex align-items-center justify-content-between p-2 px-3 mb-2 rounded-3">
+          <div class="d-flex align-items-center">
+            <i class="fa fa-lock text-danger me-2 fs-5"></i>
+            <div>
+              <strong class="text-danger">{{ '::OrderCancelledLocked' | abpLocalization }}</strong>
+              <div class="small text-muted">{{ '::OrderCancelledLockedDesc' | abpLocalization }}</div>
+            </div>
+          </div>
+          <span class="badge bg-danger rounded-pill px-3 py-1 fw-bold">
+            <i class="fa fa-ban me-1"></i> {{ '::OrderStatusCancelled' | abpLocalization }}
+          </span>
         </div>
       }
       <form id="order-form" [formGroup]="form" (ngSubmit)="save()" class="order-pos-modal-body">
@@ -328,7 +297,7 @@
                     <i class="fa fa-book-open"></i>
                     <span>{{ '::MenuDishes' | abpLocalization }}</span>
                   </span>
-                  <span class="column-count-badge">{{ filteredDishes.length }}</span>
+                  <span class="column-count-badge">{{ filteredDishes().length }}</span>
                 </div>
               </div>
 
@@ -339,14 +308,14 @@
                   type="text"
                   class="form-control pos-search-input"
                   [value]="dishSearchTerm"
-                  (input)="dishSearchTerm = $any($event.target).value"
+                  (input)="onDishSearchInput($any($event.target).value)"
                   [placeholder]="'::SearchDishPlaceholder' | abpLocalization"
                 />
                 @if (dishSearchTerm) {
                   <button
                     type="button"
                     class="btn-clear-search"
-                    (click)="dishSearchTerm = ''"
+                    (click)="onDishSearchInput('')"
                     title="Xóa tìm kiếm"
                   >
                     <i class="fa fa-times-circle"></i>
@@ -357,7 +326,7 @@
 
             <!-- Danh sách món ăn phân theo Course / Category dạng dropdown Accordion -->
             <div class="pos-dish-list-scroll">
-              @for (group of groupedDishes; track group.categoryName) {
+              @for (group of groupedDishes(); track group.categoryName) {
                 <div class="pos-category-section mb-2">
                   <!-- Header của Course / Category (Nhấn để mở / ẩn) -->
                   <div
@@ -432,6 +401,7 @@
                               type="button"
                               class="btn btn-sm btn-order-dish"
                               [class.btn-dish-out-of-stock]="isDishOutOfStock(dish.id)"
+                              [disabled]="isOrderLocked"
                               (click)="addDishToOrder(dish)"
                             >
                               <i class="fa fa-cart-plus"></i>
@@ -469,7 +439,7 @@
                 </span>
                 <span class="cart-count-badge">{{ orderItemsArray.length }}</span>
               </div>
-              @if (orderItemsArray.length > 0) {
+              @if (orderItemsArray.length > 0 && !isOrderLocked) {
                 <button
                   type="button"
                   class="btn btn-sm btn-clear-order"
@@ -561,6 +531,7 @@
                       <button
                         type="button"
                         class="stepper-btn btn-minus"
+                        [disabled]="isOrderLocked"
                         (click)="decreaseQuantity($index)"
                         title="Giảm"
                       >
@@ -571,11 +542,13 @@
                         min="1"
                         class="stepper-input"
                         formControlName="quantity"
+                        [readonly]="isOrderLocked"
                         (input)="calculateTotal()"
                       />
                       <button
                         type="button"
                         class="stepper-btn btn-plus"
+                        [disabled]="isOrderLocked"
                         (click)="increaseQuantity($index)"
                         title="Tăng"
                       >
@@ -592,21 +565,23 @@
                     </div>
 
                     <!-- Nút xóa món -->
-                    <button
-                      type="button"
-                      class="btn-remove-cart-item"
-                      (click)="removeOrderItem($index)"
-                      [title]="'::Delete' | abpLocalization"
-                    >
-                      <i class="fa fa-times"></i>
-                    </button>
+                    @if (!isOrderLocked) {
+                      <button
+                        type="button"
+                        class="btn-remove-cart-item"
+                        (click)="removeOrderItem($index)"
+                        [title]="'::Delete' | abpLocalization"
+                      >
+                        <i class="fa fa-times"></i>
+                      </button>
+                    }
                   </div>
 
                   <!-- Banner cảnh báo hết / thiếu nguyên liệu trong kho -->
                   @if (getDishStockWarning(itemGroup.get('dishId')?.value, itemGroup.get('quantity')?.value); as warning) {
                     <div class="cart-item-stock-warning">
                       <i class="fa fa-triangle-exclamation"></i>
-                      <span [innerHTML]="warning"></span>
+                      <span>{{ warning }}</span>
                     </div>
                   }
                 </div>
@@ -664,14 +639,27 @@
         <i class="fa fa-times"></i>
         <span>{{ '::Close' | abpLocalization }}</span>
       </button>
-      <button
-        form="order-form"
-        class="btn btn-order-modal-submit"
-        [disabled]="form?.invalid || orderItemsArray.length === 0 || isOrderCompleted || !hasOrderChanged"
-      >
-        <i class="fa fa-save"></i>
-        <span>{{ (selectedItem?.id ? '::UpdateOrder' : '::AddNewOrder') | abpLocalization }}</span>
-      </button>
+      @if (!selectedItem?.id) {
+        <button
+          *abpPermission="'TooHungry.Orders.Create'"
+          form="order-form"
+          class="btn btn-order-modal-submit"
+          [disabled]="form?.invalid || orderItemsArray.length === 0 || isOrderLocked || !hasOrderChanged"
+        >
+          <i class="fa fa-save"></i>
+          <span>{{ '::AddNewOrder' | abpLocalization }}</span>
+        </button>
+      } @else {
+        <button
+          *abpPermission="'TooHungry.Orders.Edit'"
+          form="order-form"
+          class="btn btn-order-modal-submit"
+          [disabled]="form?.invalid || orderItemsArray.length === 0 || isOrderLocked || !hasOrderChanged"
+        >
+          <i class="fa fa-save"></i>
+          <span>{{ '::UpdateOrder' | abpLocalization }}</span>
+        </button>
+      }
     </div>
   </ng-template>
 </abp-modal>

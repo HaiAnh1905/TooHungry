@@ -1,0 +1,98 @@
+@if (alerts.length > 0 && !isDismissed) {
+  <div class="bento-alert-banner">
+    <div class="banner-main-row">
+      <div class="banner-info">
+        <div class="alert-icon-wrap">
+          <i class="fa fa-triangle-exclamation"></i>
+        </div>
+        <div class="alert-text-block">
+          <span class="alert-title">{{ '::InventoryAlertsBannerTitle' | abpLocalization }}:</span>
+          <span class="alert-message">
+            {{ topAlert?.message || ('::InventoryAlertGenericMessage' | abpLocalization) }}
+          </span>
+          @if (topAlert?.ingredientName) {
+            <span class="alert-tag">{{ topAlert?.ingredientName }}</span>
+          }
+          @if (topAlert?.batchCode) {
+            <span class="alert-batch-tag">{{ topAlert?.batchCode }}</span>
+          }
+        </div>
+      </div>
+
+      <div class="banner-actions">
+        @if (topAlert?.batchCode || topAlert?.batchId) {
+          <button
+            type="button"
+            class="btn-banner-action btn-discard"
+            (click)="onDiscard($event, topAlert!)"
+          >
+            <i class="fa fa-ban me-1"></i>
+            <span>{{ '::DiscardNowAction' | abpLocalization }}</span>
+          </button>
+        }
+
+        @if (alerts.length > 1) {
+          <button
+            type="button"
+            class="btn-banner-action btn-expand"
+            (click)="onToggle()"
+          >
+            @if (isExpanded) {
+              <i class="fa fa-chevron-up me-1"></i>
+              <span>{{ '::CollapseAlerts' | abpLocalization }}</span>
+            } @else {
+              <i class="fa fa-chevron-down me-1"></i>
+              <span>{{ '::ViewAllAlerts' | abpLocalization: ('' + alerts.length) }}</span>
+            }
+          </button>
+        }
+
+        <button
+          type="button"
+          class="btn-banner-close"
+          (click)="onDismiss()"
+          [title]="'::DismissAlerts' | abpLocalization"
+        >
+          <i class="fa fa-times"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Danh sách cảnh báo chi tiết khi mở rộng -->
+    @if (isExpanded) {
+      <div class="banner-expanded-list">
+        <div class="alerts-grid">
+          @for (alert of alerts; track $index) {
+            <div
+              class="alert-detail-item"
+              (click)="onSelect(alert)"
+              role="button"
+              tabindex="0"
+            >
+              <div class="alert-item-left">
+                <span class="alert-type-badge">
+                  {{ alert.alertType }}
+                </span>
+                <span class="alert-item-name">{{ alert.ingredientName }}</span>
+                @if (alert.batchCode) {
+                  <span class="alert-batch-badge font-monospace">{{ alert.batchCode }}</span>
+                }
+                <span class="alert-item-desc">{{ alert.message }}</span>
+              </div>
+
+              @if (alert.batchCode || alert.batchId) {
+                <button
+                  type="button"
+                  class="btn-item-discard"
+                  (click)="onDiscard($event, alert)"
+                >
+                  <i class="fa fa-ban me-1"></i>{{ '::DiscardNowAction' | abpLocalization }}
+                </button>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+}

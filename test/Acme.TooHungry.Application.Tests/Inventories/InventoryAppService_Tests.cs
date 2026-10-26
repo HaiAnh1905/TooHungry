@@ -47,10 +47,10 @@ public abstract class InventoryAppService_Tests<TStartupModule> : TooHungryAppli
         batchDto.Quantity.ShouldBe(10m);
         batchDto.RemainingQuantity.ShouldBe(10m);
 
-        var txs = await _inventoryAppService.GetTransactionsAsync(fish.Id);
-        txs.Count.ShouldBeGreaterThanOrEqualTo(1);
-        txs.First().TransactionType.ShouldBe(InventoryTransactionType.IN);
-        txs.First().Quantity.ShouldBe(10m);
+        var txs = await _inventoryAppService.GetTransactionsAsync(fish.Id, new Volo.Abp.Application.Dtos.PagedAndSortedResultRequestDto { MaxResultCount = 100 });
+        txs.TotalCount.ShouldBeGreaterThanOrEqualTo(1);
+        txs.Items.First().TransactionType.ShouldBe(InventoryTransactionType.IN);
+        txs.Items.First().Quantity.ShouldBe(10m);
     }
 
     [Fact]
@@ -127,8 +127,8 @@ public abstract class InventoryAppService_Tests<TStartupModule> : TooHungryAppli
         batchDto.BatchCode.ShouldStartWith("BATCH-");
         batchDto.UnitCost.ShouldBe(120000m);
 
-        var txs = await _inventoryAppService.GetTransactionsAsync(pork.Id);
-        var inTx = txs.FirstOrDefault(x => x.TransactionType == InventoryTransactionType.IN);
+        var txs = await _inventoryAppService.GetTransactionsAsync(pork.Id, new Volo.Abp.Application.Dtos.PagedAndSortedResultRequestDto { MaxResultCount = 100 });
+        var inTx = txs.Items.FirstOrDefault(x => x.TransactionType == InventoryTransactionType.IN);
         inTx.ShouldNotBeNull();
         inTx.UnitCost.ShouldBe(120000m);
         inTx.BatchCode.ShouldBe(batchDto.BatchCode);
@@ -174,8 +174,8 @@ public abstract class InventoryAppService_Tests<TStartupModule> : TooHungryAppli
         reloaded.RemainingQuantity.ShouldBe(0m);
         reloaded.IsActive.ShouldBeFalse();
 
-        var txs = await _inventoryAppService.GetTransactionsAsync(shrimp.Id);
-        var discardTx = txs.FirstOrDefault(x => x.TransactionType == InventoryTransactionType.ADJUSTMENT_OUT);
+        var txs = await _inventoryAppService.GetTransactionsAsync(shrimp.Id, new Volo.Abp.Application.Dtos.PagedAndSortedResultRequestDto { MaxResultCount = 100 });
+        var discardTx = txs.Items.FirstOrDefault(x => x.TransactionType == InventoryTransactionType.ADJUSTMENT_OUT);
         discardTx.ShouldNotBeNull();
         discardTx.Quantity.ShouldBe(8m);
         discardTx.UnitCost.ShouldBe(320000m);

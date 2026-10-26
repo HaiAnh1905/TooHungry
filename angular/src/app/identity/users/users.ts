@@ -1,7 +1,3 @@
-import { HttpClient } from '@angular/common/http';
-import { RestService } from '@abp/ng.core';
-import { switchMap, catchError } from 'rxjs/operators';
-import { throwError } from 'rxjs';
 import { ChangeDetectorRef, Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, FormsModule } from '@angular/forms';
@@ -69,8 +65,7 @@ export class Users implements OnInit {
     private userService: IdentityUserService,
     private roleService: IdentityRoleService,
     private fb: FormBuilder,
-    private cdr: ChangeDetectorRef,
-    private http: HttpClient
+    private cdr: ChangeDetectorRef
   ) {
     this.form = this.fb.group({
       userName: ['', [Validators.required]],
@@ -266,19 +261,28 @@ export class Users implements OnInit {
     }
     
     if (this.selectedId) {
+      const selectedRole = roleNames.length > 0 ? roleNames[0] : null;
+      const roleChanged = selectedRole !== this.originalRoleName;
+
       this.userService.update(this.selectedId, val).subscribe({
         next: () => {
-          this.userService.updateRoles(this.selectedId!, { roleNames }).subscribe({
-            next: () => {
-              this.modalLoading = false;
-              this.isModalVisible = false;
-              this.loadUsers();
-            },
-            error: () => {
-              this.modalLoading = false;
-              this.cdr.detectChanges();
-            }
-          });
+          if (roleChanged) {
+            this.userService.updateRoles(this.selectedId!, { roleNames }).subscribe({
+              next: () => {
+                this.modalLoading = false;
+                this.isModalVisible = false;
+                this.loadUsers();
+              },
+              error: () => {
+                this.modalLoading = false;
+                this.cdr.detectChanges();
+              }
+            });
+          } else {
+            this.modalLoading = false;
+            this.isModalVisible = false;
+            this.loadUsers();
+          }
         },
         error: () => {
           this.modalLoading = false;

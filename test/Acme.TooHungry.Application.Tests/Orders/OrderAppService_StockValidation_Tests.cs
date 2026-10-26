@@ -61,7 +61,7 @@ public abstract class OrderAppService_StockValidation_Tests<TStartupModule> : To
             {
                 Items = new List<SubmitOrderItemDto>
                 {
-                    new() { DishId = dish.Id, Quantity = 4, UnitPrice = 180000m }
+                    new() { DishId = dish.Id, Quantity = 4 }
                 }
             });
 
@@ -101,7 +101,7 @@ public abstract class OrderAppService_StockValidation_Tests<TStartupModule> : To
             {
                 Items = new List<SubmitOrderItemDto>
                 {
-                    new() { DishId = dish.Id, Quantity = 4, UnitPrice = 300000m }
+                    new() { DishId = dish.Id, Quantity = 4 }
                 }
             });
 

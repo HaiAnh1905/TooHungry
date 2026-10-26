@@ -17,12 +17,13 @@ using Acme.TooHungry.Dishes;
 using Acme.TooHungry.Ingredients;
 using Volo.Abp;
 using Volo.Abp.Data;
+using Volo.Abp.Uow;
 
 namespace Acme.TooHungry.Orders;
 
 [RemoteService(IsEnabled = false)]
 [Authorize]
-public class OrderAppService : ApplicationService, IOrderAppService
+public class OrderAppService : TooHungryAppService, IOrderAppService
 {
     private readonly IRepository<Order, Guid> _orderRepository;
     private readonly IRepository<RestaurantTable, Guid> _tableRepository;
@@ -73,6 +74,7 @@ public class OrderAppService : ApplicationService, IOrderAppService
             dto.TableName = order.Table.Name;
         }
         EnsureOrderAmounts(dto);
+        await PopulateDishInfoAsync(new[] { dto });
         return dto;
     }
 
@@ -81,9 +83,24 @@ public class OrderAppService : ApplicationService, IOrderAppService
     /// </summary>
     /// <param name="input">Tham số phân trang và sắp xếp</param>
     /// <returns>Danh sách đơn hàng phân trang</returns>
-    public virtual async Task<PagedResultDto<OrderDto>> GetListAsync(PagedAndSortedResultRequestDto input)
+    public virtual async Task<PagedResultDto<OrderDto>> GetListAsync(GetOrdersInputDto input)
     {
         var queryable = await _orderRepository.WithDetailsAsync(x => x.Items, x => x.Table!);
+
+        if (!string.IsNullOrWhiteSpace(input.Filter))
+        {
+            var filter = input.Filter.Trim().ToLower();
+            queryable = queryable.Where(x =>
+                (x.OrderNumber != null && x.OrderNumber.ToLower().Contains(filter)) ||
+                (x.Note != null && x.Note.ToLower().Contains(filter)) ||
+                (x.Table != null && x.Table.Name.ToLower().Contains(filter)));
+        }
+
+        if (input.Status.HasValue)
+        {
+            queryable = queryable.Where(x => x.Status == input.Status.Value);
+        }
+
         var totalCount = await AsyncExecuter.CountAsync(queryable);
 
         var sorting = input.Sorting.IsNullOrWhiteSpace() ? nameof(Order.OrderDate) + " desc" : input.Sorting;
@@ -100,6 +117,7 @@ public class OrderAppService : ApplicationService, IOrderAppService
             }
             EnsureOrderAmounts(dtos[i]);
         }
+        await PopulateDishInfoAsync(dtos);
         return new PagedResultDto<OrderDto>(totalCount, dtos);
     }
 
@@ -110,37 +128,32 @@ public class OrderAppService : ApplicationService, IOrderAppService
     /// <returns>Thông tin đơn hàng vừa tạo</returns>
     public virtual async Task<OrderDto> CreateAsync(CreateUpdateOrderDto input)
     {
-        var order = new Order
+        var orderNumber = string.IsNullOrWhiteSpace(input.OrderNumber) ? CodeGenerator.GenerateOrderNumber(Clock.Now) : input.OrderNumber;
+        var order = new Order(GuidGenerator.Create(), orderNumber, input.OrderDate, input.TableId, input.Note);
+        if (input.Status != OrderStatus.Pending)
         {
-            TableId = input.TableId,
-            OrderDate = input.OrderDate,
-            Status = input.Status,
-            Note = input.Note,
-            OrderNumber = string.IsNullOrWhiteSpace(input.OrderNumber) ? $"ORD-{DateTime.UtcNow:yyyyMMddHHmmss}" : input.OrderNumber
-        };
+            order.ChangeStatus(input.Status);
+        }
 
-        // Tính toán thành tiền từng món và tổng tiền đơn hàng
+        // Tính toán thành tiền từng món và tổng tiền đơn hàng trực tiếp từ giá món trên hệ thống (Dish.Price)
         if (input.Items != null && input.Items.Count > 0)
         {
-            foreach (var itemDto in input.Items)
-            {
-                var item = new OrderItem(GuidGenerator.Create())
-                {
-                    DishId = itemDto.DishId,
-                    Quantity = itemDto.Quantity,
-                    UnitPrice = itemDto.UnitPrice,
-                    TotalPrice = itemDto.Quantity * itemDto.UnitPrice
-                };
-                order.Items.Add(item);
-            }
-            order.TotalAmount = order.Items.Sum(x => x.TotalPrice);
+            await PopulateOrderItemsAsync(order, input.Items.Select(x => (x.DishId, x.Quantity, x.Note)));
         }
-        else if (input.TotalAmount > 0)
+        else
         {
-            order.TotalAmount = input.TotalAmount;
+            order.RecalculateTotalAmount();
         }
 
-        var inserted = await _orderRepository.InsertAsync(order, autoSave: true);
+        Order inserted;
+        try
+        {
+            inserted = await _orderRepository.InsertAsync(order, autoSave: true);
+        }
+        catch (Exception ex) when (ex.GetType().Name == "DbUpdateException" || ex.InnerException?.Message.Contains("IX_AppOrders_TableId") == true || ex.Message.Contains("IX_AppOrders_TableId") || ex.InnerException?.Message.Contains("UNIQUE") == true || ex.Message.Contains("UNIQUE") || ex.InnerException?.Message.Contains("duplicate") == true || ex.Message.Contains("duplicate"))
+        {
+            throw new BusinessException("TooHungry:Order:TableAlreadyHasActiveOrder", innerException: ex);
+        }
 
         // Tự động chuyển trạng thái bàn sang Có khách (Occupied) khi phát sinh đơn hàng
         if (order.TableId.HasValue)
@@ -148,10 +161,12 @@ public class OrderAppService : ApplicationService, IOrderAppService
             var table = await _tableRepository.FindAsync(order.TableId.Value);
             if (table != null && table.Status != TableStatus.Occupied)
             {
-                table.Status = TableStatus.Occupied;
-                if (!table.OccupiedTime.HasValue) table.OccupiedTime = DateTime.Now;
+                table.Occupy(Clock.Now);
                 await _tableRepository.UpdateAsync(table, autoSave: true);
-                await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name, table.DiningAreaId, table.OccupiedTime);
+                CurrentUnitOfWork?.OnCompleted(async () =>
+                {
+                    await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name, table.DiningAreaId, table.OccupiedTime);
+                });
             }
         }
 
@@ -173,44 +188,42 @@ public class OrderAppService : ApplicationService, IOrderAppService
             throw new EntityNotFoundException(typeof(Order), id);
         }
 
-        order.OrderDate = input.OrderDate;
-        order.Status = input.Status;
-        order.Note = input.Note;
-        order.TableId = input.TableId;
-        if (!string.IsNullOrWhiteSpace(input.OrderNumber))
+        var oldStatus = order.Status;
+
+        // Đơn hàng đã ở trạng thái kết thúc (Completed hoặc Cancelled) thì khóa hoàn toàn, không cho phép chỉnh sửa
+        if (oldStatus == OrderStatus.Completed)
         {
-            order.OrderNumber = input.OrderNumber;
+            throw new BusinessException("TooHungry:Order:AlreadyCompleted");
         }
 
-        order.Items.Clear();
+        if (oldStatus == OrderStatus.Cancelled)
+        {
+            throw new BusinessException("TooHungry:Order:AlreadyCancelled");
+        }
+
+        order.SetOrderDate(input.OrderDate);
+        order.ChangeStatus(input.Status);
+        order.Note = input.Note;
+        order.SetTable(input.TableId);
+        if (!string.IsNullOrWhiteSpace(input.OrderNumber))
+        {
+            order.SetOrderNumber(input.OrderNumber);
+        }
+
         if (input.Items != null && input.Items.Count > 0)
         {
-            foreach (var itemDto in input.Items)
-            {
-                var item = new OrderItem(GuidGenerator.Create())
-                {
-                    OrderId = order.Id,
-                    DishId = itemDto.DishId,
-                    Quantity = itemDto.Quantity,
-                    UnitPrice = itemDto.UnitPrice,
-                    TotalPrice = itemDto.Quantity * itemDto.UnitPrice
-                };
-                order.Items.Add(item);
-            }
-
-            order.TotalAmount = order.Items.Sum(x => x.TotalPrice);
+            await PopulateOrderItemsAsync(order, input.Items.Select(x => (x.DishId, x.Quantity, x.Note)));
         }
         else
         {
-            order.TotalAmount = input.TotalAmount;
+            order.Items.Clear();
+            order.RecalculateTotalAmount();
         }
 
         await _orderRepository.UpdateAsync(order, autoSave: true);
 
-        // Nếu đơn hàng chuyển sang Hoàn thành (Completed):
-        // 1. Tự động tính tiêu hao nguyên liệu theo Recipe và trừ kho FEFO
-        // 2. Chuyển bàn ăn sang trạng thái Dọn dẹp (Cleaning)
-        if (order.Status == OrderStatus.Completed)
+        // Nếu đơn hàng chuyển sang Hoàn thành (Completed) LẦN ĐẦU TIÊN:
+        if (oldStatus != OrderStatus.Completed && order.Status == OrderStatus.Completed)
         {
             await ProcessOrderInventoryConsumptionAsync(order);
 
@@ -219,16 +232,35 @@ public class OrderAppService : ApplicationService, IOrderAppService
                 var table = await _tableRepository.FindAsync(order.TableId.Value);
                 if (table != null)
                 {
-                    table.Status = TableStatus.Cleaning;
-                    table.OccupiedTime = null;
-                    table.ReservedCustomerName = null;
-                    table.ReservedCustomerPhone = null;
-                    table.ReservedGuestCount = null;
-                    table.ReservedTime = null;
-                    table.ReservedNote = null;
+                    table.MarkCleaning();
                     await _tableRepository.UpdateAsync(table, autoSave: true);
-                    await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name, table.DiningAreaId, table.OccupiedTime);
+                    CurrentUnitOfWork?.OnCompleted(async () =>
+                    {
+                        await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name, table.DiningAreaId, table.OccupiedTime);
+                    });
                 }
+            }
+        }
+        else if (oldStatus != OrderStatus.Cancelled && order.Status == OrderStatus.Cancelled)
+        {
+            // Nếu đơn hàng chuyển sang Hủy (Cancelled):
+            if (order.TableId.HasValue)
+            {
+                var table = await _tableRepository.FindAsync(order.TableId.Value);
+                if (table != null)
+                {
+                    table.Release();
+                    await _tableRepository.UpdateAsync(table, autoSave: true);
+                }
+
+                CurrentUnitOfWork?.OnCompleted(async () =>
+                {
+                    await _realtimeNotifier.NotifyTableOrderUpdatedAsync(order.TableId.Value, false, null);
+                    if (table != null)
+                    {
+                        await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name, table.DiningAreaId, table.OccupiedTime);
+                    }
+                });
             }
         }
         else if (order.TableId.HasValue)
@@ -236,10 +268,12 @@ public class OrderAppService : ApplicationService, IOrderAppService
             var table = await _tableRepository.FindAsync(order.TableId.Value);
             if (table != null && table.Status != TableStatus.Occupied)
             {
-                table.Status = TableStatus.Occupied;
-                if (!table.OccupiedTime.HasValue) table.OccupiedTime = DateTime.Now;
+                table.Occupy(Clock.Now);
                 await _tableRepository.UpdateAsync(table, autoSave: true);
-                await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name, table.DiningAreaId, table.OccupiedTime);
+                CurrentUnitOfWork?.OnCompleted(async () =>
+                {
+                    await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name, table.DiningAreaId, table.OccupiedTime);
+                });
             }
         }
 
@@ -250,6 +284,7 @@ public class OrderAppService : ApplicationService, IOrderAppService
     /// Xóa một đơn hàng khỏi hệ thống
     /// </summary>
     /// <param name="id">Id đơn hàng cần xóa</param>
+    [Authorize(TooHungryPermissions.Orders.Delete)]
     public virtual async Task DeleteAsync(Guid id)
     {
         await _orderRepository.DeleteAsync(id);
@@ -279,7 +314,53 @@ public class OrderAppService : ApplicationService, IOrderAppService
             dto.TableName = activeOrder.Table.Name;
         }
         EnsureOrderAmounts(dto);
+        await PopulateDishInfoAsync(new[] { dto });
         return dto;
+    }
+
+    /// <summary>
+    /// Gán danh sách món ăn vào đơn hàng với đơn giá (UnitPrice) lấy trực tiếp từ bảng Dish trên server.
+    /// Đảm bảo Client không thể can thiệp hoặc gian lận giá bán.
+    /// </summary>
+    private async Task PopulateOrderItemsAsync(Order order, IEnumerable<(Guid DishId, int Quantity, string? Note)> items)
+    {
+        order.Items.Clear();
+        var itemList = items.ToList();
+        if (itemList.Count == 0)
+        {
+            order.RecalculateTotalAmount();
+            return;
+        }
+
+        var dishIds = itemList.Select(x => x.DishId).Distinct().ToList();
+        var dishes = await _dishRepository.GetListAsync(x => dishIds.Contains(x.Id));
+        var dishMap = dishes.ToDictionary(x => x.Id);
+
+        foreach (var itemDto in itemList)
+        {
+            if (itemDto.Quantity <= 0)
+            {
+                throw new BusinessException("TooHungry:Order:InvalidItemQuantity");
+            }
+
+            if (!dishMap.TryGetValue(itemDto.DishId, out var dish))
+            {
+                throw new EntityNotFoundException(typeof(Dish), itemDto.DishId);
+            }
+
+            var item = new OrderItem(GuidGenerator.Create())
+            {
+                OrderId = order.Id,
+                DishId = itemDto.DishId,
+                Quantity = itemDto.Quantity,
+                UnitPrice = dish.Price,
+                TotalPrice = itemDto.Quantity * dish.Price,
+                Note = itemDto.Note
+            };
+            order.Items.Add(item);
+        }
+
+        order.RecalculateTotalAmount();
     }
 
     /// <summary>
@@ -318,7 +399,7 @@ public class OrderAppService : ApplicationService, IOrderAppService
 
         foreach (var order in activeOrders)
         {
-            order.Status = OrderStatus.Completed;
+            order.Complete();
             await _orderRepository.UpdateAsync(order, autoSave: true);
             await ProcessOrderInventoryConsumptionAsync(order);
         }
@@ -326,12 +407,7 @@ public class OrderAppService : ApplicationService, IOrderAppService
         var table = await _tableRepository.FindAsync(tableId);
         if (table != null)
         {
-            table.Status = TableStatus.Available;
-            table.ReservedCustomerName = null;
-            table.ReservedCustomerPhone = null;
-            table.ReservedGuestCount = null;
-            table.ReservedTime = null;
-            table.ReservedNote = null;
+            table.Release();
             await _tableRepository.UpdateAsync(table, autoSave: true);
             await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name);
         }
@@ -349,9 +425,10 @@ public class OrderAppService : ApplicationService, IOrderAppService
             return;
         }
 
+        var orderDishIds = order.Items.Select(x => x.DishId).Distinct().ToList();
         var recipeQueryable = await _recipeRepository.WithDetailsAsync(x => x.Ingredients);
         var activeRecipes = await AsyncExecuter.ToListAsync(
-            recipeQueryable.Where(x => x.IsActive)
+            recipeQueryable.Where(x => orderDishIds.Contains(x.DishId) && x.IsActive)
         );
 
         foreach (var orderItem in order.Items)
@@ -374,11 +451,26 @@ public class OrderAppService : ApplicationService, IOrderAppService
                 {
                     try
                     {
-                        await _inventoryManager.DeductFefoAsync(
-                            recipeIngredient.IngredientId,
-                            totalRequiredQty,
-                            $"ORDER-{order.OrderNumber}"
-                        );
+                        if (retryCount == 0)
+                        {
+                            await _inventoryManager.DeductFefoAsync(
+                                recipeIngredient.IngredientId,
+                                totalRequiredQty,
+                                $"ORDER-{order.OrderNumber}"
+                            );
+                        }
+                        else
+                        {
+                            using (var uow = UnitOfWorkManager.Begin(new AbpUnitOfWorkOptions { IsTransactional = true }, requiresNew: true))
+                            {
+                                await _inventoryManager.DeductFefoAsync(
+                                    recipeIngredient.IngredientId,
+                                    totalRequiredQty,
+                                    $"ORDER-{order.OrderNumber}"
+                                );
+                                await uow.CompleteAsync();
+                            }
+                        }
                         break;
                     }
                     catch (AbpDbConcurrencyException) when (retryCount < 3)
@@ -402,9 +494,6 @@ public class OrderAppService : ApplicationService, IOrderAppService
             return result;
         }
 
-        var recipeQueryable = await _recipeRepository.WithDetailsAsync(x => x.Ingredients);
-        var activeRecipes = await AsyncExecuter.ToListAsync(recipeQueryable.Where(x => x.IsActive));
-
         // Gom nhóm các món trong giỏ theo DishId để tính tổng số lượng đặt
         var groupedItems = input.Items
             .GroupBy(x => x.DishId)
@@ -412,6 +501,12 @@ public class OrderAppService : ApplicationService, IOrderAppService
             .ToList();
 
         var dishIds = groupedItems.Select(x => x.DishId).ToList();
+
+        var recipeQueryable = await _recipeRepository.WithDetailsAsync(x => x.Ingredients);
+        var activeRecipes = await AsyncExecuter.ToListAsync(
+            recipeQueryable.Where(x => dishIds.Contains(x.DishId) && x.IsActive)
+        );
+
         var dishQueryable = await _dishRepository.GetQueryableAsync();
         var dishes = await AsyncExecuter.ToListAsync(dishQueryable.Where(x => dishIds.Contains(x.Id)));
         var dishDict = dishes.ToDictionary(x => x.Id);
@@ -531,6 +626,7 @@ public class OrderAppService : ApplicationService, IOrderAppService
         }
 
         Order? order = null;
+        var isNewOrder = false;
         if (input.OrderId.HasValue && input.OrderId.Value != Guid.Empty)
         {
             var queryable = await _orderRepository.WithDetailsAsync(x => x.Items, x => x.Table!);
@@ -556,13 +652,14 @@ public class OrderAppService : ApplicationService, IOrderAppService
 
             if (order == null)
             {
-                order = new Order
-                {
-                    TableId = input.TableId,
-                    OrderDate = DateTime.UtcNow,
-                    Status = OrderStatus.Pending,
-                    OrderNumber = $"ORD-{DateTime.UtcNow:yyyyMMddHHmmss}"
-                };
+                isNewOrder = true;
+                order = new Order(
+                    GuidGenerator.Create(),
+                    CodeGenerator.GenerateOrderNumber(Clock.Now),
+                    Clock.Now,
+                    input.TableId,
+                    input.Note
+                );
             }
         }
 
@@ -571,42 +668,40 @@ public class OrderAppService : ApplicationService, IOrderAppService
             order.Note = input.Note;
         }
 
-        order.Items.Clear();
-        foreach (var itemDto in input.Items)
-        {
-            var item = new OrderItem(GuidGenerator.Create())
-            {
-                OrderId = order.Id,
-                DishId = itemDto.DishId,
-                Quantity = itemDto.Quantity,
-                UnitPrice = itemDto.UnitPrice,
-                TotalPrice = itemDto.Quantity * itemDto.UnitPrice,
-                Note = itemDto.Note
-            };
-            order.Items.Add(item);
-        }
-        order.TotalAmount = order.Items.Sum(x => x.TotalPrice);
+        await PopulateOrderItemsAsync(order, input.Items.Select(x => (x.DishId, x.Quantity, x.Note)));
 
-        if (order.Id == Guid.Empty)
+        try
         {
-            order = await _orderRepository.InsertAsync(order, autoSave: true);
+            if (isNewOrder)
+            {
+                order = await _orderRepository.InsertAsync(order, autoSave: true);
+            }
+            else
+            {
+                await _orderRepository.UpdateAsync(order, autoSave: true);
+            }
         }
-        else
+        catch (Exception ex) when (ex.GetType().Name == "DbUpdateException" || ex.InnerException?.Message.Contains("IX_AppOrders_TableId") == true || ex.Message.Contains("IX_AppOrders_TableId") || ex.InnerException?.Message.Contains("UNIQUE") == true || ex.Message.Contains("UNIQUE") || ex.InnerException?.Message.Contains("duplicate") == true || ex.Message.Contains("duplicate"))
         {
-            await _orderRepository.UpdateAsync(order, autoSave: true);
+            throw new BusinessException("TooHungry:Order:TableAlreadyHasActiveOrder", innerException: ex);
         }
 
         // Cập nhật trạng thái bàn sang Có khách (Occupied) nếu chưa phải
         if (table.Status != TableStatus.Occupied)
         {
-            table.Status = TableStatus.Occupied;
-            if (!table.OccupiedTime.HasValue) table.OccupiedTime = DateTime.Now;
+            table.Occupy(Clock.Now);
             await _tableRepository.UpdateAsync(table, autoSave: true);
-            await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name, table.DiningAreaId, table.OccupiedTime);
+            CurrentUnitOfWork?.OnCompleted(async () =>
+            {
+                await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name, table.DiningAreaId, table.OccupiedTime);
+            });
         }
 
-        // Phát tín hiệu Realtime SignalR
-        await _realtimeNotifier.NotifyTableOrderUpdatedAsync(table.Id, true, order.Id);
+        // Phát tín hiệu Realtime SignalR sau khi commit UoW
+        CurrentUnitOfWork?.OnCompleted(async () =>
+        {
+            await _realtimeNotifier.NotifyTableOrderUpdatedAsync(table.Id, true, order.Id);
+        });
 
         return await GetAsync(order.Id);
     }
@@ -622,12 +717,7 @@ public class OrderAppService : ApplicationService, IOrderAppService
             throw new EntityNotFoundException(typeof(Order), id);
         }
 
-        if (order.Status == OrderStatus.Completed)
-        {
-            throw new BusinessException("TooHungry:Order:CannotCancelCompleted");
-        }
-
-        order.Status = OrderStatus.Cancelled;
+        order.Cancel();
         if (!string.IsNullOrWhiteSpace(input?.Reason))
         {
             order.Note = string.IsNullOrWhiteSpace(order.Note)
@@ -639,7 +729,21 @@ public class OrderAppService : ApplicationService, IOrderAppService
 
         if (order.TableId.HasValue)
         {
-            await _realtimeNotifier.NotifyTableOrderUpdatedAsync(order.TableId.Value, false, null);
+            var table = await _tableRepository.FindAsync(order.TableId.Value);
+            if (table != null)
+            {
+                table.Release();
+                await _tableRepository.UpdateAsync(table, autoSave: true);
+                CurrentUnitOfWork?.OnCompleted(async () =>
+                {
+                    await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name, table.DiningAreaId, table.OccupiedTime);
+                });
+            }
+
+            CurrentUnitOfWork?.OnCompleted(async () =>
+            {
+                await _realtimeNotifier.NotifyTableOrderUpdatedAsync(order.TableId.Value, false, null);
+            });
         }
     }
 
@@ -648,7 +752,7 @@ public class OrderAppService : ApplicationService, IOrderAppService
     /// Chuyển trạng thái đơn hàng sang Completed, trừ kho FEFO theo công thức món ăn,
     /// chuyển trạng thái bàn sang Cleaning, phát sóng realtime SignalR và trả về OrderDto.
     /// </summary>
-    [Authorize(TooHungryPermissions.Orders.Default)]
+    [Authorize(TooHungryPermissions.Orders.Edit)]
     public virtual async Task<OrderDto> CompletePaymentAsync(Guid id, CompletePaymentInputDto input)
     {
         var queryable = await _orderRepository.WithDetailsAsync(x => x.Items, x => x.Table!);
@@ -658,17 +762,7 @@ public class OrderAppService : ApplicationService, IOrderAppService
             throw new EntityNotFoundException(typeof(Order), id);
         }
 
-        if (order.Status == OrderStatus.Completed)
-        {
-            throw new BusinessException("TooHungry:Order:AlreadyCompleted");
-        }
-
-        if (order.Status == OrderStatus.Cancelled)
-        {
-            throw new BusinessException("TooHungry:Order:AlreadyCancelled");
-        }
-
-        order.Status = OrderStatus.Completed;
+        order.Complete();
         if (!string.IsNullOrWhiteSpace(input.PaymentNote))
         {
             order.Note = string.IsNullOrWhiteSpace(order.Note)
@@ -687,18 +781,51 @@ public class OrderAppService : ApplicationService, IOrderAppService
             var table = await _tableRepository.FindAsync(order.TableId.Value);
             if (table != null)
             {
-                table.Status = TableStatus.Cleaning;
-                table.OccupiedTime = null;
-                table.ReservedCustomerName = null;
-                table.ReservedCustomerPhone = null;
-                table.ReservedGuestCount = null;
-                table.ReservedTime = null;
-                table.ReservedNote = null;
+                table.MarkCleaning();
                 await _tableRepository.UpdateAsync(table, autoSave: true);
                 await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name, table.DiningAreaId, table.OccupiedTime);
             }
         }
 
         return await GetAsync(id);
+    }
+
+    private async Task PopulateDishInfoAsync(IEnumerable<OrderDto> dtos)
+    {
+        var orderDtos = dtos.ToList();
+        var allDishIds = orderDtos
+            .Where(o => o.Items != null)
+            .SelectMany(o => o.Items)
+            .Select(i => i.DishId)
+            .Distinct()
+            .ToList();
+
+        if (allDishIds.Count == 0)
+        {
+            return;
+        }
+
+        var dishQueryable = await _dishRepository.GetQueryableAsync();
+        var dishes = await AsyncExecuter.ToListAsync(dishQueryable.Where(d => allDishIds.Contains(d.Id)));
+        var dishDict = dishes.ToDictionary(d => d.Id);
+
+        foreach (var orderDto in orderDtos)
+        {
+            if (orderDto.Items == null) continue;
+            foreach (var item in orderDto.Items)
+            {
+                if (dishDict.TryGetValue(item.DishId, out var dish))
+                {
+                    if (string.IsNullOrEmpty(item.DishName))
+                    {
+                        item.DishName = dish.Name;
+                    }
+                    if (string.IsNullOrEmpty(item.DishPhotoUrl))
+                    {
+                        item.DishPhotoUrl = dish.ImageUrl;
+                    }
+                }
+            }
+        }
     }
 }

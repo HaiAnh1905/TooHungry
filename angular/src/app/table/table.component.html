@@ -38,6 +38,7 @@
 
       <!-- Nút Thêm bàn mới -->
       <button
+        *abpPermission="'TooHungry.Tables.Create'"
         id="create-table"
         class="btn btn-primary btn-add-theme"
         type="button"
@@ -262,311 +263,37 @@
         <div class="row g-3 g-lg-4 table-cards-grid">
           @for (t of filteredGridTables(); track t.id) {
             <div class="col-12 col-sm-6 col-md-4 col-xl-3">
-              <div
-                class="dining-table-card"
-                [class.table-available]="t.status === TableStatus.Available"
-                [class.table-occupied]="t.status === TableStatus.Occupied"
-                [class.table-reserved]="t.status === TableStatus.Reserved"
-                [class.table-cleaning]="t.status === TableStatus.Cleaning"
-                [class.table-disabled]="t.status === TableStatus.Disabled"
-              >
-                <!-- 1. Card Top: Tên bàn & Status badge -->
-                <div class="card-header-row d-flex align-items-center justify-content-between mb-2">
-                  <div class="table-identity">
-                    <div class="d-flex align-items-center gap-2">
-                      <span class="status-pulse-dot"></span>
-                      <h4 class="table-name-text m-0" [title]="t.name">{{ t.name }}</h4>
-                    </div>
-                    @if (t.diningAreaName || t.location) {
-                      <span class="table-location-sub text-truncate" [title]="t.diningAreaName || t.location">
-                        <i class="fa fa-map-marker-alt me-1"></i>
-                        <span>{{ t.diningAreaName || t.location }}</span>
-                      </span>
-                    }
-                  </div>
-
-                  <!-- Status Chip góc trên bên phải & Timer cảnh báo 2 tầng -->
-                  <div class="table-status-group d-flex flex-column align-items-end justify-content-center gap-1">
-                    <span class="status-pill-badge" [ngClass]="getStatusBadgeClass(t.status)">
-                      {{ getStatusLabel(t.status) | abpLocalization }}
-                    </span>
-                    @if (t.status === TableStatus.Occupied && t.occupiedTime) {
-                      <span
-                        class="time-elapsed-tag"
-                        [ngClass]="getMealDurationWarningClass(t.occupiedTime)"
-                        [title]="getElapsedTimeTooltip(t)"
-                      >
-                        <i class="fa fa-hourglass-half me-1"></i>
-                        <span>{{ getElapsedTime(t) }}</span>
-                      </span>
-                    } @else if (t.status === TableStatus.Reserved && t.reservedTime) {
-                      <span class="time-elapsed-tag" [title]="t.reservedTime | date: 'HH:mm dd/MM'">
-                        <i class="fa fa-clock me-1"></i>
-                        <span>{{ t.reservedTime | date: 'HH:mm' }}</span>
-                      </span>
-                    }
-                  </div>
-                </div>
-
-                <!-- 2. Visual Table Plate: Mô phỏng hình học bàn & ghế ngồi -->
-                <div class="table-visual-plate my-2">
-                  <div class="furnishing-assembly">
-                    <div class="chairs-row chairs-top">
-                      <span class="chair-pill"></span>
-                      @if ((t.capacity || 0) >= 4) { <span class="chair-pill"></span> }
-                      @if ((t.capacity || 0) >= 8) { <span class="chair-pill"></span> }
-                    </div>
-                    <div class="table-surface-board">
-                      <i class="fa fa-utensils surface-icon"></i>
-                      <span class="capacity-seats-label">{{ t.capacity }} {{ '::Seats' | abpLocalization }}</span>
-                    </div>
-                    <div class="chairs-row chairs-bottom">
-                      <span class="chair-pill"></span>
-                      @if ((t.capacity || 0) >= 4) { <span class="chair-pill"></span> }
-                      @if ((t.capacity || 0) >= 8) { <span class="chair-pill"></span> }
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 3. Cụm thông tin trạng thái & Nút thao tác thẻ bàn -->
-                <div class="card-bottom-section mt-auto">
-                  <div class="table-info-slot">
-                    @if (t.status === TableStatus.Disabled) {
-                      <div class="info-slot-box info-disabled-box w-100 text-center">
-                        <div class="primary-info-line">
-                          <i class="fa fa-wrench text-secondary me-1"></i>
-                          <span>{{ '::TableStatusDisabled' | abpLocalization }}</span>
-                        </div>
-                      </div>
-                    } @else if (t.status === TableStatus.Cleaning) {
-                      <div class="info-slot-box info-cleaning-box w-100 text-center">
-                        <div class="primary-info-line">
-                          <i class="fa fa-broom text-info me-1"></i>
-                          <span>{{ '::TableStatusCleaning' | abpLocalization }}</span>
-                        </div>
-                      </div>
-                    } @else if (t.status === TableStatus.Reserved) {
-                      <div
-                        class="info-slot-box info-reserved-box w-100 text-center cursor-pointer"
-                        (click)="openReservationDetailModal(t, $event)"
-                        [title]="'::ReservationDetails' | abpLocalization"
-                      >
-                        <div class="primary-info-line text-truncate">
-                          <i class="fa fa-user-tag text-warning me-1"></i>
-                          <span class="guest-name-text">{{ t.reservedCustomerName || ('::TableStatusReserved' | abpLocalization) }}</span>
-                        </div>
-                        <div class="secondary-info-line mt-0.5">
-                          <i class="fa fa-clock text-warning me-1"></i>
-                          <span>{{ t.reservedTime ? (t.reservedTime | date: 'HH:mm (dd/MM)') : '--:--' }}</span>
-                        </div>
-                      </div>
-                    } @else if (t.status === TableStatus.Occupied) {
-                      <div class="info-slot-box info-occupied-box w-100 text-center">
-                        <div class="primary-info-line d-flex align-items-center justify-content-center gap-1">
-                          <i class="fa fa-utensils text-danger"></i>
-                          <span>{{ t.hasActiveOrder ? ('::TableHasOpenOrder' | abpLocalization) : ('::TableWaitingForOrder' | abpLocalization) }}</span>
-                        </div>
-                      </div>
-                    } @else {
-                      <div class="info-slot-box info-available-box w-100 text-center">
-                        <div class="primary-info-line">
-                          <i class="fa fa-check-circle text-success me-1"></i>
-                          <span>{{ '::ReadyToServe' | abpLocalization }}</span>
-                        </div>
-                      </div>
-                    }
-                  </div>
-
-                  <!-- Hàng nút thao tác theo ngữ cảnh trạng thái -->
-                  <div class="table-actions-footer pt-2">
-                    @if (t.status === TableStatus.Available) {
-                      <div class="table-actions-2rows">
-                        <button
-                          type="button"
-                          class="btn btn-action-main-full btn-occupy"
-                          (click)="quickUpdateStatus(t, TableStatus.Occupied)"
-                          [title]="'::SeatGuestsTooltip' | abpLocalization"
-                        >
-                          <i class="fa fa-user-check me-1.5"></i>
-                          <span>{{ getActionLabel('seatGuests') }}</span>
-                        </button>
-                        <div class="sub-actions-row">
-                          <button
-                            type="button"
-                            class="btn btn-action-sub-pill btn-sub-reserve"
-                            (click)="openReserveModal(t)"
-                            [title]="'::ReserveTable' | abpLocalization"
-                          >
-                            <i class="fa fa-calendar-plus me-1.5"></i>
-                            <span>{{ getActionLabel('reserve') }}</span>
-                          </button>
-                          <button
-                            type="button"
-                            class="btn btn-action-sub-pill btn-sub-disable"
-                            (click)="toggleDisableTable(t)"
-                            [title]="'::DisableTable' | abpLocalization"
-                          >
-                            <i class="fa fa-ban me-1.5"></i>
-                            <span>{{ getActionLabel('disable') }}</span>
-                          </button>
-                        </div>
-                      </div>
-                    } @else if (t.status === TableStatus.Occupied) {
-                      <div class="occupied-actions-grid">
-                        <button
-                          type="button"
-                          class="btn-grid-action btn-grid-order"
-                          (click)="goToOrder(t)"
-                          [title]="getActionLabel('order', t.hasActiveOrder)"
-                        >
-                          <i class="fa fa-utensils"></i>
-                          <span>{{ getActionLabel('order', t.hasActiveOrder) }}</span>
-                        </button>
-                        <button
-                          type="button"
-                          class="btn-grid-action btn-grid-end"
-                          (click)="onEndMeal(t)"
-                          [title]="'::EndMealTooltip' | abpLocalization"
-                        >
-                          <i class="fa fa-flag-checkered"></i>
-                          <span>{{ getActionLabel('endMeal') }}</span>
-                        </button>
-                        <button
-                          type="button"
-                          class="btn-grid-action btn-grid-transfer"
-                          (click)="openTransferModal(t)"
-                          [title]="'::TransferTable' | abpLocalization"
-                        >
-                          <i class="fa fa-right-left"></i>
-                          <span>{{ getActionLabel('transfer') }}</span>
-                        </button>
-                        <button
-                          type="button"
-                          class="btn-grid-action btn-grid-merge"
-                          (click)="openMergeModal(t)"
-                          [title]="'::MergeTables' | abpLocalization"
-                        >
-                          <i class="fa fa-object-group"></i>
-                          <span>{{ getActionLabel('merge') }}</span>
-                        </button>
-                      </div>
-                    } @else if (t.status === TableStatus.Reserved) {
-                      <div class="table-actions-2rows">
-                        <button
-                          type="button"
-                          class="btn btn-action-main-full btn-occupy"
-                          (click)="quickUpdateStatus(t, TableStatus.Occupied)"
-                        >
-                          <i class="fa fa-user-check me-1.5"></i>
-                          <span>{{ getActionLabel('checkIn') }}</span>
-                        </button>
-                        <div class="sub-actions-row">
-                          <button
-                            type="button"
-                            class="btn btn-action-sub-pill btn-sub-detail"
-                            (click)="openReservationDetailModal(t, $event)"
-                            [title]="'::ReservationDetails' | abpLocalization"
-                          >
-                            <i class="fa fa-eye me-1.5"></i>
-                            <span>{{ getActionLabel('reservationDetails') }}</span>
-                          </button>
-                          <button
-                            type="button"
-                            class="btn btn-action-sub-pill btn-sub-disable"
-                            (click)="toggleDisableTable(t)"
-                            [title]="'::DisableTable' | abpLocalization"
-                          >
-                            <i class="fa fa-ban me-1.5"></i>
-                            <span>{{ getActionLabel('disable') }}</span>
-                          </button>
-                        </div>
-                      </div>
-                    } @else if (t.status === TableStatus.Cleaning) {
-                      <button
-                        type="button"
-                        class="btn btn-action-main btn-enable w-100"
-                        (click)="quickUpdateStatus(t, TableStatus.Available)"
-                      >
-                        <i class="fa fa-broom me-1"></i>
-                        <span>{{ '::FinishCleaning' | abpLocalization }}</span>
-                      </button>
-                    } @else {
-                      <div class="d-flex gap-1.5 flex-wrap w-100">
-                        <button
-                          type="button"
-                          class="btn btn-action-main btn-enable flex-grow-1"
-                          (click)="toggleDisableTable(t)"
-                        >
-                          <i class="fa fa-check-circle me-1"></i>
-                          <span>{{ '::EnableTable' | abpLocalization }}</span>
-                        </button>
-                        <button
-                          type="button"
-                          class="btn btn-action-sub btn-delete"
-                          (click)="delete(t.id)"
-                          [title]="'::Delete' | abpLocalization"
-                        >
-                          <i class="fa fa-trash-alt"></i>
-                        </button>
-                      </div>
-                    }
-                  </div>
-                </div>
-              </div>
+              <app-table-card
+                [table]="t"
+                [isWaiterMode]="false"
+                [currentTimestamp]="currentTime()"
+                (seatGuests)="quickUpdateStatus($event, TableStatus.Occupied)"
+                (checkIn)="quickUpdateStatus($event, TableStatus.Occupied)"
+                (openReservation)="openReserveModal($event)"
+                (openReservationDetails)="openReservationDetailModal($event)"
+                (goToOrder)="goToOrder($event)"
+                (completeMeal)="onEndMeal($event)"
+                (openTransfer)="openTransferModal($event)"
+                (openMerge)="openMergeModal($event)"
+                (finishCleaning)="quickUpdateStatus($event, TableStatus.Available)"
+                (disableTable)="toggleDisableTable($event)"
+                (enableTable)="toggleDisableTable($event)"
+                (editTable)="editTable($event.id)"
+                (deleteTable)="delete($event.id)"
+              ></app-table-card>
             </div>
           }
         </div>
 
         <!-- Floor Plan Pagination -->
         @if (filteredTableList().length > 0) {
-          <div class="custom-table-footer d-flex align-items-center justify-content-between flex-wrap gap-3 mt-4">
-            <span class="records-summary-text">
-              {{ '::ShowingRecords' | abpLocalization }}
-              <strong>{{ gridFromRecord() }} - {{ gridToRecord() }}</strong>
-              {{ '::OfTotal' | abpLocalization }}
-              <strong>{{ filteredTableList().length }}</strong>
-              {{ '::TableCount' | abpLocalization }}
-            </span>
-
-            <div class="d-flex align-items-center gap-2 pagination-btn-group">
-              <button
-                type="button"
-                class="btn-page-nav"
-                [disabled]="gridPage() === 1"
-                (click)="gridFirstPage()"
-                [title]="'::FirstPage' | abpLocalization"
-              >
-                <i class="fa fa-angle-double-left"></i>
-              </button>
-              <button
-                type="button"
-                class="btn-page-nav"
-                [disabled]="gridPage() === 1"
-                (click)="gridPrevPage()"
-                [title]="'::PreviousPage' | abpLocalization"
-              >
-                <i class="fa fa-angle-left"></i>
-              </button>
-              <span class="page-indicator-pill">{{ gridPage() }} / {{ gridTotalPages() }}</span>
-              <button
-                type="button"
-                class="btn-page-nav"
-                [disabled]="gridPage() === gridTotalPages()"
-                (click)="gridNextPage()"
-                [title]="'::NextPage' | abpLocalization"
-              >
-                <i class="fa fa-angle-right"></i>
-              </button>
-              <button
-                type="button"
-                class="btn-page-nav"
-                [disabled]="gridPage() === gridTotalPages()"
-                (click)="gridLastPage()"
-                [title]="'::LastPage' | abpLocalization"
-              >
-                <i class="fa fa-angle-double-right"></i>
-              </button>
-            </div>
+          <div class="mt-4">
+            <app-pager
+              [totalCount]="filteredTableList().length"
+              [pageSize]="gridPageSize()"
+              [currentPage]="gridPage()"
+              (pageChange)="onGridPageChange($event)"
+            ></app-pager>
           </div>
         }
       }
@@ -695,6 +422,7 @@
                 </button>
               } @else {
                 <button
+                  *abpPermission="'TooHungry.Tables.UpdateStatus'"
                   type="button"
                   class="icon-action-btn"
                   [ngClass]="row.status === TableStatus.Disabled ? 'btn-enable-inline' : 'btn-disable-inline'"
@@ -706,6 +434,7 @@
               }
 
               <button
+                *abpPermission="'TooHungry.Tables.Edit'"
                 type="button"
                 class="icon-action-btn btn-edit"
                 [disabled]="row.status === TableStatus.Occupied"
@@ -716,6 +445,7 @@
               </button>
 
               <button
+                *abpPermission="'TooHungry.Tables.Delete'"
                 type="button"
                 class="icon-action-btn btn-delete"
                 [disabled]="row.status === TableStatus.Occupied"
@@ -730,31 +460,11 @@
       </ngx-datatable>
 
       <!-- Custom Datatable Footer -->
-      <div class="custom-table-footer d-flex align-items-center justify-content-between flex-wrap gap-3">
-        <span class="records-summary-text">
-          {{ '::ShowingRecords' | abpLocalization }}
-          <strong>{{ fromRecord }} - {{ toRecord }}</strong>
-          {{ '::OfTotal' | abpLocalization }}
-          <strong>{{ data.totalCount }}</strong>
-          {{ '::TableCount' | abpLocalization }}
-        </span>
-
-        <div class="d-flex align-items-center gap-2 pagination-btn-group">
-          <button type="button" class="btn-page-nav" [disabled]="currentPage === 1" (click)="firstPage()">
-            <i class="fa fa-angle-double-left"></i>
-          </button>
-          <button type="button" class="btn-page-nav" [disabled]="currentPage === 1" (click)="prevPage()">
-            <i class="fa fa-angle-left"></i>
-          </button>
-          <span class="page-indicator-pill">{{ currentPage }} / {{ totalPages }}</span>
-          <button type="button" class="btn-page-nav" [disabled]="currentPage === totalPages" (click)="nextPage()">
-            <i class="fa fa-angle-right"></i>
-          </button>
-          <button type="button" class="btn-page-nav" [disabled]="currentPage === totalPages" (click)="lastPage()">
-            <i class="fa fa-angle-double-right"></i>
-          </button>
-        </div>
-      </div>
+      <app-pager
+        [listService]="list"
+        [totalCount]="data.totalCount"
+        (pageChange)="recalculateTable()"
+      ></app-pager>
     </div>
   }
 </div>

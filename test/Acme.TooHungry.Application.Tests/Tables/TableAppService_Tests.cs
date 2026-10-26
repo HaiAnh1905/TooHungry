@@ -51,15 +51,10 @@ public abstract class TableAppService_Tests<TStartupModule> : TooHungryApplicati
     public async Task Should_Prevent_Duplicate_Table_Name()
     {
         // Arrange
-        await _tableRepository.InsertAsync(new RestaurantTable
-        {
-            Name = "BAN-TRUNG-01",
-            Capacity = 4,
-            Status = TableStatus.Available
-        }, autoSave: true);
+        await _tableRepository.InsertAsync(new RestaurantTable("BAN-TRUNG-01", 4, TableStatus.Available), autoSave: true);
 
         // Act & Assert
-        await Should.ThrowAsync<UserFriendlyException>(async () =>
+        await Should.ThrowAsync<BusinessException>(async () =>
         {
             await _tableAppService.CreateAsync(new CreateUpdateTableDto
             {
@@ -80,7 +75,7 @@ public abstract class TableAppService_Tests<TStartupModule> : TooHungryApplicati
         }, autoSave: true);
 
         // Act & Assert
-        await Should.ThrowAsync<UserFriendlyException>(async () =>
+        await Should.ThrowAsync<BusinessException>(async () =>
         {
             await _tableAppService.CreateAsync(new CreateUpdateTableDto
             {
@@ -95,15 +90,10 @@ public abstract class TableAppService_Tests<TStartupModule> : TooHungryApplicati
     public async Task Should_Prevent_Deleting_Table_When_Occupied()
     {
         // Arrange
-        var table = await _tableRepository.InsertAsync(new RestaurantTable
-        {
-            Name = "BAN-DANG-CO-KHACH",
-            Capacity = 4,
-            Status = TableStatus.Occupied
-        }, autoSave: true);
+        var table = await _tableRepository.InsertAsync(new RestaurantTable("BAN-DANG-CO-KHACH", 4, TableStatus.Occupied), autoSave: true);
 
         // Act & Assert
-        await Should.ThrowAsync<UserFriendlyException>(async () =>
+        await Should.ThrowAsync<BusinessException>(async () =>
         {
             await _tableAppService.DeleteAsync(table.Id);
         });
@@ -113,12 +103,7 @@ public abstract class TableAppService_Tests<TStartupModule> : TooHungryApplicati
     public async Task Should_Change_Table_Status()
     {
         // Arrange
-        var table = await _tableRepository.InsertAsync(new RestaurantTable
-        {
-            Name = "BAN-DOI-TRANG-THAI",
-            Capacity = 4,
-            Status = TableStatus.Available
-        }, autoSave: true);
+        var table = await _tableRepository.InsertAsync(new RestaurantTable("BAN-DOI-TRANG-THAI", 4, TableStatus.Available), autoSave: true);
 
         // Act
         var updated = await _tableAppService.ChangeStatusAsync(table.Id, TableStatus.Occupied);

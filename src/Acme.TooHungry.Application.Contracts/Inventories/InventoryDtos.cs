@@ -58,6 +58,13 @@ public class DiscardBatchInputDto
     public string Reason { get; set; } = string.Empty;
 }
 
+public class BulkDiscardBatchesInputDto
+{
+    public List<Guid> BatchIds { get; set; } = new();
+
+    public string Reason { get; set; } = string.Empty;
+}
+
 public class CreateInventoryBatchDto
 {
     public Guid IngredientId { get; set; }

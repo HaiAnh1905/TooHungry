@@ -10,6 +10,7 @@ using Volo.Abp;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Data;
 using Volo.Abp.Domain.Repositories;
+using Volo.Abp.Uow;
 
 namespace Acme.TooHungry.Inventories;
 
@@ -122,7 +123,7 @@ public class InventoryAppService : TooHungryAppService, IInventoryAppService
         }
 
         var batchCode = string.IsNullOrWhiteSpace(input.BatchCode)
-            ? $"BATCH-{now:yyyyMMddHHmmss}"
+            ? CodeGenerator.GenerateBatchCode(DateTime.UtcNow)
             : input.BatchCode.Trim();
 
         var baseQuantity = qty * factor;
@@ -172,7 +173,18 @@ public class InventoryAppService : TooHungryAppService, IInventoryAppService
         {
             try
             {
-                await _inventoryManager.AdjustStockAsync(input.IngredientId, input.ActualQuantity, input.Reason, batchDeductions);
+                if (retryCount == 0)
+                {
+                    await _inventoryManager.AdjustStockAsync(input.IngredientId, input.ActualQuantity, input.Reason, batchDeductions);
+                }
+                else
+                {
+                    using (var uow = UnitOfWorkManager.Begin(new AbpUnitOfWorkOptions { IsTransactional = true }, requiresNew: true))
+                    {
+                        await _inventoryManager.AdjustStockAsync(input.IngredientId, input.ActualQuantity, input.Reason, batchDeductions);
+                        await uow.CompleteAsync();
+                    }
+                }
                 break;
             }
             catch (AbpDbConcurrencyException) when (retryCount < 3)
@@ -188,7 +200,7 @@ public class InventoryAppService : TooHungryAppService, IInventoryAppService
         Check.NotNullOrWhiteSpace(input.Reason, nameof(input.Reason));
 
         var batch = await _batchRepository.GetAsync(id);
-        if (!batch.IsActive || batch.RemainingQuantity <= 0)
+        if (!batch.IsActive)
         {
             throw new BusinessException("InventoryBatch:AlreadyEmptyOrInactive");
         }
@@ -208,6 +220,42 @@ public class InventoryAppService : TooHungryAppService, IInventoryAppService
             unitCost: batch.UnitCost
         );
         await _transactionRepository.InsertAsync(tx, autoSave: true);
+    }
+
+    [Authorize(TooHungryPermissions.Inventories.Discard)]
+    public virtual async Task BulkDiscardBatchesAsync(BulkDiscardBatchesInputDto input)
+    {
+        Check.NotNull(input, nameof(input));
+        Check.NotNullOrWhiteSpace(input.Reason, nameof(input.Reason));
+        if (input.BatchIds == null || input.BatchIds.Count == 0) return;
+
+        var batches = await _batchRepository.GetListAsync(x => input.BatchIds.Contains(x.Id));
+        var transactions = new List<InventoryTransaction>();
+
+        foreach (var batch in batches)
+        {
+            if (!batch.IsActive) continue;
+
+            var discardedQuantity = batch.RemainingQuantity;
+            batch.Discard();
+            await _batchRepository.UpdateAsync(batch, autoSave: false);
+
+            transactions.Add(new InventoryTransaction(
+                GuidGenerator.Create(),
+                batch.IngredientId,
+                batch.Id,
+                InventoryTransactionType.ADJUSTMENT_OUT,
+                discardedQuantity,
+                input.Reason.Trim(),
+                referenceId: null,
+                unitCost: batch.UnitCost
+            ));
+        }
+
+        if (transactions.Count > 0)
+        {
+            await _transactionRepository.InsertManyAsync(transactions, autoSave: true);
+        }
     }
 
     [Authorize(TooHungryPermissions.Inventories.Adjust)]
@@ -254,10 +302,14 @@ public class InventoryAppService : TooHungryAppService, IInventoryAppService
         var alerts = new List<InventoryAlertDto>();
         var now = DateTime.UtcNow;
 
-        var batchQueryable = await _batchRepository.WithDetailsAsync(x => x.Ingredient!);
-        var batches = await AsyncExecuter.ToListAsync(batchQueryable.Where(x => x.IsActive && x.RemainingQuantity > 0));
+        // T016: 1. Chỉ nạp các lô hàng hết hạn hoặc cận hạn (trong vòng 3 ngày) trực tiếp từ SQL
+        var nearExpiryThreshold = now.AddDays(3);
+        var alertBatchQueryable = await _batchRepository.WithDetailsAsync(x => x.Ingredient!);
+        var expiringBatches = await AsyncExecuter.ToListAsync(
+            alertBatchQueryable.Where(x => x.IsActive && x.RemainingQuantity > 0 && x.ExpiryDate <= nearExpiryThreshold)
+        );
 
-        foreach (var b in batches)
+        foreach (var b in expiringBatches)
         {
             var isFresh = b.Ingredient != null && b.Ingredient.StorageType == StorageType.FRESH;
 
@@ -279,7 +331,7 @@ public class InventoryAppService : TooHungryAppService, IInventoryAppService
                 });
             }
             // Cảnh báo vàng: Lô hàng sắp hết hạn trong 3 ngày (CHỈ áp dụng cho nguyên liệu KHÔNG PHẢI tươi sống)
-            else if (!isFresh && b.ExpiryDate <= now.AddDays(3))
+            else if (!isFresh)
             {
                 var daysLeft = Math.Max(1, (int)Math.Ceiling((b.ExpiryDate - now).TotalDays));
                 alerts.Add(new InventoryAlertDto
@@ -296,11 +348,21 @@ public class InventoryAppService : TooHungryAppService, IInventoryAppService
             }
         }
 
-        // Cảnh báo dưới mức tồn tối thiểu
+        // T016: 2. Tính tổng tồn kho khả dụng trực tiếp từ SQL bằng GroupBy
+        var activeBatchQuery = await _batchRepository.GetQueryableAsync();
+        var stockSummary = await AsyncExecuter.ToListAsync(
+            activeBatchQuery
+                .Where(b => b.IsActive && b.RemainingQuantity > 0)
+                .GroupBy(b => b.IngredientId)
+                .Select(g => new { IngredientId = g.Key, TotalRemaining = g.Sum(b => b.RemainingQuantity) })
+        );
+        var stockMap = stockSummary.ToDictionary(s => s.IngredientId, s => s.TotalRemaining);
+
+        // 3. Cảnh báo dưới mức tồn tối thiểu và hết hàng
         var ingredients = await _ingredientRepository.GetListAsync(x => x.IsActive);
         foreach (var ing in ingredients)
         {
-            var totalStock = batches.Where(x => x.IngredientId == ing.Id).Sum(x => x.RemainingQuantity);
+            var totalStock = stockMap.GetValueOrDefault(ing.Id, 0);
             if (totalStock <= 0)
             {
                 alerts.Add(new InventoryAlertDto
@@ -330,14 +392,24 @@ public class InventoryAppService : TooHungryAppService, IInventoryAppService
         return alerts;
     }
 
-    public virtual async Task<List<InventoryTransactionDto>> GetTransactionsAsync(Guid ingredientId)
+    /// <summary>
+    /// Lấy danh sách lịch sử giao dịch kho có phân trang và sắp xếp phía máy chủ
+    /// </summary>
+    public virtual async Task<PagedResultDto<InventoryTransactionDto>> GetTransactionsAsync(Guid ingredientId, PagedAndSortedResultRequestDto input)
     {
         var queryable = await _transactionRepository.WithDetailsAsync(x => x.Ingredient!, x => x.Batch!);
-        var txs = await AsyncExecuter.ToListAsync(
-            queryable.Where(x => x.IngredientId == ingredientId).OrderByDescending(x => x.CreationTime)
-        );
+        queryable = queryable.Where(x => x.IngredientId == ingredientId);
 
-        return txs.Select(t =>
+        var totalCount = await AsyncExecuter.CountAsync(queryable);
+
+        var sorting = string.IsNullOrWhiteSpace(input.Sorting) ? "CreationTime desc" : input.Sorting;
+        queryable = queryable
+            .OrderBy(sorting)
+            .PageBy(input.SkipCount, input.MaxResultCount);
+
+        var txs = await AsyncExecuter.ToListAsync(queryable);
+
+        var dtos = txs.Select(t =>
         {
             var dto = _txMapper.Map(t);
             if (t.Ingredient != null)
@@ -350,5 +422,7 @@ public class InventoryAppService : TooHungryAppService, IInventoryAppService
             }
             return dto;
         }).ToList();
+
+        return new PagedResultDto<InventoryTransactionDto>(totalCount, dtos);
     }
 }

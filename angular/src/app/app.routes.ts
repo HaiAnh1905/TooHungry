@@ -2,6 +2,7 @@ import { authGuard, eLayoutType } from '@abp/ng.core';
 import { smartPermissionGuard } from './shared/guards/smart-permission.guard';
 import { dashboardGuard, adminTableGuard } from './shared/guards/dashboard.guard';
 import { waiterAuthGuard } from './waiter/guards/waiter-auth.guard';
+import { inventoryKeeperAuthGuard } from './inventory-keeper/guards/inventory-keeper-auth.guard';
 import { Routes } from '@angular/router';
 
 export const APP_ROUTES: Routes = [
@@ -152,6 +153,58 @@ export const APP_ROUTES: Routes = [
     data: { requiredPolicy: 'TooHungry.Inventories' },
   },
   {
+    path: 'inventory-keeper',
+    loadComponent: () =>
+      import('./inventory-keeper/layout/inventory-keeper-layout.component').then(
+        c => c.InventoryKeeperLayoutComponent
+      ),
+    canActivate: [authGuard, inventoryKeeperAuthGuard],
+    data: { layout: eLayoutType.empty },
+    children: [
+      {
+        path: '',
+        redirectTo: 'dashboard',
+        pathMatch: 'full',
+      },
+      {
+        path: 'dashboard',
+        loadComponent: () =>
+          import('./inventory-keeper/dashboard/inventory-keeper-dashboard.component').then(
+            c => c.InventoryKeeperDashboardComponent
+          ),
+        canActivate: [smartPermissionGuard],
+        data: { requiredPolicy: 'TooHungry.Inventories', layout: eLayoutType.empty },
+      },
+      {
+        path: 'batches',
+        loadComponent: () =>
+          import('./inventory-keeper/batches/inventory-keeper-batches.component').then(
+            c => c.InventoryKeeperBatchesComponent
+          ),
+        canActivate: [smartPermissionGuard],
+        data: { requiredPolicy: 'TooHungry.Inventories', layout: eLayoutType.empty },
+      },
+      {
+        path: 'transactions',
+        loadComponent: () =>
+          import('./inventory-keeper/transactions/inventory-keeper-transactions.component').then(
+            c => c.InventoryKeeperTransactionsComponent
+          ),
+        canActivate: [smartPermissionGuard],
+        data: { requiredPolicy: 'TooHungry.Inventories', layout: eLayoutType.empty },
+      },
+      {
+        path: '**',
+        redirectTo: 'dashboard',
+      },
+    ],
+  },
+  {
+    path: 'keeper',
+    redirectTo: 'inventory-keeper',
+    pathMatch: 'full',
+  },
+  {
     path: 'forecasts',
     loadComponent: () => import('./forecast/forecast.component').then(c => c.ForecastComponent),
     canActivate: [authGuard, smartPermissionGuard],
@@ -165,6 +218,12 @@ export const APP_ROUTES: Routes = [
       ),
     canActivate: [authGuard, smartPermissionGuard],
     data: { requiredPolicy: 'TooHungry.Forecasts' },
+  },
+  {
+    path: 'error/0',
+    loadComponent: () =>
+      import('./shared/components/error-page/error-page.component').then(c => c.ErrorPageComponent),
+    data: { status: 0, layout: eLayoutType.empty },
   },
   {
     path: 'error/403',

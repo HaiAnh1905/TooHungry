@@ -585,7 +585,7 @@ export class IngredientComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       error: err => {
         this.isRestoring = false;
-        this.toaster.error(err?.error?.error?.message || 'Không thể khôi phục nguyên liệu!');
+        this.toaster.error(err?.error?.error?.message || err?.error?.message || this.localizationService.instant('::ActionFailedError'));
         this.cdr.markForCheck();
       },
     });
@@ -624,7 +624,7 @@ export class IngredientComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       error: err => {
         this.isDeactivating = false;
-        this.toaster.error(err?.error?.error?.message || 'Lỗi khi tạm ngưng nguyên liệu!');
+        this.toaster.error(err?.error?.error?.message || err?.error?.message || this.localizationService.instant('::ActionFailedError'));
         this.cdr.markForCheck();
       },
     });
@@ -649,7 +649,7 @@ export class IngredientComponent implements OnInit, AfterViewInit, OnDestroy {
               this.loadData();
             },
             error: err => {
-              this.toaster.error(err?.error?.error?.message || 'Lỗi khi kích hoạt lại!');
+              this.toaster.error(err?.error?.error?.message || err?.error?.message || this.localizationService.instant('::ActionFailedError'));
             },
           });
         }

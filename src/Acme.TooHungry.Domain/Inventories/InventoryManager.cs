@@ -41,18 +41,18 @@ public class InventoryManager : DomainService
     {
         if (requiredQuantity <= 0)
         {
-            return new DeductionResult { TotalDeducted = 0, ShortageQuantity = 0 };
+            throw new BusinessException("TooHungry:Inventory:InvalidQuantity");
         }
 
         var ingredient = await _ingredientRepository.GetAsync(ingredientId);
 
-        var now = DateTime.UtcNow;
+        var now = Clock.Now;
 
         // Lấy tất cả các lô còn hàng đang active
         var queryable = await _batchRepository.GetQueryableAsync();
-        var allBatches = queryable
-            .Where(x => x.IngredientId == ingredientId && x.IsActive && x.RemainingQuantity > 0)
-            .ToList();
+        var allBatches = await AsyncExecuter.ToListAsync(
+            queryable.Where(x => x.IngredientId == ingredientId && x.IsActive && x.RemainingQuantity > 0)
+        );
 
         // Lọc bỏ các lô đồ tươi sống FRESH quá hạn
         var validBatches = allBatches
@@ -68,6 +68,8 @@ public class InventoryManager : DomainService
 
         decimal remainingToDeduct = requiredQuantity;
         decimal totalDeducted = 0;
+        var batchesToUpdate = new List<InventoryBatch>();
+        var transactionsToInsert = new List<InventoryTransaction>();
 
         foreach (var batch in batches)
         {
@@ -78,7 +80,7 @@ public class InventoryManager : DomainService
 
             var amountToDeduct = Math.Min(remainingToDeduct, batch.RemainingQuantity);
             batch.DeductQuantity(amountToDeduct);
-            await _batchRepository.UpdateAsync(batch, autoSave: true);
+            batchesToUpdate.Add(batch);
 
             var transaction = new InventoryTransaction(
                 GuidGenerator.Create(),
@@ -90,10 +92,20 @@ public class InventoryManager : DomainService
                 referenceId,
                 batch.UnitCost
             );
-            await _transactionRepository.InsertAsync(transaction, autoSave: true);
+            transactionsToInsert.Add(transaction);
 
             totalDeducted += amountToDeduct;
             remainingToDeduct -= amountToDeduct;
+        }
+
+        if (batchesToUpdate.Count > 0)
+        {
+            await _batchRepository.UpdateManyAsync(batchesToUpdate, autoSave: true);
+        }
+
+        if (transactionsToInsert.Count > 0)
+        {
+            await _transactionRepository.InsertManyAsync(transactionsToInsert, autoSave: true);
         }
 
         return new DeductionResult
@@ -115,9 +127,9 @@ public class InventoryManager : DomainService
         Check.NotNullOrWhiteSpace(reason, nameof(reason));
 
         var queryable = await _batchRepository.GetQueryableAsync();
-        var currentBatches = queryable
-            .Where(x => x.IngredientId == ingredientId && x.IsActive)
-            .ToList();
+        var currentBatches = await AsyncExecuter.ToListAsync(
+            queryable.Where(x => x.IngredientId == ingredientId && x.IsActive)
+        );
 
         var systemQuantity = currentBatches.Sum(x => x.RemainingQuantity);
         var difference = actualQuantity - systemQuantity;
@@ -135,6 +147,11 @@ public class InventoryManager : DomainService
                 throw new BusinessException("StockAdjustment:BatchSelectionRequiredForDeficit");
             }
 
+            if (batchDeductions.Any(x => x.quantity <= 0))
+            {
+                throw new BusinessException("TooHungry:Inventory:InvalidQuantity");
+            }
+
             var totalBatchDeduction = batchDeductions.Sum(x => x.quantity);
             if (Math.Abs(difference) != totalBatchDeduction)
             {
@@ -143,6 +160,7 @@ public class InventoryManager : DomainService
 
             foreach (var item in batchDeductions)
             {
+
                 var batch = currentBatches.FirstOrDefault(x => x.Id == item.batchId);
                 if (batch == null)
                 {
@@ -172,18 +190,30 @@ public class InventoryManager : DomainService
         }
         else
         {
-            // Thừa kho: Tạo lô điều chỉnh tăng
-            var now = DateTime.UtcNow;
+            // Thừa kho: Tạo lô điều chỉnh tăng với PurchaseUnit, UnitCost, ExpiryDate chuẩn
+            var ingredient = await _ingredientRepository.GetAsync(ingredientId);
+            var now = Clock.Now;
+
+            // Hạn sử dụng lấy theo hạn xa nhất của các lô còn hạn của nguyên liệu đó trong kho (hoặc 30 ngày)
+            var maxExpiryDate = currentBatches
+                .Where(b => b.ExpiryDate > now)
+                .Select(b => (DateTime?)b.ExpiryDate)
+                .Max() ?? now.AddDays(30);
+
+            var batchCode = $"ADJ-{now:yyyyMMddHHmmss}-{Guid.NewGuid():N}"[..24];
+
             var adjustmentBatch = new InventoryBatch(
                 GuidGenerator.Create(),
                 ingredientId,
-                $"ADJ-{now:yyyyMMddHHmmss}",
+                batchCode,
                 difference,
                 difference,
-                "BaseUnit",
+                ingredient.BaseUnit,
                 1.0m,
                 now,
-                now.AddYears(1)
+                maxExpiryDate,
+                supplierId: null,
+                unitCost: ingredient.EstimatedPrice
             );
             await _batchRepository.InsertAsync(adjustmentBatch, autoSave: true);
 

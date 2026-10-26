@@ -1,7 +1,7 @@
 <abp-modal
   [(visible)]="visible"
   (visibleChange)="visibleChange.emit($event)"
-  [options]="{ size: 'md', centered: true }"
+  [options]="{ size: isBulk ? 'lg' : 'md', centered: true }"
   [busy]="isSubmitting"
   [suppressUnsavedChangesWarning]="true"
 >
@@ -12,61 +12,96 @@
       </div>
       <div>
         <h5 class="m-0 modal-title-text text-danger">
-          {{ '::DiscardBatchModalTitle' | abpLocalization }}
+          {{ (isBulk ? '::BulkDiscardBatchModalTitle' : '::DiscardBatchModalTitle') | abpLocalization }}
         </h5>
         <span class="modal-subtitle-text">
-          {{ batch?.batchCode }} - {{ batch?.ingredientName || ingredient?.name }}
+          @if (isBulk) {
+            {{ '::BulkDiscardBatchModalSubtitle' | abpLocalization: (batches.length + '') }}
+          } @else {
+            {{ effectiveBatch?.batchCode }} - {{ effectiveBatch?.ingredientName || ingredient?.name }}
+          }
         </span>
       </div>
     </div>
   </ng-template>
 
   <ng-template #abpBody>
-    <div class="alert alert-danger d-flex align-items-start gap-2 mb-3">
-      <i class="fa fa-circle-exclamation mt-1"></i>
-      <div class="small">
-        {{
-          '::DiscardBatchConfirmMessage'
-            | abpLocalization
-              : (batch?.batchCode || '')
-              : ('' + (batch?.remainingQuantity || 0))
-              : (batch?.purchaseUnit || ingredient?.baseUnit || ingredient?.unitName || '')
-        }}
+    @if (isBulk) {
+      <div class="alert alert-danger d-flex align-items-start gap-2 mb-3">
+        <i class="fa fa-circle-exclamation mt-1"></i>
+        <div class="small">
+          {{ '::BulkDiscardConfirmMessage' | abpLocalization: (batches.length + '') }}
+        </div>
       </div>
-    </div>
 
-    <!-- Batch metadata card -->
-    <div class="card bg-light border-0 p-3 mb-3 rounded-3">
-      <div class="row g-2 text-muted small">
-        <div class="col-6">
-          <span>{{ '::BatchCode' | abpLocalization }}:</span>
-          <strong class="text-dark d-block font-monospace">{{ batch?.batchCode }}</strong>
+      <!-- Bulk batches summary card -->
+      <div class="card bg-light border-0 p-3 mb-3 rounded-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="fw-bold small text-dark d-flex align-items-center gap-2">
+            <i class="fa fa-boxes-stacked text-danger"></i>
+            {{ '::SelectedBatchesPreview' | abpLocalization }}
+          </span>
+          <span class="badge bg-danger text-white rounded-pill px-2 py-1">
+            {{ '::TotalBatches' | abpLocalization }}: {{ batches.length }}
+          </span>
         </div>
-        <div class="col-6">
-          <span>{{ '::RemainingQuantity' | abpLocalization }}:</span>
-          <strong class="text-danger d-block font-monospace">
-            {{ batch?.remainingQuantity }} {{ batch?.purchaseUnit || ingredient?.baseUnit }}
-          </strong>
-        </div>
-        <div class="col-6">
-          <span>{{ '::ExpiryDate' | abpLocalization }}:</span>
-          <strong class="text-dark d-block">
-            {{ batch?.expiryDate ? (batch?.expiryDate | date:'dd/MM/yyyy') : ('::NoExpiry' | abpLocalization) }}
-          </strong>
-        </div>
-        <div class="col-6">
-          <span>{{ '::UnitCostHeader' | abpLocalization }}:</span>
-          <strong class="text-dark d-block font-monospace">
-            {{ batch?.unitCost ? (batch?.unitCost | number:'1.0-0') + ' ₫' : '—' }}
-          </strong>
+        <div class="bulk-batches-preview-list d-flex flex-wrap gap-2" style="max-height: 140px; overflow-y: auto;">
+          @for (b of batches; track b.id) {
+            <div class="badge bg-white text-dark border p-2 d-flex align-items-center gap-2 font-monospace shadow-xs">
+              <span class="fw-bold text-dark">{{ b.batchCode }}</span>
+              <span class="text-muted">({{ b.ingredientName || 'Nguyên liệu' }}: <strong class="text-danger">{{ b.remainingQuantity }} {{ b.purchaseUnit || '' }}</strong>)</span>
+            </div>
+          }
         </div>
       </div>
-    </div>
+    } @else {
+      <div class="alert alert-danger d-flex align-items-start gap-2 mb-3">
+        <i class="fa fa-circle-exclamation mt-1"></i>
+        <div class="small">
+          {{
+            '::DiscardBatchConfirmMessage'
+              | abpLocalization
+                : (effectiveBatch?.batchCode || '')
+                : ('' + (effectiveBatch?.remainingQuantity || 0))
+                : (effectiveBatch?.purchaseUnit || ingredient?.baseUnit || ingredient?.unitName || '')
+          }}
+        </div>
+      </div>
+
+      <!-- Batch metadata card -->
+      <div class="card bg-light border-0 p-3 mb-3 rounded-3">
+        <div class="row g-2 text-muted small">
+          <div class="col-6">
+            <span>{{ '::BatchCode' | abpLocalization }}:</span>
+            <strong class="text-dark d-block font-monospace">{{ effectiveBatch?.batchCode }}</strong>
+          </div>
+          <div class="col-6">
+            <span>{{ '::RemainingQuantity' | abpLocalization }}:</span>
+            <strong class="text-danger d-block font-monospace">
+              {{ effectiveBatch?.remainingQuantity }} {{ effectiveBatch?.purchaseUnit || ingredient?.baseUnit }}
+            </strong>
+          </div>
+          <div class="col-6">
+            <span>{{ '::ExpiryDate' | abpLocalization }}:</span>
+            <strong class="text-dark d-block">
+              {{ effectiveBatch?.expiryDate ? (effectiveBatch?.expiryDate | date:'dd/MM/yyyy') : ('::NoExpiry' | abpLocalization) }}
+            </strong>
+          </div>
+          <div class="col-6">
+            <span>{{ '::UnitCostHeader' | abpLocalization }}:</span>
+            <strong class="text-dark d-block font-monospace">
+              {{ effectiveBatch?.unitCost ? (effectiveBatch?.unitCost | number:'1.0-0') + ' ₫' : '—' }}
+            </strong>
+          </div>
+        </div>
+      </div>
+    }
 
     <form (ngSubmit)="submit()">
       <div class="mb-3">
-        <label class="form-label fw-bold small text-dark">
-          {{ '::DiscardReasonCategoryLabel' | abpLocalization }}
+        <label class="form-label fw-bold small text-dark d-flex align-items-center">
+          <span>{{ '::DiscardReasonCategoryLabel' | abpLocalization }}</span>
+          <span class="text-danger ms-1 fw-bold">*</span>
         </label>
         <select
           class="form-select"
@@ -80,18 +115,48 @@
         </select>
       </div>
 
-      <div class="mb-2">
-        <label class="form-label fw-bold small text-dark">
-          {{ '::DiscardCustomNotesLabel' | abpLocalization }}
-        </label>
+      <div class="mb-3">
+        <div class="d-flex align-items-center justify-content-between mb-1">
+          <label class="form-label fw-bold small text-dark m-0 d-flex align-items-center">
+            <span>{{ '::DiscardCustomNotesLabel' | abpLocalization }}</span>
+            <span class="text-danger ms-1 fw-bold">*</span>
+          </label>
+          <span class="text-muted small">{{ '::QuickPresetsHint' | abpLocalization }}</span>
+        </div>
+
+        <!-- 3 LỰA CHỌN MẶC ĐỊNH CHO DETAILED NOTES -->
+        <div class="d-flex flex-wrap gap-1 mb-2 preset-chips-group">
+          @for (preset of defaultNotePresets; track preset.valueKey) {
+            <button
+              type="button"
+              class="btn btn-sm preset-chip-btn"
+              [class.active]="customNotes === (preset.valueKey | abpLocalization)"
+              (click)="applyPresetNote(preset.valueKey)"
+              [disabled]="isSubmitting"
+              [title]="preset.valueKey | abpLocalization"
+            >
+              <i class="fas fa-tag me-1 text-danger"></i>
+              <span>{{ preset.labelKey | abpLocalization }}</span>
+            </button>
+          }
+        </div>
+
         <textarea
           class="form-control"
+          [class.is-invalid]="!customNotes.trim() && isSubmittedAttempt"
           rows="3"
           [(ngModel)]="customNotes"
           name="customNotes"
           [placeholder]="'::DiscardCustomNotesPlaceholder' | abpLocalization"
           [disabled]="isSubmitting"
+          required
         ></textarea>
+        @if (!customNotes.trim() && isSubmittedAttempt) {
+          <div class="invalid-feedback d-block mt-1">
+            <i class="fa fa-circle-exclamation me-1"></i>
+            {{ '::DetailedNotesRequired' | abpLocalization }}
+          </div>
+        }
       </div>
     </form>
   </ng-template>
@@ -114,9 +179,9 @@
       @if (isSubmitting) {
         <i class="fa fa-spin fa-spinner me-1"></i>
       } @else {
-        <i class="fa fa-ban me-1"></i>
+        <i class="fa fa-trash-can me-1"></i>
       }
-      {{ '::ConfirmDiscardAction' | abpLocalization }}
+      {{ (isBulk ? '::BulkDiscardAction' : '::ConfirmDiscardAction') | abpLocalization: (isBulk ? (batches.length + '') : '') }}
     </button>
   </ng-template>
 </abp-modal>

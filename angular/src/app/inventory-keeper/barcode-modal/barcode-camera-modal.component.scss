@@ -1,0 +1,123 @@
+.text-primary-orange {
+  color: #ea580c !important;
+}
+
+.modal-header-icon-box {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #fff7ed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+
+.camera-scanner-container {
+  display: flex;
+  flex-direction: column;
+
+  .camera-viewfinder-wrapper {
+    position: relative;
+    width: 100%;
+    height: 320px;
+    background: #0f172a;
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .camera-video-stream {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .laser-scanner-reticle {
+      position: absolute;
+      width: 240px;
+      height: 180px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 12px;
+      box-shadow: 0 0 0 1000px rgba(15, 23, 42, 0.55);
+
+      .corner-bracket {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border-color: #ea580c;
+        border-style: solid;
+
+        &.top-left {
+          top: -2px;
+          left: -2px;
+          border-width: 3px 0 0 3px;
+          border-top-left-radius: 6px;
+        }
+
+        &.top-right {
+          top: -2px;
+          right: -2px;
+          border-width: 3px 3px 0 0;
+          border-top-right-radius: 6px;
+        }
+
+        &.bottom-left {
+          bottom: -2px;
+          left: -2px;
+          border-width: 0 0 3px 3px;
+          border-bottom-left-radius: 6px;
+        }
+
+        &.bottom-right {
+          bottom: -2px;
+          right: -2px;
+          border-width: 0 3px 3px 0;
+          border-bottom-right-radius: 6px;
+        }
+      }
+
+      .laser-beam {
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: #ea580c;
+        box-shadow: 0 0 8px 2px #ea580c;
+        animation: scanMove 2s infinite ease-in-out;
+      }
+    }
+  }
+
+  .manual-input-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 0.875rem 1rem;
+
+    .btn-primary-orange {
+      background: #ea580c;
+      color: #ffffff;
+      font-weight: 600;
+      border: none;
+      min-width: 80px;
+
+      &:hover:not(:disabled) {
+        background: #c2410c;
+      }
+    }
+  }
+}
+
+@keyframes scanMove {
+  0% {
+    top: 5%;
+  }
+  50% {
+    top: 90%;
+  }
+  100% {
+    top: 5%;
+  }
+}

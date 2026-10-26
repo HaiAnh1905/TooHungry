@@ -1,0 +1,490 @@
+@if (sidebarService.currentTemplate()) {
+  <!-- Fallback: Nếu màn hình con có template tùy biến cụ thể -->
+  <ng-container *ngTemplateOutlet="sidebarService.currentTemplate()"></ng-container>
+} @else {
+  @switch (activeTab) {
+    <!-- 1. SIDEBAR CHO TAB TỔNG QUAN / DASHBOARD -->
+    @case ('dashboard') {
+      <div class="dashboard-sidebar-panel">
+        <!-- Ô TÌM KIẾM NHANH (MÃ LÔ, NGUYÊN LIỆU) KÈM SHORTCUT CTRL + K -->
+        <div class="sidebar-search-block mb-2">
+          <label class="form-label fw-bold text-muted d-flex align-items-center justify-content-between mb-1">
+            <span>{{ '::Search' | abpLocalization }}</span>
+            <span class="badge bg-light text-muted border">Ctrl + K</span>
+          </label>
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-white border-end-0">
+              <i class="fas fa-search text-muted"></i>
+            </span>
+            <input
+              #dashboardSearchInput
+              type="text"
+              class="form-control border-start-0 ps-0"
+              [placeholder]="'::QuickSearchBatches' | abpLocalization"
+              [ngModel]="sidebarService.batchesSearchTerm()"
+              (ngModelChange)="onDashboardSearchInput($event)"
+            />
+            @if (sidebarService.batchesSearchTerm()) {
+              <button
+                type="button"
+                class="btn btn-outline-secondary border-start-0"
+                (click)="clearBatchesSearch()"
+              >
+                <i class="fas fa-times"></i>
+              </button>
+            }
+          </div>
+        </div>
+
+        <!-- Nút Quét mã vạch trực tiếp trên Sidebar -->
+        <div class="sidebar-scan-btn mb-3">
+          <button
+            type="button"
+            class="btn btn-primary-orange w-100 py-1.5 d-flex align-items-center justify-content-center gap-2"
+            (click)="openCameraModal()"
+          >
+            <i class="fas fa-barcode"></i>
+            <span>{{ '::KeeperScanBarcode' | abpLocalization }}</span>
+          </button>
+        </div>
+
+        <!-- THÔNG TIN CA TRỰC & TRẠNG THÁI VẬN HÀNH KHO -->
+        <div class="sidebar-filter-group mb-3">
+          <div class="filter-group-title">
+            <i class="fas fa-id-badge me-1 text-primary-orange"></i>
+            {{ '::WarehouseStatus' | abpLocalization }}
+          </div>
+          <div class="shift-info-card">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <span class="shift-label">
+                <i class="far fa-clock me-1 text-primary-orange"></i>
+                {{ '::CurrentShift' | abpLocalization }}:
+              </span>
+              <span class="shift-badge-val">
+                {{ userInfo?.shiftLocalizationKey ? (userInfo?.shiftLocalizationKey | abpLocalization) : ('::OperationalCockpit' | abpLocalization) }}
+              </span>
+            </div>
+            <div class="d-flex align-items-center justify-content-between">
+              <span class="shift-label">
+                <i class="far fa-calendar-check me-1 text-muted"></i>
+                {{ '::DataLastUpdated' | abpLocalization }}:
+              </span>
+              <span class="shift-date-val">
+                {{ alertStateService.kpiSummary().lastUpdated | date:'HH:mm' }} ({{ alertStateService.kpiSummary().lastUpdated | date:'dd/MM' }})
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- LỐI TẮT BỘ LỌC NHANH (DÙNG ĐỒNG BỘ SIDEBAR-PILL-BTN NHƯ BATCHES VÀ TRANSACTIONS) -->
+        <div class="sidebar-filter-group">
+          <div class="filter-group-title">
+            <i class="fas fa-bolt me-1 text-primary-orange"></i>
+            {{ '::WarehouseQuickShortcuts' | abpLocalization }}
+          </div>
+          <div class="filter-pills-column">
+            <button
+              type="button"
+              class="sidebar-pill-btn"
+              (click)="goToBatchesWithFilter('All')"
+            >
+              <div class="d-flex align-items-center justify-content-between w-100">
+                <span>
+                  <i class="fas fa-boxes-stacked text-primary-orange me-1.5"></i>
+                  {{ '::KeeperBatchesTab' | abpLocalization }}
+                </span>
+                <span class="badge bg-slate-soft text-dark">
+                  {{ alertStateService.kpiSummary().totalActiveBatchesCount }}
+                </span>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              class="sidebar-pill-btn"
+              (click)="goToBatchesWithFilter('ExpiringSoon')"
+            >
+              <div class="d-flex align-items-center justify-content-between w-100">
+                <span>
+                  <i class="fas fa-hourglass-half text-amber me-1.5"></i>
+                  {{ '::BatchStatusExpiringSoon' | abpLocalization }}
+                </span>
+                <span class="badge rounded-pill bg-amber-soft text-amber">
+                  {{ alertStateService.kpiSummary().expiringSoonCount }}
+                </span>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              class="sidebar-pill-btn"
+              (click)="goToBatchesWithFilter('Expired')"
+            >
+              <div class="d-flex align-items-center justify-content-between w-100">
+                <span>
+                  <i class="fas fa-ban text-red me-1.5"></i>
+                  {{ '::BatchStatusExpired' | abpLocalization }}
+                </span>
+                <span class="badge rounded-pill bg-red-soft text-red">
+                  {{ alertStateService.kpiSummary().expiredCount }}
+                </span>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              class="sidebar-pill-btn"
+              (click)="goToBatchesWithFilter('Deactivated')"
+            >
+              <div class="d-flex align-items-center justify-content-between w-100">
+                <span>
+                  <i class="fas fa-lock text-muted me-1.5"></i>
+                  {{ '::BatchStatusDeactivated' | abpLocalization }}
+                </span>
+                <i class="fas fa-arrow-right text-muted small"></i>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              class="sidebar-pill-btn"
+              (click)="router.navigate(['/inventory-keeper/transactions'])"
+            >
+              <div class="d-flex align-items-center justify-content-between w-100">
+                <span>
+                  <i class="fas fa-clock-rotate-left text-sky me-1.5"></i>
+                  {{ '::KeeperTransactionsTab' | abpLocalization }}
+                </span>
+                <i class="fas fa-arrow-right text-muted small"></i>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- 2. SIDEBAR CHO TAB DANH MỤC LÔ HÀNG / BATCHES -->
+    @case ('batches') {
+      <div class="batches-sidebar-panel">
+        <!-- Ô TÌM KIẾM NHANH (MÃ LÔ, NGUYÊN LIỆU) KÈM SHORTCUT CTRL + K -->
+        <div class="sidebar-search-block mb-2">
+          <label class="form-label fw-bold text-muted d-flex align-items-center justify-content-between mb-1">
+            <span>{{ '::Search' | abpLocalization }}</span>
+            <span class="badge bg-light text-muted border">Ctrl + K</span>
+          </label>
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-white border-end-0">
+              <i class="fas fa-search text-muted"></i>
+            </span>
+            <input
+              #batchesSearchInput
+              type="text"
+              class="form-control border-start-0 ps-0"
+              [placeholder]="'::KeeperSearchPlaceholder' | abpLocalization"
+              [ngModel]="sidebarService.batchesSearchTerm()"
+              (ngModelChange)="onBatchesSearchInput($event)"
+            />
+            @if (sidebarService.batchesSearchTerm()) {
+              <button
+                type="button"
+                class="btn btn-outline-secondary border-start-0"
+                (click)="clearBatchesSearch()"
+              >
+                <i class="fas fa-times"></i>
+              </button>
+            }
+          </div>
+        </div>
+
+        <!-- Nút Quét mã vạch trực tiếp trên Sidebar -->
+        <div class="sidebar-scan-btn mb-3">
+          <button
+            type="button"
+            class="btn btn-primary-orange w-100 py-1.5 d-flex align-items-center justify-content-center gap-2"
+            (click)="openCameraModal()"
+          >
+            <i class="fas fa-barcode"></i>
+            <span>{{ '::KeeperScanBarcode' | abpLocalization }}</span>
+          </button>
+        </div>
+
+        <!-- BỘ LỌC NHIỆT ĐỘ BẢO QUẢN -->
+        <div class="sidebar-filter-group mb-3">
+          <div class="filter-group-title">
+            <i class="fas fa-temperature-half me-1 text-primary-orange"></i>
+            {{ '::KeeperStorageCondition' | abpLocalization }}
+          </div>
+          <div class="filter-pills-column">
+            <button
+              type="button"
+              class="sidebar-pill-btn"
+              [class.active]="sidebarService.batchesCondition() === StorageConditionType.All"
+              (click)="setCondition(StorageConditionType.All)"
+            >
+              <span>{{ '::StorageConditionAll' | abpLocalization }}</span>
+            </button>
+            <button
+              type="button"
+              class="sidebar-pill-btn"
+              [class.active]="sidebarService.batchesCondition() === StorageConditionType.Chilled"
+              (click)="setCondition(StorageConditionType.Chilled)"
+            >
+              <i class="fas fa-snowflake text-emerald me-1"></i>
+              <span>{{ '::StorageConditionChilled' | abpLocalization }}</span>
+            </button>
+            <button
+              type="button"
+              class="sidebar-pill-btn"
+              [class.active]="sidebarService.batchesCondition() === StorageConditionType.Frozen"
+              (click)="setCondition(StorageConditionType.Frozen)"
+            >
+              <i class="fas fa-icicles text-sky me-1"></i>
+              <span>{{ '::StorageConditionFrozen' | abpLocalization }}</span>
+            </button>
+            <button
+              type="button"
+              class="sidebar-pill-btn"
+              [class.active]="sidebarService.batchesCondition() === StorageConditionType.Dry"
+              (click)="setCondition(StorageConditionType.Dry)"
+            >
+              <i class="fas fa-box text-amber me-1"></i>
+              <span>{{ '::StorageConditionDry' | abpLocalization }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- BỘ LỌC TRẠNG THÁI HẠN DÙNG LÔ HÀNG -->
+        <div class="sidebar-filter-group">
+          <div class="filter-group-title">
+            <i class="fas fa-tag me-1 text-primary-orange"></i>
+            {{ '::KeeperBatchStatus' | abpLocalization }}
+          </div>
+          <div class="filter-pills-column">
+            <button
+              type="button"
+              class="sidebar-pill-btn"
+              [class.active]="sidebarService.batchesStatus() === BatchStatusFilterType.All"
+              (click)="setStatus(BatchStatusFilterType.All)"
+            >
+              <span>{{ '::BatchStatusAll' | abpLocalization }}</span>
+            </button>
+            <button
+              type="button"
+              class="sidebar-pill-btn"
+              [class.active]="sidebarService.batchesStatus() === BatchStatusFilterType.InUse"
+              (click)="setStatus(BatchStatusFilterType.InUse)"
+            >
+              <i class="fas fa-check-circle text-success me-1"></i>
+              <span>{{ '::BatchStatusInUse' | abpLocalization }}</span>
+            </button>
+            <button
+              type="button"
+              class="sidebar-pill-btn"
+              [class.active]="sidebarService.batchesStatus() === BatchStatusFilterType.ExpiringSoon"
+              (click)="setStatus(BatchStatusFilterType.ExpiringSoon)"
+            >
+              <i class="fas fa-hourglass-half text-amber me-1"></i>
+              <span>{{ '::BatchStatusExpiringSoon' | abpLocalization }}</span>
+            </button>
+            <button
+              type="button"
+              class="sidebar-pill-btn"
+              [class.active]="sidebarService.batchesStatus() === BatchStatusFilterType.Expired"
+              (click)="setStatus(BatchStatusFilterType.Expired)"
+            >
+              <i class="fas fa-ban text-red me-1"></i>
+              <span>{{ '::BatchStatusExpired' | abpLocalization }}</span>
+            </button>
+            <button
+              type="button"
+              class="sidebar-pill-btn"
+              [class.active]="sidebarService.batchesStatus() === BatchStatusFilterType.Deactivated"
+              (click)="setStatus(BatchStatusFilterType.Deactivated)"
+            >
+              <i class="fas fa-lock text-muted me-1"></i>
+              <span>{{ '::BatchStatusDeactivated' | abpLocalization }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- 3. SIDEBAR CHO TAB NHẬT KÝ BIẾN ĐỘNG & KIỂM KÊ / TRANSACTIONS -->
+    @case ('transactions') {
+      <div class="transactions-sidebar-panel">
+        <!-- Ô TÌM KIẾM GIAO DỊCH TRÊN SIDEBAR KÈM CTRL + K -->
+        <div class="sidebar-search-block mb-2">
+          <label class="form-label fw-bold small text-muted d-flex align-items-center justify-content-between mb-1">
+            <span>{{ '::Search' | abpLocalization }}</span>
+            <span class="badge bg-light text-muted border">Ctrl + K</span>
+          </label>
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-white border-end-0">
+              <i class="fas fa-search text-muted"></i>
+            </span>
+            <input
+              #transactionsSearchInput
+              type="text"
+              class="form-control border-start-0 ps-0"
+              [placeholder]="'::KeeperSearchTransactionsPlaceholder' | abpLocalization"
+              [ngModel]="sidebarService.transactionsSearchQuery()"
+              (ngModelChange)="onTransactionsSearchInput($event)"
+            />
+            @if (sidebarService.transactionsSearchQuery()) {
+              <button
+                type="button"
+                class="btn btn-outline-secondary border-start-0"
+                (click)="clearTransactionsSearch()"
+                [title]="'::ClearSearch' | abpLocalization"
+              >
+                <i class="fas fa-times"></i>
+              </button>
+            }
+          </div>
+        </div>
+
+        <!-- CHỌN NGUYÊN LIỆU ĐỂ XEM NHẬT KÝ (CUSTOM SEARCHABLE DROPDOWN) -->
+        <div class="sidebar-filter-group mb-2">
+          <div class="filter-group-title d-flex align-items-center justify-content-between mb-1">
+            <span>
+              <i class="fas fa-wheat-awn me-1 text-primary-orange"></i>
+              {{ '::SelectIngredient' | abpLocalization }}
+            </span>
+            <span class="badge bg-light text-muted">{{ sidebarService.ingredients().length }}</span>
+          </div>
+
+          <div class="ingredient-custom-dropdown" (click)="$event.stopPropagation()">
+            <!-- Trigger button hiển thị nguyên liệu đang chọn -->
+            <button
+              type="button"
+              class="ingredient-dropdown-trigger"
+              [class.open]="sidebarService.isIngredientDropdownOpen()"
+              (click)="toggleIngredientDropdown($event)"
+            >
+              <div class="trigger-info">
+                @if (sidebarService.selectedIngredient()) {
+                  <div class="d-flex align-items-center justify-content-between gap-1 w-100">
+                    <span class="ingredient-name text-truncate">{{ sidebarService.selectedIngredient()?.name }}</span>
+                    <span class="stock-pill flex-shrink-0">
+                      {{ sidebarService.selectedIngredient()?.currentStock }} {{ sidebarService.selectedIngredient()?.baseUnit || '' }}
+                    </span>
+                  </div>
+                  <span class="ingredient-code">{{ sidebarService.selectedIngredient()?.code }}</span>
+                } @else {
+                  <span class="ingredient-placeholder">{{ '::SelectIngredient' | abpLocalization }}</span>
+                }
+              </div>
+              <i class="fas fa-chevron-down trigger-chevron" [class.rotated]="sidebarService.isIngredientDropdownOpen()"></i>
+            </button>
+
+            <!-- Popup Menu Dropdown tìm kiếm & danh sách lựa chọn -->
+            @if (sidebarService.isIngredientDropdownOpen()) {
+              <div class="ingredient-dropdown-menu shadow-lg">
+                <!-- Ô tìm kiếm nhanh ngay trong popup -->
+                <div class="dropdown-search-header">
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white border-end-0 py-1">
+                      <i class="fas fa-search small text-muted"></i>
+                    </span>
+                    <input
+                      #ingredientSearchInput
+                      type="text"
+                      class="form-control form-control-sm border-start-0 ps-0 py-1"
+                      [placeholder]="'::FilterIngredientPlaceholder' | abpLocalization"
+                      [ngModel]="sidebarService.ingredientSearchText()"
+                      (ngModelChange)="onIngredientSearchInput($event)"
+                    />
+                    @if (sidebarService.ingredientSearchText()) {
+                      <button
+                        type="button"
+                        class="btn btn-outline-secondary border-start-0 py-1"
+                        (click)="clearIngredientSearch($event)"
+                      >
+                        <i class="fas fa-times small"></i>
+                      </button>
+                    }
+                  </div>
+                </div>
+
+                <!-- Danh sách các nguyên liệu cuộn mượt -->
+                <div class="dropdown-options-list">
+                  @for (ing of sidebarService.filteredIngredients(); track ing.id) {
+                    <div
+                      class="dropdown-option-item"
+                      [class.selected]="ing.id === sidebarService.selectedIngredientId()"
+                      (click)="selectIngredient(ing, $event)"
+                    >
+                      <div class="option-main">
+                        <span class="option-name text-truncate">{{ ing.name }}</span>
+                        <span class="option-code">{{ ing.code }}</span>
+                      </div>
+                      <div class="option-meta">
+                        <span class="option-stock" [class.stock-zero]="(ing.currentStock || 0) <= 0">
+                          {{ ing.currentStock || 0 }} {{ ing.baseUnit || '' }}
+                        </span>
+                        @if (ing.id === sidebarService.selectedIngredientId()) {
+                          <i class="fas fa-check option-check text-primary-orange ms-1"></i>
+                        }
+                      </div>
+                    </div>
+                  }
+                  @if (sidebarService.filteredIngredients().length === 0) {
+                    <div class="dropdown-empty-state">
+                      <i class="fas fa-circle-question text-muted mb-1"></i>
+                      <span>{{ '::NoIngredientMatches' | abpLocalization }}</span>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- BỘ LỌC LOẠI BIẾN ĐỘNG -->
+        <div class="sidebar-filter-group">
+          <div class="filter-group-title">
+            <i class="fas fa-filter me-1 text-primary-orange"></i>
+            {{ '::TransactionType' | abpLocalization }}
+          </div>
+          <div class="filter-pills-column">
+            <button
+              type="button"
+              class="sidebar-pill-btn"
+              [class.active]="sidebarService.transactionsTypeFilter() === null"
+              (click)="setTypeFilter(null)"
+            >
+              <span>{{ '::All' | abpLocalization }}</span>
+            </button>
+            <button
+              type="button"
+              class="sidebar-pill-btn"
+              [class.active]="sidebarService.transactionsTypeFilter() === 1"
+              (click)="setTypeFilter(1)"
+            >
+              <i class="fas fa-arrow-down text-emerald me-1"></i>
+              <span>{{ '::TransactionTypeIn' | abpLocalization }}</span>
+            </button>
+            <button
+              type="button"
+              class="sidebar-pill-btn"
+              [class.active]="sidebarService.transactionsTypeFilter() === 2"
+              (click)="setTypeFilter(2)"
+            >
+              <i class="fas fa-arrow-up text-rose me-1"></i>
+              <span>{{ '::TransactionTypeOut' | abpLocalization }}</span>
+            </button>
+            <button
+              type="button"
+              class="sidebar-pill-btn"
+              [class.active]="sidebarService.transactionsTypeFilter() === 3"
+              (click)="setTypeFilter(3)"
+            >
+              <i class="fas fa-sliders text-amber me-1"></i>
+              <span>{{ '::TransactionTypeAudit' | abpLocalization }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+  }
+}

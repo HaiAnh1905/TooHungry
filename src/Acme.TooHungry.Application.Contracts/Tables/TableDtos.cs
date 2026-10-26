@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel.DataAnnotations;
 using Volo.Abp.Application.Dtos;
 
 namespace Acme.TooHungry.Tables;
@@ -36,24 +37,17 @@ public class TableDto : FullAuditedEntityDto<Guid>
 
 public class CreateUpdateTableDto
 {
+    [Required]
+    [StringLength(128)]
     public string Name { get; set; } = string.Empty;
 
+    [Range(1, 100)]
     public int Capacity { get; set; } = 4;
-
-    public TableStatus Status { get; set; } = TableStatus.Available;
 
     public Guid? DiningAreaId { get; set; }
 
+    [StringLength(128)]
     public string? Location { get; set; }
-
-    // Reservation info
-    public string? ReservedCustomerName { get; set; }
-    public string? ReservedCustomerPhone { get; set; }
-    public DateTime? ReservedTime { get; set; }
-    public int? ReservedGuestCount { get; set; }
-    public string? ReservedNote { get; set; }
-
-    public DateTime? OccupiedTime { get; set; }
 }
 
 public class GetTablesInput : PagedAndSortedResultRequestDto

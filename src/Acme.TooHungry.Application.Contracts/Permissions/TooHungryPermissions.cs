@@ -102,62 +102,6 @@ public static class TooHungryPermissions
         public const string Delete = Default + ".Delete";
     }
 
-    public static class UnitConversions
-    {
-        public const string Default = GroupName + ".UnitConversions";
-        public const string Create = Default + ".Create";
-        public const string Edit = Default + ".Edit";
-        public const string Delete = Default + ".Delete";
-    }
-
-    public static class Receivings
-    {
-        public const string Default = GroupName + ".Receivings";
-        public const string Create = Default + ".Create";
-        public const string Edit = Default + ".Edit";
-        public const string Delete = Default + ".Delete";
-    }
-
-    public static class StockAdjustments
-    {
-        public const string Default = GroupName + ".StockAdjustments";
-        public const string Create = Default + ".Create";
-        public const string Edit = Default + ".Edit";
-        public const string Delete = Default + ".Delete";
-    }
-
-    public static class Wastes
-    {
-        public const string Default = GroupName + ".Wastes";
-        public const string Create = Default + ".Create";
-        public const string Edit = Default + ".Edit";
-        public const string Delete = Default + ".Delete";
-    }
-
-    public static class Stocktakings
-    {
-        public const string Default = GroupName + ".Stocktakings";
-        public const string Create = Default + ".Create";
-        public const string Edit = Default + ".Edit";
-        public const string Delete = Default + ".Delete";
-    }
-
-    public static class Bills
-    {
-        public const string Default = GroupName + ".Bills";
-        public const string Create = Default + ".Create";
-        public const string Edit = Default + ".Edit";
-        public const string Delete = Default + ".Delete";
-    }
-
-    public static class Payments
-    {
-        public const string Default = GroupName + ".Payments";
-        public const string Create = Default + ".Create";
-        public const string Edit = Default + ".Edit";
-        public const string Delete = Default + ".Delete";
-    }
-
     public static class Forecasts
     {
         public const string Default = GroupName + ".Forecasts";

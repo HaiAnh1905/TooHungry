@@ -1,0 +1,242 @@
+<div class="transaction-tab-container">
+  <!-- Toolbar: Chọn Nguyên liệu tra cứu & Bộ lọc loại giao dịch -->
+  <div class="bento-filter-card">
+    <div class="row g-2 align-items-center">
+      <!-- Ingredient Select -->
+      <div class="col-12 col-md-5">
+        <label class="form-label fw-semibold small text-slate-700 mb-1">
+          <i class="fa fa-filter me-1 text-orange"></i>
+          {{ '::SelectIngredientPrompt' | abpLocalization }}
+        </label>
+        <app-custom-select
+          class="w-100 d-block"
+          [options]="ingredientSelectOptions"
+          [ngModel]="selectedIngredientId"
+          (selectionChange)="onIngredientSelect($event)"
+          [placeholder]="'::SelectIngredientPrompt' | abpLocalization"
+          leadIcon="fa-box"
+          minWidth="100%"
+          maxHeight="320px"
+          [searchable]="true"
+          [searchPlaceholder]="'::SearchIngredientPrompt' | abpLocalization"
+        ></app-custom-select>
+      </div>
+
+      <!-- Transaction Type Filter -->
+      <div class="col-12 col-sm-6 col-md-4">
+        <label class="form-label fw-semibold small text-slate-700 mb-1">
+          <i class="fa fa-layer-group me-1 text-slate-500"></i>
+          {{ '::TransactionTypeHeader' | abpLocalization }}
+        </label>
+        <app-custom-select
+          class="w-100 d-block"
+          [options]="transactionTypeOptions"
+          [ngModel]="selectedTypeFilter"
+          (selectionChange)="onTypeFilterSelect($event)"
+          leadIcon="fa-list-check"
+          minWidth="100%"
+        ></app-custom-select>
+      </div>
+
+      <!-- Action: Điều chỉnh kiểm kê kho -->
+      <div class="col-12 col-sm-6 col-md-3 d-flex align-items-end justify-content-end">
+        <button
+          type="button"
+          class="btn btn-orange btn-stock-adjust w-100"
+          (click)="openStockAdjustment.emit()"
+        >
+          <i class="fa fa-sliders me-1"></i>
+          <span>{{ '::AdjustStock' | abpLocalization }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bento Table: Nhật ký biến động -->
+  <div class="bento-table-card">
+    <div class="table-responsive">
+      <table class="table align-middle table-hover mb-0">
+        <thead class="bento-thead">
+          <tr>
+            <th class="ps-4">{{ '::TransactionDateHeader' | abpLocalization }}</th>
+            <th>{{ '::TransactionTypeHeader' | abpLocalization }}</th>
+            <th class="text-end">{{ '::QuantityChangeHeader' | abpLocalization }}</th>
+            <th>{{ '::BatchCode' | abpLocalization }}</th>
+            <th class="text-end">{{ '::UnitCostHeader' | abpLocalization }}</th>
+            <th>{{ '::ReasonHeader' | abpLocalization }}</th>
+            <th class="pe-4">{{ '::ReferenceCodeHeader' | abpLocalization }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (isLoading) {
+            <tr>
+              <td colspan="7" class="text-center py-5">
+                <div class="spinner-border text-orange" role="status"></div>
+              </td>
+            </tr>
+          } @else if (!selectedIngredientId) {
+            <tr>
+              <td colspan="7" class="text-center py-5 text-muted">
+                <div class="empty-state">
+                  <i class="fa fa-hand-pointer fa-2x mb-2 text-slate-300"></i>
+                  <p class="m-0">{{ '::SelectIngredientPrompt' | abpLocalization }}</p>
+                </div>
+              </td>
+            </tr>
+          } @else if (filteredTransactions.length === 0) {
+            <tr>
+              <td colspan="7" class="text-center py-5 text-muted">
+                <div class="empty-state">
+                  <i class="fa fa-clock-rotate-left fa-2x mb-2 text-slate-300"></i>
+                  <p class="m-0">{{ '::NoTransactionsFound' | abpLocalization }}</p>
+                </div>
+              </td>
+            </tr>
+          } @else {
+            @for (tx of pagedTransactions; track tx.id) {
+              <tr>
+                <td class="ps-4 small text-muted font-monospace">
+                  {{ tx.creationTime | date:'dd/MM/yyyy HH:mm:ss' }}
+                </td>
+                <td>
+                  @switch (tx.transactionType ?? tx.type) {
+                    @case (TransactionTypeEnum.IN) {
+                      <span class="tx-badge tx-in">
+                        <i class="fa fa-arrow-down me-1"></i>{{ '::TransactionType:In' | abpLocalization }}
+                      </span>
+                    }
+                    @case (TransactionTypeEnum.OUT) {
+                      <span class="tx-badge tx-out">
+                        <i class="fa fa-arrow-up me-1"></i>{{ '::TransactionType:Out' | abpLocalization }}
+                      </span>
+                    }
+                    @case (TransactionTypeEnum.ADJUSTMENT_IN) {
+                      <span class="tx-badge tx-adj-in">
+                        <i class="fa fa-plus me-1"></i>{{ '::TransactionType:AdjIn' | abpLocalization }}
+                      </span>
+                    }
+                    @case (TransactionTypeEnum.ADJUSTMENT_OUT) {
+                      @if (isDiscardTransaction(tx)) {
+                        <span class="tx-badge tx-discard">
+                          <i class="fa fa-trash-can me-1"></i>{{ '::TransactionType:Discard' | abpLocalization }}
+                        </span>
+                      } @else {
+                        <span class="tx-badge tx-adj-out">
+                          <i class="fa fa-minus me-1"></i>{{ '::TransactionType:AdjOut' | abpLocalization }}
+                        </span>
+                      }
+                    }
+                    @default {
+                      <span class="tx-badge tx-default">
+                        {{ tx.transactionType ?? tx.type }}
+                      </span>
+                    }
+                  }
+                </td>
+                <td class="text-end font-monospace fw-bold fs-6">
+                  @if ((tx.transactionType ?? tx.type) === TransactionTypeEnum.IN || (tx.transactionType ?? tx.type) === TransactionTypeEnum.ADJUSTMENT_IN) {
+                    <span class="text-emerald-600">+{{ tx.quantity | number:'1.0-2' }}</span>
+                  } @else {
+                    <span class="text-rose-600">-{{ tx.quantity | number:'1.0-2' }}</span>
+                  }
+                </td>
+                <td>
+                  @if (tx.batchCode) {
+                    <span class="badge bg-light text-slate-800 border font-monospace">
+                      {{ tx.batchCode }}
+                    </span>
+                  } @else {
+                    <span class="text-muted small">—</span>
+                  }
+                </td>
+                <td class="text-end font-monospace text-slate-700">
+                  {{ tx.unitCost ? (tx.unitCost | number:'1.0-0') + ' ₫' : '—' }}
+                </td>
+                <td class="small text-dark">
+                  {{ tx.reason || '—' }}
+                </td>
+                <td class="pe-4 small text-muted font-monospace">
+                  {{ tx.referenceId ? ('#' + tx.referenceId) : '—' }}
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Phân trang chuẩn Bento -->
+    @if (!isLoading && filteredTransactions.length > 0) {
+      <div class="bento-pagination-bar">
+        <div class="pagination-info">
+          <span>
+            {{ '::ShowingRecords' | abpLocalization }}
+            <strong>{{ fromRecord }} - {{ toRecord }}</strong>
+            {{ '::OfTotal' | abpLocalization }}
+            <strong>{{ filteredTransactions.length }}</strong>
+            {{ '::TransactionsUnit' | abpLocalization }}
+          </span>
+
+          <div class="page-size-selector">
+            <span class="text-muted small">{{ '::Display' | abpLocalization }}:</span>
+            <app-custom-select
+              [options]="pageSizeOptions"
+              [ngModel]="pageSize"
+              (selectionChange)="onPageSizeChange($event)"
+              size="sm"
+              placement="top"
+              minWidth="140px"
+            ></app-custom-select>
+          </div>
+        </div>
+
+        <div class="pagination-nav-group">
+          <button
+            type="button"
+            class="btn-page-nav"
+            [disabled]="currentPage === 1"
+            (click)="onPageChange(1)"
+            [title]="'::FirstPage' | abpLocalization"
+          >
+            <i class="fa fa-angle-double-left"></i>
+          </button>
+
+          <button
+            type="button"
+            class="btn-page-nav btn-text-nav"
+            [disabled]="currentPage === 1"
+            (click)="onPageChange(currentPage - 1)"
+          >
+            <i class="fa fa-angle-left me-1"></i>
+            <span>{{ '::PreviousPage' | abpLocalization }}</span>
+          </button>
+
+          <span class="page-current-indicator">
+            {{ '::Page' | abpLocalization }}
+            <strong>{{ currentPage }}</strong> / {{ totalPages }}
+          </span>
+
+          <button
+            type="button"
+            class="btn-page-nav btn-text-nav"
+            [disabled]="currentPage === totalPages"
+            (click)="onPageChange(currentPage + 1)"
+          >
+            <span>{{ '::NextPage' | abpLocalization }}</span>
+            <i class="fa fa-angle-right ms-1"></i>
+          </button>
+
+          <button
+            type="button"
+            class="btn-page-nav"
+            [disabled]="currentPage === totalPages"
+            (click)="onPageChange(totalPages)"
+            [title]="'::LastPage' | abpLocalization"
+          >
+            <i class="fa fa-angle-double-right"></i>
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+</div>

@@ -99,9 +99,8 @@ public abstract class TableReservationAppService_Update_Tests<TStartupModule> : 
         updated.Note.ShouldBe("Thêm ghế trẻ em");
 
         var tableInDb = await _tableRepository.GetAsync(table.Id);
-        tableInDb.ReservedCustomerName.ShouldBe("Khách Đã Đổi");
-        tableInDb.ReservedCustomerPhone.ShouldBe("0988888888");
-        tableInDb.ReservedGuestCount.ShouldBe(5);
-        tableInDb.ReservedNote.ShouldBe("Thêm ghế trẻ em");
+        // Khi dời giờ đặt sang 2 ngày sau (> 60 phút), bàn ăn được giải phóng về Available và xóa thông tin giữ bàn
+        tableInDb.Status.ShouldBe(TableStatus.Available);
+        tableInDb.ReservedCustomerName.ShouldBeNull();
     }
 }

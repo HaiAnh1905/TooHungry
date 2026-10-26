@@ -35,6 +35,7 @@ public class RecipeController : TooHungryController
     }
 
     [HttpGet("by-dish/{dishId:guid}")]
+    [Authorize(TooHungryPermissions.Recipes.Default)]
     public virtual Task<RecipeDto?> GetActiveByDishIdAsync(Guid dishId)
     {
         return _recipeAppService.GetActiveByDishIdAsync(dishId);

@@ -9,5 +9,16 @@
   </head>
   <body>
     <app-root></app-root>
+    <script>
+      // Đảm bảo nút trên màn hình lỗi luôn tải lại trang và kết nối lại backend
+      document.addEventListener('click', function (e) {
+        var btn = e.target && e.target.closest('#abp-http-error-container .error-actions a, #abp-http-error-container .btn-primary');
+        if (btn) {
+          e.preventDefault();
+          e.stopPropagation();
+          window.location.href = '/';
+        }
+      });
+    </script>
   </body>
 </html>

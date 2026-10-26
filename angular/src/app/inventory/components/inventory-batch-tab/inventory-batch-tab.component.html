@@ -1,0 +1,350 @@
+<div class="batch-tab-container">
+  <!-- Toolbar: Tìm kiếm & Bộ lọc Lô hàng -->
+  <div class="bento-filter-card">
+    <div class="row g-2 align-items-center">
+      <!-- Search Input -->
+      <div class="col-12 col-md-4">
+        <div class="modern-search-box">
+          <i class="fa fa-search search-icon"></i>
+          <input
+            type="text"
+            class="form-control"
+            [ngModel]="searchQuery"
+            (ngModelChange)="onSearchChange($event)"
+            [placeholder]="'::SearchBatchPlaceholder' | abpLocalization"
+          />
+          @if (searchQuery) {
+            <button
+              type="button"
+              class="btn-clear-search"
+              (click)="onSearchChange('')"
+            >
+              <i class="fa fa-times-circle"></i>
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- FEFO Status Filter -->
+      <div class="col-6 col-md-2">
+        <app-custom-select
+          class="w-100 d-block"
+          [options]="fefoStatusOptions"
+          [ngModel]="statusFilter"
+          (selectionChange)="onStatusChange($event)"
+          leadIcon="fa-list-check"
+          minWidth="100%"
+        ></app-custom-select>
+      </div>
+
+      <!-- Active / Locked Status Filter (RM-013) -->
+      <div class="col-6 col-md-2">
+        <app-custom-select
+          class="w-100 d-block"
+          [options]="activeFilterOptions"
+          [ngModel]="activeFilter"
+          (selectionChange)="onActiveFilterChange($event)"
+          leadIcon="fa-lock"
+          minWidth="100%"
+        ></app-custom-select>
+      </div>
+
+      <!-- Sort Direction -->
+      <div class="col-6 col-md-2">
+        <app-custom-select
+          class="w-100 d-block"
+          [options]="sortDirectionOptions"
+          [ngModel]="sortDirection"
+          (selectionChange)="onSortChange($event)"
+          [leadIcon]="sortDirection === 'oldest' ? 'fa-arrow-up-wide-short' : 'fa-arrow-down-wide-short'"
+          minWidth="100%"
+        ></app-custom-select>
+      </div>
+
+      <!-- Actions & Reset -->
+      <div class="col-6 col-md-2 d-flex align-items-center justify-content-end gap-2">
+        @if (hasActiveFilters) {
+          <button
+            type="button"
+            class="btn btn-outline-secondary btn-reset-filter"
+            (click)="resetFilters()"
+            [title]="'::ResetFilter' | abpLocalization"
+          >
+            <i class="fa fa-rotate-left"></i>
+          </button>
+        }
+        <button
+          *abpPermission="'TooHungry.Inventories.Batch'"
+          type="button"
+          class="btn btn-orange btn-inbound-batch flex-grow-1"
+          (click)="openCreateBatch.emit()"
+        >
+          <i class="fa fa-truck-ramp-box me-1"></i>
+          <span>{{ '::InboundBatchAction' | abpLocalization }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bento Table: Danh sách Lô hàng -->
+  <div class="bento-table-card">
+    <div
+      class="table-responsive drag-scroll-container"
+      #tableContainer
+      [class.is-dragging]="isDragging"
+      (mousedown)="onTableMouseDown($event, tableContainer)"
+      (mousemove)="onTableMouseMove($event, tableContainer)"
+      (mouseup)="onTableMouseUp()"
+      (mouseleave)="onTableMouseLeave()"
+    >
+      <table class="table align-middle table-hover mb-0">
+        <thead class="bento-thead">
+          <tr>
+            <th class="ps-4 batch-code-col">{{ '::BatchCode' | abpLocalization }}</th>
+            <th class="ingredient-name-col">{{ '::Ingredient' | abpLocalization }}</th>
+            <th class="storage-type-col">{{ '::StorageType' | abpLocalization }}</th>
+            <th class="received-date-col">{{ '::ReceivedDate' | abpLocalization }}</th>
+            <th class="expiry-date-col">{{ '::ExpiryDate' | abpLocalization }} (FEFO)</th>
+            <th class="shelf-life-col">{{ '::ShelfLifeTimeline' | abpLocalization }}</th>
+            <th class="remaining-col text-end">{{ '::RemainingQuantity' | abpLocalization }}</th>
+            <th class="unit-price-col text-end">{{ '::UnitPrice' | abpLocalization }}</th>
+            <th class="batch-status-col">{{ '::BatchStatus' | abpLocalization }}</th>
+            <th class="actions-col pe-4 text-center">{{ '::Actions' | abpLocalization }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (isLoading) {
+            <tr>
+              <td colspan="10" class="text-center py-5">
+                <div class="spinner-border text-orange" role="status"></div>
+              </td>
+            </tr>
+          } @else if (filteredBatches.length === 0) {
+            <tr>
+              <td colspan="10" class="text-center py-5 text-muted">
+                <div class="empty-state">
+                  <i class="fa fa-boxes-stacked fa-2x mb-2 text-slate-300"></i>
+                  <p class="m-0">{{ '::NoBatchesFound' | abpLocalization }}</p>
+                </div>
+              </td>
+            </tr>
+          } @else {
+            @for (batch of pagedBatches; track batch.id) {
+              <tr [class.highlighted-row]="highlightedBatchId === batch.id || (highlightedBatchCode && batch.batchCode === highlightedBatchCode)">
+                <td class="ps-4 batch-code-col">
+                  <span class="batch-code-badge font-monospace">
+                    {{ batch.batchCode }}
+                  </span>
+                </td>
+                <td class="ingredient-name-col">
+                  <span class="fw-bold text-dark d-block ingredient-name-text">{{ batch.ingredientName }}</span>
+                </td>
+                <td class="storage-type-col">
+                  @if (batch.storageType === StorageTypeEnum.FRESH) {
+                    <span class="storage-tag storage-fresh">
+                      <i class="fa fa-leaf me-1"></i>{{ '::StorageType_FRESH' | abpLocalization }}
+                    </span>
+                  } @else if (batch.storageType === StorageTypeEnum.SHORT_TERM) {
+                    <span class="storage-tag storage-chilled">
+                      <i class="fa fa-snowflake me-1"></i>{{ '::StorageType_SHORT_TERM' | abpLocalization }}
+                    </span>
+                  } @else {
+                    <span class="storage-tag storage-frozen">
+                      <i class="fa fa-box-archive me-1"></i>{{ '::StorageType_LONG_TERM' | abpLocalization }}
+                    </span>
+                  }
+                </td>
+                <td class="received-date-col small text-muted font-monospace">
+                  {{ batch.inboundDate ? (batch.inboundDate | date:'dd/MM/yyyy') : '—' }}
+                </td>
+                <td class="expiry-date-col">
+                  <div class="expiry-cell">
+                    <span class="font-monospace small fw-semibold">
+                      {{ batch.expirationDate ? (batch.expirationDate | date:'dd/MM/yyyy') : ('::NoExpiry' | abpLocalization) }}
+                    </span>
+                    @if (batch.expirationDate) {
+                      @if (batch.daysRemaining < 0) {
+                        <span class="countdown-text text-danger">
+                          {{ '::DashboardInventory:ExpiredDaysAgo' | abpLocalization: (Math.abs(batch.daysRemaining) + '') }}
+                        </span>
+                      } @else if (batch.daysRemaining === 0) {
+                        <span class="countdown-text text-danger fw-bold">
+                          {{ '::ExpiresToday' | abpLocalization }}
+                        </span>
+                      } @else if (batch.daysRemaining <= 7) {
+                        <span class="countdown-text text-amber-600">
+                          {{ '::DashboardInventory:DaysRemaining' | abpLocalization: (batch.daysRemaining + '') }}
+                        </span>
+                      } @else {
+                        <span class="countdown-text text-muted">
+                          {{ '::DashboardInventory:DaysRemaining' | abpLocalization: (batch.daysRemaining + '') }}
+                        </span>
+                      }
+                    }
+                  </div>
+                </td>
+                <td class="shelf-life-col">
+                  <!-- Timeline mini progress bar -->
+                  <div class="timeline-bar-wrap">
+                    <div class="timeline-track">
+                      <div
+                        class="timeline-fill"
+                        [ngClass]="'timeline-' + batch.fefoStatus.toLowerCase()"
+                        [style.width.%]="batch.elapsedPercentage || 0"
+                      ></div>
+                    </div>
+                  </div>
+                </td>
+                <td
+                  class="remaining-col text-end font-monospace"
+                  [title]="('::InitialQuantity' | abpLocalization) + ': ' + batch.initialQuantity + ' ' + batch.unitName"
+                >
+                  <span class="fw-bold fs-6" [class.text-danger]="batch.remainingQuantity <= 0">
+                    {{ batch.remainingQuantity }}
+                  </span>
+                  <span class="text-muted small ms-1">{{ batch.unitName }}</span>
+                </td>
+                <td class="unit-price-col text-end font-monospace text-slate-700">
+                  {{ batch.unitPrice ? (batch.unitPrice | number:'1.0-0') + ' ₫' : '—' }}
+                </td>
+                <td class="batch-status-col">
+                  @if (!batch.isActive) {
+                    <span class="fefo-badge badge-locked" [title]="batch.deactivationReason || ('::StatusSuspended' | abpLocalization)">
+                      <i class="fa fa-lock me-1"></i>{{ '::StatusSuspended' | abpLocalization }}
+                    </span>
+                  } @else if (batch.fefoStatus === BatchFefoStatusEnum.Expired) {
+                    <span class="fefo-badge badge-expired">
+                      <i class="fa fa-triangle-exclamation me-1"></i>{{ '::BatchExpired' | abpLocalization }}
+                    </span>
+                  } @else if (batch.fefoStatus === BatchFefoStatusEnum.ExpiringSoon) {
+                    <span class="fefo-badge badge-expiring">
+                      <i class="fa fa-clock-rotate-left me-1"></i>{{ '::BatchExpiringSoon' | abpLocalization }}
+                    </span>
+                  } @else {
+                    <span class="fefo-badge badge-safe">
+                      <i class="fa fa-shield-halved me-1"></i>{{ '::BatchSafe' | abpLocalization }}
+                    </span>
+                  }
+                </td>
+                <td class="actions-col pe-4 text-center">
+                  <div class="action-buttons-group">
+                    @if (!batch.isActive) {
+                      <!-- Mở khóa lô (RM-013) -->
+                      <button
+                        *abpPermission="'TooHungry.Inventories.DeactivateBatch'"
+                        type="button"
+                        class="btn-row-action btn-unlock"
+                        (click)="unlockBatch.emit(batch)"
+                        [title]="'::ActionReactivateBatch' | abpLocalization"
+                      >
+                        <i class="fa fa-lock-open"></i>
+                      </button>
+                    } @else if (batch.remainingQuantity > 0) {
+                      <!-- Khóa lô (RM-013) -->
+                      <button
+                        *abpPermission="'TooHungry.Inventories.DeactivateBatch'"
+                        type="button"
+                        class="btn-row-action btn-lock"
+                        (click)="lockBatch.emit(batch)"
+                        [title]="'::ActionDeactivateBatch' | abpLocalization"
+                      >
+                        <i class="fa fa-lock"></i>
+                      </button>
+
+                      <!-- Xuất hủy lô (DISCARD) -->
+                      <button
+                        *abpPermission="'TooHungry.Inventories.Discard'"
+                        type="button"
+                        class="btn-row-action btn-discard"
+                        (click)="discardBatch.emit(batch)"
+                        [title]="'::DiscardBatchAction' | abpLocalization"
+                      >
+                        <i class="fa fa-ban"></i>
+                      </button>
+                    } @else {
+                      <span class="text-muted small">—</span>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Phân trang chuẩn Bento -->
+    @if (!isLoading && filteredBatches.length > 0) {
+      <div class="bento-pagination-bar">
+        <div class="pagination-info">
+          <span>
+            {{ '::ShowingRecords' | abpLocalization }}
+            <strong>{{ fromRecord }} - {{ toRecord }}</strong>
+            {{ '::OfTotal' | abpLocalization }}
+            <strong>{{ filteredBatches.length }}</strong>
+            {{ '::BatchCount' | abpLocalization }}
+          </span>
+
+          <div class="page-size-selector">
+            <span class="text-muted small">{{ '::Display' | abpLocalization }}:</span>
+            <app-custom-select
+              [options]="pageSizeOptions"
+              [ngModel]="pageSize"
+              (selectionChange)="onPageSizeChange($event)"
+              size="sm"
+              placement="top"
+              minWidth="140px"
+            ></app-custom-select>
+          </div>
+        </div>
+
+        <div class="pagination-nav-group">
+          <button
+            type="button"
+            class="btn-page-nav"
+            [disabled]="currentPage === 1"
+            (click)="onPageChange(1)"
+            [title]="'::FirstPage' | abpLocalization"
+          >
+            <i class="fa fa-angle-double-left"></i>
+          </button>
+
+          <button
+            type="button"
+            class="btn-page-nav btn-text-nav"
+            [disabled]="currentPage === 1"
+            (click)="onPageChange(currentPage - 1)"
+          >
+            <i class="fa fa-angle-left me-1"></i>
+            <span>{{ '::PreviousPage' | abpLocalization }}</span>
+          </button>
+
+          <span class="page-current-indicator">
+            {{ '::Page' | abpLocalization }}
+            <strong>{{ currentPage }}</strong> / {{ totalPages }}
+          </span>
+
+          <button
+            type="button"
+            class="btn-page-nav btn-text-nav"
+            [disabled]="currentPage === totalPages"
+            (click)="onPageChange(currentPage + 1)"
+          >
+            <span>{{ '::NextPage' | abpLocalization }}</span>
+            <i class="fa fa-angle-right ms-1"></i>
+          </button>
+
+          <button
+            type="button"
+            class="btn-page-nav"
+            [disabled]="currentPage === totalPages"
+            (click)="onPageChange(totalPages)"
+            [title]="'::LastPage' | abpLocalization"
+          >
+            <i class="fa fa-angle-double-right"></i>
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+</div>

@@ -14,18 +14,30 @@ import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { CoreModule, LocalizationService } from '@abp/ng.core';
 import { UserRoleNavigationService } from '../../services/user-role-navigation.service';
 
+export type SupportedErrorCode = 0 | 404 | 403 | 500 | 505;
+
 export interface ErrorPageConfig {
-  statusCode: 404 | 403 | 500 | 505;
+  statusCode: SupportedErrorCode;
   titleKey: string;
   descriptionKey: string;
   badgeText: string;
-  iconType: 'empty-table' | 'security-lock' | 'server-disconnect';
+  iconType: 'empty-table' | 'security-lock' | 'server-disconnect' | 'network-offline';
   showRetryButton: boolean;
   showBackButton: boolean;
   showTraceId: boolean;
 }
 
 export const ERROR_PAGE_CONFIGS: Record<number, ErrorPageConfig> = {
+  0: {
+    statusCode: 0,
+    titleKey: 'ErrorPages.0.Title',
+    descriptionKey: 'ErrorPages.0.Description',
+    badgeText: 'MẤT KẾT NỐI MÁY CHỦ (NETWORK ERROR)',
+    iconType: 'network-offline',
+    showRetryButton: true,
+    showBackButton: true,
+    showTraceId: true,
+  },
   404: {
     statusCode: 404,
     titleKey: 'ErrorPages.404.Title',
@@ -70,6 +82,8 @@ export const ERROR_PAGE_CONFIGS: Record<number, ErrorPageConfig> = {
 
 export const ERROR_PAGE_LOCALIZATION: Record<string, Record<string, string>> = {
   vi: {
+    'ErrorPages.0.Title': 'Không thể kết nối đến máy chủ',
+    'ErrorPages.0.Description': 'Hệ thống không thể kết nối tới máy chủ backend. Vui lòng kiểm tra lại dịch vụ API hoặc đường truyền mạng rồi thử lại.',
     'ErrorPages.404.Title': 'Không tìm thấy trang yêu cầu',
     'ErrorPages.404.Description': 'Đường dẫn bạn truy cập không tồn tại hoặc đã được chuyển sang địa chỉ mới trong nhà hàng.',
     'ErrorPages.403.Title': 'Truy cập bị từ chối',
@@ -97,6 +111,8 @@ export const ERROR_PAGE_LOCALIZATION: Record<string, Record<string, string>> = {
     'ErrorPages.TraceIdLabel': 'Mã tham chiếu lỗi',
   },
   en: {
+    'ErrorPages.0.Title': 'Cannot Connect to Server',
+    'ErrorPages.0.Description': 'The system cannot reach the backend server. Please verify that the backend API service is running and try again.',
     'ErrorPages.404.Title': 'Page Not Found',
     'ErrorPages.404.Description': 'The requested link does not exist or has been relocated to a new address.',
     'ErrorPages.403.Title': 'Access Forbidden',
@@ -141,6 +157,10 @@ export class ErrorPageComponent implements OnInit, OnDestroy {
   readonly roleNavService = inject(UserRoleNavigationService);
 
   @Input() statusCodeInput?: number;
+  @Input() errorStatus?: number;
+  readonly status = signal<number | undefined>(undefined);
+  destroy$?: any;
+
   @Input() customTitle?: string;
   @Input() customMessage?: string;
   @Input() traceIdInput?: string;
@@ -165,12 +185,20 @@ export class ErrorPageComponent implements OnInit, OnDestroy {
   private timerInterval: any = null;
 
   ngOnInit(): void {
-    // 1. Phân giải mã trạng thái HTTP từ Input -> Route Data -> Route QueryParams -> 404
-    const resolvedStatus =
-      this.statusCodeInput ||
-      this.route.snapshot.data['status'] ||
-      Number(this.route.snapshot.queryParams['status']) ||
-      404;
+    // 1. Phân giải mã trạng thái HTTP (hỗ trợ cả 0, 403, 404, 500, 505)
+    let resolvedStatus: number = 404;
+
+    if (this.statusCodeInput !== undefined) {
+      resolvedStatus = Number(this.statusCodeInput);
+    } else if (this.errorStatus !== undefined) {
+      resolvedStatus = Number(this.errorStatus);
+    } else if (this.status() !== undefined) {
+      resolvedStatus = Number(this.status());
+    } else if (this.route?.snapshot?.data?.['status'] !== undefined) {
+      resolvedStatus = Number(this.route.snapshot.data['status']);
+    } else if (this.route?.snapshot?.queryParams?.['status'] !== undefined) {
+      resolvedStatus = Number(this.route.snapshot.queryParams['status']);
+    }
 
     const config = ERROR_PAGE_CONFIGS[resolvedStatus] || ERROR_PAGE_CONFIGS[404];
     this.activeConfig.set(config);
