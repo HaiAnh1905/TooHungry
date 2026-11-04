@@ -190,6 +190,12 @@ function configureRoutes() {
       invisible: true,
     },
     {
+      path: '/inventory-keeper/inventory',
+      name: '::Menu:InventoryKeeperInventory',
+      layout: eLayoutType.empty,
+      invisible: true,
+    },
+    {
       path: '/inventory-keeper/batches',
       name: '::Menu:InventoryKeeperBatches',
       layout: eLayoutType.empty,
@@ -204,6 +210,24 @@ function configureRoutes() {
     {
       path: '/keeper',
       name: '::Menu:KeeperAlias',
+      layout: eLayoutType.empty,
+      invisible: true,
+    },
+    {
+      path: '/cashier',
+      name: '::Menu:CashierPortal',
+      layout: eLayoutType.empty,
+      invisible: true,
+    },
+    {
+      path: '/cashier/tables',
+      name: '::Menu:CashierTables',
+      layout: eLayoutType.empty,
+      invisible: true,
+    },
+    {
+      path: '/cashier/orders',
+      name: '::Menu:CashierOrders',
       layout: eLayoutType.empty,
       invisible: true,
     },

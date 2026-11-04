@@ -177,6 +177,18 @@
               <option value="noRecipe">{{ '::NoRecipeWarning' | abpLocalization }}</option>
             </select>
           </div>
+
+          <div class="filter-select-group">
+            <select
+              class="toolbar-select toolbar-sort-select"
+              [(ngModel)]="dishSortBy"
+              (ngModelChange)="onDishSortChange()"
+              [title]="'::SortBy' | abpLocalization"
+            >
+              <option value="quantityDesc">{{ '::SortQuantityDesc' | abpLocalization }}</option>
+              <option value="quantityAsc">{{ '::SortQuantityAsc' | abpLocalization }}</option>
+            </select>
+          </div>
         </div>
 
         <div class="toolbar-right">
@@ -190,14 +202,38 @@
       <!-- Table -->
       <div class="table-responsive">
         <table class="detail-table">
+          <colgroup>
+            <col style="width: 50px;" />
+            <col style="width: 25%;" />
+            <col style="width: 130px;" />
+            <col style="width: 195px;" />
+            <col style="width: 150px;" />
+            <col style="width: 150px;" />
+            <col style="width: auto;" />
+          </colgroup>
           <thead>
             <tr>
-              <th style="width: 50px" class="text-center">#</th>
+              <th class="text-center">#</th>
               <th>{{ '::Dish' | abpLocalization }}</th>
-              <th style="width: 140px" class="text-end">{{ '::Price' | abpLocalization }}</th>
-              <th style="width: 160px" class="text-center">{{ '::ForecastQuantity' | abpLocalization }}</th>
-              <th style="width: 160px" class="text-end">{{ '::TotalPrice' | abpLocalization }}</th>
-              <th style="width: 150px" class="text-center">{{ '::Recipe' | abpLocalization }}</th>
+              <th class="text-end">{{ '::Price' | abpLocalization }}</th>
+              <th
+                class="text-center sortable-th active-sort"
+                (click)="toggleDishSort()"
+                [title]="'::ClickToSort' | abpLocalization"
+              >
+                <div class="th-content justify-content-center">
+                  <span>{{ '::ForecastQuantity' | abpLocalization }}</span>
+                  <i
+                    class="fas th-sort-icon"
+                    [ngClass]="{
+                      'fa-sort-down': dishSortBy === 'quantityDesc',
+                      'fa-sort-up': dishSortBy === 'quantityAsc'
+                    }"
+                  ></i>
+                </div>
+              </th>
+              <th class="text-end">{{ '::TotalPrice' | abpLocalization }}</th>
+              <th class="text-center">{{ '::Recipe' | abpLocalization }}</th>
               <th>{{ '::OrderNote' | abpLocalization }}</th>
             </tr>
           </thead>
@@ -371,16 +407,26 @@
       <!-- Table -->
       <div class="table-responsive">
         <table class="detail-table">
+          <colgroup>
+            <col style="width: 55px;" />
+            <col style="width: 25%;" />
+            <col style="width: 110px;" />
+            <col style="width: 140px;" />
+            <col style="width: 140px;" />
+            <col style="width: 160px;" />
+            <col style="width: 140px;" />
+            <col style="width: auto;" />
+          </colgroup>
           <thead>
             <tr>
-              <th style="width: 50px" class="text-center">#</th>
+              <th class="text-center">#</th>
               <th>{{ '::IngredientName' | abpLocalization }}</th>
-              <th style="width: 100px" class="text-center">{{ '::BaseUnit' | abpLocalization }}</th>
-              <th style="width: 140px" class="text-end">{{ '::RequiredQuantity' | abpLocalization }}</th>
-              <th style="width: 140px" class="text-end">{{ '::CurrentStock' | abpLocalization }}</th>
-              <th style="width: 160px" class="text-end">{{ '::SuggestedPurchase' | abpLocalization }}</th>
-              <th style="width: 140px" class="text-end">{{ '::EstimatedPrice' | abpLocalization }}</th>
-              <th style="width: 160px" class="text-end">{{ '::EstimatedCost' | abpLocalization }}</th>
+              <th class="text-center">{{ '::BaseUnit' | abpLocalization }}</th>
+              <th class="text-end">{{ '::RequiredQuantity' | abpLocalization }}</th>
+              <th class="text-end">{{ '::CurrentStock' | abpLocalization }}</th>
+              <th class="text-end">{{ '::SuggestedPurchase' | abpLocalization }}</th>
+              <th class="text-end">{{ '::EstimatedPrice' | abpLocalization }}</th>
+              <th class="text-end">{{ '::EstimatedCost' | abpLocalization }}</th>
             </tr>
           </thead>
           <tbody>

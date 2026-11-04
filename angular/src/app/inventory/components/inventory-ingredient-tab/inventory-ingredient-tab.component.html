@@ -3,7 +3,7 @@
   <div class="bento-filter-card">
     <div class="row g-2 align-items-center">
       <!-- Search Input -->
-      <div class="col-12 col-md-4">
+      <div class="col-12 col-md-3 col-xl-3">
         <div class="modern-search-box">
           <i class="fa fa-search search-icon"></i>
           <input
@@ -26,19 +26,19 @@
       </div>
 
       <!-- Storage Filter -->
-      <div class="col-6 col-md-2">
+      <div class="col-6 col-md-2 col-xl-2">
         <app-custom-select
           class="w-100 d-block"
           [options]="storageFilterOptions"
           [ngModel]="storageFilter"
           (selectionChange)="onStorageChange($event)"
-          leadIcon="fa-layer-group"
+          leadIcon="fa-warehouse"
           minWidth="100%"
         ></app-custom-select>
       </div>
 
       <!-- Stock Level Filter -->
-      <div class="col-6 col-md-2">
+      <div class="col-6 col-md-2 col-xl-2">
         <app-custom-select
           class="w-100 d-block"
           [options]="stockFilterOptions"
@@ -50,7 +50,7 @@
       </div>
 
       <!-- Active / Deactivated Status Filter -->
-      <div class="col-6 col-md-2">
+      <div class="col-6 col-md-2 col-xl-2">
         <app-custom-select
           class="w-100 d-block"
           [options]="statusFilterOptions"
@@ -62,7 +62,7 @@
       </div>
 
       <!-- Actions & Reset -->
-      <div class="col-6 col-md-2 d-flex align-items-center justify-content-end gap-2">
+      <div class="col-6 col-md-3 col-xl-3 d-flex align-items-center justify-content-end gap-2">
         @if (hasActiveFilters) {
           <button
             type="button"
@@ -79,7 +79,7 @@
           (click)="openCreate.emit()"
         >
           <i class="fa fa-plus me-1"></i>
-          <span>{{ '::AddIngredientAction' | abpLocalization }}</span>
+          <span class="text-nowrap">{{ '::AddIngredientAction' | abpLocalization }}</span>
         </button>
       </div>
     </div>

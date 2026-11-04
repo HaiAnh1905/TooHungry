@@ -6,7 +6,7 @@
 
 > **Nguồn liệt-kê-được**: File Entities trong thư mục `src/Acme.TooHungry.Domain` kết hợp với thư mục `specs` và tài liệu rà soát mã nguồn toàn diện `CODE_REVIEW.md`.
 > Đơn vị "màn/chức năng" = Quản lý (CRUD) một Entity, một chức năng dùng chung hoặc một gói giải pháp củng cố/ổn định hệ thống.
-> Tổng 27 item sau khi gộp và ánh xạ (từ RM-001 đến RM-021 đã hoàn thành; bổ sung Wave 5 gồm RM-022 đến RM-026 giải quyết toàn diện 68 vấn đề phát hiện từ `CODE_REVIEW.md`, cùng RM-027 kiểm định và đối soát mã nguồn so với Code Review).
+> Tổng 28 item sau khi gộp và ánh xạ (từ RM-001 đến RM-021 đã hoàn thành; Wave 5 gồm RM-022 đến RM-027 giải quyết toàn diện 68 vấn đề phát hiện từ `CODE_REVIEW.md` và kiểm định nghiệm thu; bổ sung Wave 6 với RM-028: Phân hệ Thu ngân & Đồng bộ vận hành thời gian thực giữa Waiter và Cashier).
 >
 > **Chiến lược đã chốt (interview 2026-10-06 & cập nhật 2026-10-22)**:
 > 1. **Granularity**: 1 màn cho 1 Entity hoặc cụm tính năng liên quan chặt chẽ.
@@ -14,8 +14,8 @@
 > 3. **Ưu tiên**: Master Data (Units, Ingredients, Dishes) lên trước, các nghiệp vụ vận hành (Orders, Inventory) để Wave sau cùng.
 > 4. **Đánh số ID**: Cấp mới từ RM-001; sau khi loại bỏ RM-010 Thực đơn trong ngày, thực hiện đôn số tuần tự dịch trái (Shift left) từ RM-010 đến RM-016 (RM-010 POS, RM-011..013 Kho, RM-014 Dự báo, RM-015 Bố cục Waiter, RM-016 Thanh toán).
 > 5. Giữ 1 item cho CRUD của cùng 1 Entity. Khu vực & Bàn ăn gộp chung thành RM-008 do dùng chung spec.
-> 6. **Chuỗi tuần tự vận hành Waiter (Dependency Flow)**:
->    `Authentication (RM-001) → Waiter Routing & Layout (RM-015) → Table Management (RM-008) → Booking (RM-009) → Customer Check-in (RM-008: AVAILABLE → OCCUPIED) → Order (RM-010) → Payment (RM-016) → Cleaning (RM-008: CLEANING) → Table Available (RM-008: AVAILABLE)`
+> 6. **Chuỗi tuần tự vận hành Waiter & Cashier (Dependency & Real-time Sync Flow)**:
+>    `Authentication (RM-001) → Routing & Layout (RM-015/RM-028) → Table Management (RM-008) → Booking (RM-009) → Customer Check-in (AVAILABLE → OCCUPIED, sync Waiter ↔ Cashier) → Order (Tạo/Nhận/Xử lý đơn, sync Waiter ↔ Cashier) → Billing & Payment (RM-016/RM-028, sync Waiter ↔ Cashier) → Cleaning (CLEANING, sync Waiter ↔ Cashier) → Table Available (AVAILABLE)`
 > 7. **Chu kỳ trạng thái bàn (Table State Flow)**:
 >    ```text
 >    AVAILABLE
@@ -56,8 +56,8 @@
 > - Settings, Data, OpenIddict — phụ trợ hệ thống, không làm màn hình riêng hoặc gộp vào Identity.
 > - DailyMenus — thực đơn theo ngày (loại khỏi roadmap do gọi món POS lấy trực tiếp từ Master Data món ăn RM-006).
 >
-> **Cột `Spec`** = thư mục đặc tả SỞ HỮU item trong `specs/`, `—` = chưa có. Hiện **27/27 item có spec (100% độ phủ)**.
-> Các item Wave 5 (`RM-022` đến `RM-027`) đã có đặc tả chi tiết và thực thi theo Spec-Kit.
+> **Cột `Spec`** = thư mục đặc tả SỞ HỮU item trong `specs/`, `—` = chưa có. Hiện **28/28 item có spec (100% độ phủ)**.
+> Các item Wave 5 (`RM-022` đến `RM-027`) đã có đặc tả chi tiết và thực thi theo Spec-Kit. Wave 6 mở rộng phân hệ Thu ngân & liên kết thời gian thực với Waiter (`RM-028`).
 
 ## Bảng tổng (thứ tự build)
 
@@ -90,6 +90,7 @@
 | RM-025 | Tối ưu Hóa Truy vấn Cơ sở Dữ liệu & Clean Code (Database Query Optimization & Clean Code) | shared | 5 | RM-004, RM-007, RM-011, RM-014, RM-018 | [025-rm-025-database-query-optimization-and-clean-code](../specs/025-rm-025-database-query-optimization-and-clean-code/spec.md) | xong |
 | RM-026 | Bộ Kiểm Thử Tự Động Phân Quyền & Bất Biến (Automated Testing: Auth, Concurrency & Idempotency) | testing | 5 | RM-022, RM-023, RM-024, RM-025 | [026-rm-026-automated-testing-auth-concurrency-idempotency](../specs/026-rm-026-automated-testing-auth-concurrency-idempotency/spec.md) | hoàn thành |
 | RM-027 | Kiểm định & Đối soát Toàn diện Mã nguồn so với Code Review (Code Review Verification & Audit) | quality | 5 | RM-022, RM-023, RM-024, RM-025, RM-026 | [027-rm-027-code-review-validation](../specs/027-rm-027-code-review-validation/spec.md) | hoàn thành |
+| RM-028 | Phân hệ Thu ngân: Quản lý Bàn, Đơn hàng & Đồng bộ Thời gian thực (Cashier Portal: Table & Order Management with Real-time Sync) | cashier | 6 | RM-001, RM-002, RM-003, RM-008, RM-010, RM-015, RM-016 | [028-rm-028-cashier-portal-order-sync](../specs/028-rm-028-cashier-portal-order-sync/spec.md) | chưa |
 
 ## Chi tiết
 
@@ -709,6 +710,53 @@
 - **Trạng thái**: hoàn thành
 - **Nợ phát sinh**:
   - Không còn lỗi Nghiêm trọng (🔴) hay Trung bình (🟡) tồn đọng. 68/68 hạng mục đã được đối soát chi tiết trong [traceability-matrix.md](../specs/027-rm-027-code-review-validation/traceability-matrix.md) và phê duyệt nghiệm thu toàn diện tại [audit-signoff-report.md](../specs/027-rm-027-code-review-validation/audit-signoff-report.md) (205/205 xUnit tests pass 100%, Angular production build sạch).
+
+### RM-028 — Phân hệ Thu ngân: Quản lý Bàn, Đơn hàng & Đồng bộ Thời gian thực (Cashier Portal: Table & Order Management with Real-time Sync) (cashier, Wave 6)
+- **Mô tả**: Thiết lập phân hệ làm việc chuyên biệt dành riêng cho Thu ngân (`Cashier Portal` tại route `/cashier`), bao gồm quản lý sơ đồ bàn ăn, xử lý toàn trình vòng đời đơn hàng (nhận đơn, điều chỉnh/xử lý món, kết thúc đơn, tính tiền/thanh toán), và thiết lập cơ chế liên kết đồng bộ hai chiều theo thời gian thực (Real-time SignalR Hub) giữa hai vai trò phục vụ chính là Waiter (Nhân viên phục vụ) và Cashier (Thu ngân):
+  - **1. Bố cục & Điều hướng chuyên biệt cho Thu ngân (Cashier Layout & Contextual Navigation - `/cashier`)**:
+    + Tự động nhận diện vai trò `Cashier` sau khi đăng nhập (hoặc chuyển đổi vai trò cho Manager/Admin) để điều hướng trực tiếp vào không gian làm việc chuyên biệt `/cashier/tables` hoặc `/cashier/orders`.
+    + Topbar & Sidebar Bento gọn gàng, tone màu nhận diện Cam & Trắng (`#EA580C`), tối ưu hóa hiển thị và thao tác cảm ứng tại quầy thu ngân (POS Terminal, Tablet, Desktop).
+    + Thống kê nhanh ca làm việc thời gian thực: Doanh thu ca hiện tại, Số bàn đang có khách phục vụ, Số đơn hàng chờ xử lý, Số đơn đang yêu cầu thanh toán (Pre-bill / Checkout pending).
+  - **2. Quản lý Bàn ăn dành riêng cho Thu ngân (Cashier Table Management - Đồng nhất trải nghiệm với Waiter)**:
+    + Giao diện và trải nghiệm trực quan tương đồng với phân hệ Waiter (`RM-008`, `RM-015`, `RM-017`): Sơ đồ lưới Bento các bàn ăn phân nhóm theo từng Khu vực (Khu A, Khu B, Tầng 1, Tầng 2, VIP...).
+    + Bộ lọc trạng thái bàn nhanh: Tất cả, Bàn trống (`AVAILABLE`), Đang có khách (`OCCUPIED`), Đã đặt trước (`RESERVED`), Chờ dọn dẹp (`CLEANING`), Khóa bảo trì (`INACTIVE`).
+    + Thẻ bàn chuẩn Bento: Hiển thị số bàn, số ghế, thời gian khách đã ngồi, trạng thái đơn món, tổng tiền tạm tính hiện thời.
+    + Thao tác trực tiếp tại quầy: Bấm vào bàn để xem danh sách món đang gọi, đón khách vào bàn tại quầy, chuyển bàn hoặc gộp bàn khi khách yêu cầu.
+    + **Nút Reload Sơ đồ Bàn tại chỗ (In-place Table Reload Button)**: Trang bị nút làm mới trực quan (`[fa-rotate] Tải lại / Reload`) ở thanh công cụ cho cả hai phân hệ (Waiter và Cashier), cho phép nhân viên bấm tải lại danh sách bàn và trạng thái bàn mới nhất từ máy chủ tức thì mà không cần phải reload (F5) toàn bộ trang web, bảo toàn các bộ lọc khu vực và từ khóa tìm kiếm đang chọn.
+  - **3. Quản lý Đơn hàng tập trung cho Thu ngân (Cashier Order Management - `/cashier/orders`)**:
+    + **Nhận đơn (Receive Orders)**: Tiếp nhận tự động các đơn món do Waiter gửi từ bàn về hoặc mở đơn gọi món trực tiếp tại quầy (Take-away hoặc Dùng tại bàn).
+    + **Xử lý đơn (Process Orders)**: Theo dõi tiến độ ra món, xác nhận món, cập nhật số lượng món, thêm ghi chú chế biến (ít cay, không đường, ăn chay...), hủy món khi có yêu cầu hợp lệ từ khách/phục vụ.
+    + **Kết thúc đơn & Tính tiền (Complete Order & Billing / Payment Checkout)**:
+      * Chốt danh sách món dùng bữa, tự động tính tổng tiền, phụ thu, thuế VAT và áp dụng mã ưu đãi / chiết khấu (Discount).
+      * Xuất hóa đơn tạm tính (Pre-bill) để gửi khách kiểm tra trước khi thu tiền.
+      * Tích hợp thanh toán đa kênh (`RM-016`): Tiền mặt (Cash - tự động tính tiền thừa trả khách), Chuyển khoản QR động (VietQR sinh theo mã đơn & số tiền chuẩn xác), Quẹt thẻ ngân hàng.
+      * Xác nhận thanh toán thành công: Tự động trừ kho nguyên liệu theo công thức định lượng (FEFO), đóng trạng thái đơn sang `COMPLETED`, ghi nhận doanh thu ca, in hóa đơn hoàn tất và chuyển trạng thái bàn sang `CLEANING`.
+    + **Nút Reload Danh sách Đơn hàng tại chỗ (In-place Order Reload Button)**: Trang bị nút làm mới nhanh trên giao diện quản lý đơn hàng cho cả hai bên (Waiter và Cashier) để cập nhật tức thì trạng thái đơn, danh sách món và tình trạng thanh toán mà không cần tải lại toàn bộ trang web.
+  - **4. Liên kết & Đồng bộ Hai chiều Thời gian thực giữa Waiter và Cashier (Bi-directional Real-time Sync via SignalR Hub)**:
+    + **Đồng bộ Trạng thái Bàn (Table Status Sync)**:
+      * Khi **Waiter đón khách / nhận bàn (Check-in)**: Phát SignalR event cập nhật trạng thái bàn sang `OCCUPIED` ngay lập tức trên sơ đồ của Cashier kèm thông báo nổi (Toast/Badge: *"Bàn [Số] vừa có khách do [Tên Waiter] phục vụ"*).
+      * Ngược lại, khi Cashier xếp bàn đón khách tại quầy, sơ đồ bàn của Waiter cũng đồng bộ chuyển sang `OCCUPIED` tức thì.
+    + **Đồng bộ Nhận đơn & Gọi món (Order & Kitchen Items Sync)**:
+      * Khi **Waiter tạo đơn / thêm món mới từ bàn**: Hệ thống phát thông báo thời gian thực kèm âm thanh báo đơn mới đến màn hình Cashier (*"Bàn [Số] vừa gọi thêm [N] món"*), đơn hàng tự động xuất hiện trên danh sách xử lý của Cashier.
+      * Khi **Cashier xác nhận / cập nhật trạng thái chế biến**: Màn hình Waiter cập nhật tương ứng để nhân viên nắm bắt và phục vụ khách kịp thời.
+    + **Đồng bộ Yêu cầu Thanh toán & Kết thúc Đơn (Billing & Checkout Sync)**:
+      * Khi **Waiter bấm "Yêu cầu thanh toán" (Request Bill)** tại bàn: Bắn thông báo ưu tiên cao (High-priority alert) về màn hình Cashier kèm hiệu ứng nhấp nháy bàn cần thanh toán để Thu ngân in bill nhanh chóng.
+      * Khi **Cashier hoàn tất thanh toán (Payment Completed)**: Bắn thông báo thời gian thực về cho Waiter (*"Bàn [Số] đã thanh toán thành công [Số tiền] đ"*), đồng thời bàn tự động chuyển sang trạng thái `CLEANING` trên giao diện cả hai bên để Waiter biết tiến hành dọn bàn.
+      * Khi **Waiter hoàn tất dọn bàn (Finish Cleaning)**: Bàn chuyển sang `AVAILABLE` và đồng bộ tức thời trên cả hai màn hình Waiter và Cashier để sẵn sàng đón lượt khách mới.
+    + **Cơ chế Reload dự phòng độc lập ở cả hai vai trò (In-place Fallback Refresh)**: Bên cạnh việc tự động nhận sự kiện thời gian thực qua SignalR Hub, cả hai giao diện Waiter và Cashier đều được trang bị nút Reload độc lập để nhân viên chủ động đồng bộ lại state mới nhất trong các tình huống mạng chập chờn hoặc thiết bị vừa mở lại màn hình mà không bao giờ phải F5 tải lại toàn bộ trang web.
+  - **5. Phân quyền & Bảo mật**:
+    + Bổ sung bộ quyền chuyên biệt: `TooHungry.Cashier.ManageTables`, `TooHungry.Cashier.ManageOrders`, `TooHungry.Cashier.ProcessPayment`.
+    + Xác thực kết nối SignalR Hub bằng Bearer Token an toàn (tuân thủ RM-023).
+  - **6. Đa ngôn ngữ (i18n)**:
+    + 100% nhãn giao diện, bộ lọc, thẻ bàn, trạng thái đơn và thông báo thời gian thực được hỗ trợ song ngữ đầy đủ trong `vi.json` và `en.json`.
+- **Nguồn**: `angular/src/app/`, `src/Acme.TooHungry.Domain/Orders`, `src/Acme.TooHungry.Domain/Tables`, SignalR Hubs (`OrderHub`, `TableHub`).
+- **Thực thể/CRUD**: `RestaurantTable`, `Order`, `OrderItem`, `PaymentTransaction`, `CashierShift`.
+- **Backend**: Mở rộng Application Services & SignalR Hubs cho Cashier; bảo đảm atomicity khi thanh toán, trừ kho FEFO an toàn và broadcast sự kiện chính xác sau khi commit transaction (`OnCompleted`).
+- **Frontend**: Xây dựng phân hệ Angular standalone `/cashier` (`cashier-layout`, `cashier-tables`, `cashier-orders`, `cashier-payment-modal`, `cashier-sync.service`).
+- **Phụ thuộc**: RM-001, RM-002, RM-003, RM-008, RM-010, RM-015, RM-016, RM-022, RM-023
+- **Spec**: [specs/028-rm-028-cashier-portal-order-sync/](../specs/028-rm-028-cashier-portal-order-sync/spec.md)
+- **Trạng thái**: chưa
+- **Nợ phát sinh**: Chưa ghi nhận.
 
 
 

@@ -17,6 +17,8 @@ using Acme.TooHungry.EntityFrameworkCore;
 using Acme.TooHungry.MultiTenancy;
 using Acme.TooHungry.HealthChecks;
 using Microsoft.OpenApi;
+using Acme.TooHungry.Tables;
+using Acme.TooHungry.Hubs;
 using Volo.Abp;
 using Volo.Abp.Studio;
 using Volo.Abp.Account;
@@ -148,6 +150,8 @@ public class TooHungryHttpApiHostModule : AbpModule
         ConfigureSwagger(context, configuration);
         ConfigureVirtualFileSystem(context);
         ConfigureCors(context, configuration);
+
+        context.Services.AddTransient<ITableRealtimeNotifier, TableRealtimeNotifier>();
     }
 
     private void ConfigureStudio(IHostEnvironment hostingEnvironment)
@@ -324,9 +328,6 @@ public class TooHungryHttpApiHostModule : AbpModule
         }
         app.UseAuditing();
         app.UseAbpSerilogEnrichers();
-        app.UseConfiguredEndpoints(endpoints =>
-        {
-            endpoints.MapHub<TableHub>("/signalr-hubs/table");
-        });
+        app.UseConfiguredEndpoints();
     }
 }

@@ -1,10 +1,12 @@
 <div
   class="table-card"
+  [attr.id]="'table-card-' + table.id"
   [class.status-available]="table.status === TableStatus.Available"
   [class.status-occupied]="table.status === TableStatus.Occupied"
   [class.status-reserved]="table.status === TableStatus.Reserved"
   [class.status-cleaning]="table.status === TableStatus.Cleaning"
   [class.status-disabled]="table.status === TableStatus.Disabled"
+  [class.focus-highlight]="isFocused"
 >
   <!-- Card Header -->
   <div class="card-head">
@@ -157,30 +159,38 @@
           @if (!isWaiterMode) {
             <button
               type="button"
-              class="btn-action-sub-pill btn-sub-edit"
+              class="btn-action-sub-icon btn-sub-edit"
               (click)="editTable.emit(table)"
-              [title]="'::Edit' | abpLocalization"
+              [title]="'::EditTable' | abpLocalization"
             >
               <i class="fas fa-pen"></i>
             </button>
             <button
               type="button"
-              class="btn-action-sub-pill btn-sub-delete"
+              class="btn-action-sub-icon btn-sub-disable"
+              (click)="disableTable.emit(table)"
+              [title]="'::DisableTable' | abpLocalization"
+            >
+              <i class="fas fa-ban"></i>
+            </button>
+            <button
+              type="button"
+              class="btn-action-sub-icon btn-sub-delete"
               (click)="deleteTable.emit(table)"
-              [title]="'::Delete' | abpLocalization"
+              [title]="'::DeleteTable' | abpLocalization"
             >
               <i class="fas fa-trash-alt"></i>
             </button>
+          } @else {
+            <button
+              type="button"
+              class="btn-action-sub-icon btn-sub-disable"
+              (click)="disableTable.emit(table)"
+              [title]="'::DisableTable' | abpLocalization"
+            >
+              <i class="fas fa-ban"></i>
+            </button>
           }
-          <button
-            type="button"
-            class="btn-action-sub-pill btn-sub-disable"
-            (click)="disableTable.emit(table)"
-            [title]="'::DisableTable' | abpLocalization"
-          >
-            <i class="fas fa-ban me-1"></i>
-            <span>{{ '::Disable' | abpLocalization }}</span>
-          </button>
         </div>
       </div>
     }
@@ -243,28 +253,28 @@
 
     <!-- 3. Trạng thái RESERVED: [Nhận bàn / Check-in], [Hủy đặt bàn / Xem chi tiết] -->
     @if (table.status === TableStatus.Reserved) {
-      <div class="reserved-actions-grid d-flex gap-2">
+      <div class="reserved-actions-grid">
         <button
           type="button"
-          class="btn-action-main-full btn-checkin flex-grow-1"
+          class="btn-card-action btn-action-checkin"
           (click)="checkIn.emit(table)"
           [title]="'::CheckInReservedGuests' | abpLocalization"
         >
-          <i class="fas fa-check-double me-1"></i>
+          <i class="fas fa-check-double"></i>
           <span>{{ '::CheckIn' | abpLocalization }}</span>
         </button>
         <button
           type="button"
-          class="btn-action-sub-pill btn-sub-cancel-reserve"
+          class="btn-card-action btn-action-cancel"
           (click)="cancelReservation.emit(table)"
           [title]="'::CancelReservation' | abpLocalization"
         >
-          <i class="fas fa-times me-1"></i>
+          <i class="fas fa-times"></i>
           <span>{{ '::Cancel' | abpLocalization }}</span>
         </button>
         <button
           type="button"
-          class="btn-action-sub-pill"
+          class="btn-card-action btn-action-detail"
           (click)="openReservationDetails.emit(table)"
           [title]="'::ViewOrEditReservation' | abpLocalization"
         >

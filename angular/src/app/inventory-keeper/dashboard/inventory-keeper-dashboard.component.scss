@@ -26,12 +26,19 @@
     border: 1px solid #e2e8f0;
     border-radius: 16px;
     padding: 1.25rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
     transition: all 0.2s ease-in-out;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+
+    * {
+      user-select: none;
+      -webkit-user-select: none;
+      cursor: pointer;
+    }
 
     &:hover {
       transform: translateY(-2px);

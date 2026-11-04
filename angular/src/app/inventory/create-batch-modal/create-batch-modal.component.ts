@@ -87,6 +87,19 @@ export class CreateInventoryBatchModalComponent implements OnInit, OnChanges {
     return qty * price;
   }
 
+  getStorageTypeLabel(type?: StorageType): string {
+    if (type === StorageType.FRESH) return '::StorageType_FRESH';
+    if (type === StorageType.LONG_TERM) return '::StorageType_LONG_TERM';
+    return '::StorageType_SHORT_TERM';
+  }
+
+  generateNewBatchCode(): void {
+    const todayStr = this.getTodayDateString();
+    const dateStr = todayStr.replace(/-/g, '');
+    const randSuffix = Math.floor(100 + Math.random() * 900);
+    this.batchModel.batchCode = `LOT-${dateStr}-${randSuffix}`;
+  }
+
   @HostListener('document:keydown', ['$event'])
   handleKeyboardEvent(event: KeyboardEvent): void {
     if (!this.visible) return;
@@ -157,6 +170,22 @@ export class CreateInventoryBatchModalComponent implements OnInit, OnChanges {
     return `${year}-${month}-${day}`;
   }
 
+  getDefaultUnitPrice(ing: IngredientDto | null): number {
+    if (!ing) return 0;
+    // 1. Ưu tiên giá của lô hàng gần nhất nếu có
+    if (this.recentBatches && this.recentBatches.length > 0) {
+      const lastBatch = this.recentBatches.find(b => b.ingredientId === ing.id && b.unitPrice > 0);
+      if (lastBatch && lastBatch.unitPrice > 0) {
+        return lastBatch.unitPrice;
+      }
+    }
+    // 2. Tiếp theo lấy giá ước tính của nguyên liệu (estimatedPrice)
+    if (ing.estimatedPrice && ing.estimatedPrice > 0) {
+      return ing.estimatedPrice;
+    }
+    return 0;
+  }
+
   initForm(): void {
     const todayStr = this.getTodayDateString();
     const dateStr = todayStr.replace(/-/g, '');
@@ -172,13 +201,10 @@ export class CreateInventoryBatchModalComponent implements OnInit, OnChanges {
 
     const storageType = targetIng?.storageType !== undefined ? targetIng.storageType : StorageType.SHORT_TERM;
 
-    // Lấy giá gợi ý hoặc đơn giá của lô hàng gần nhất nếu có
+    // Lấy giá gợi ý, đơn giá của lô hàng gần nhất hoặc đơn giá ước tính của nguyên liệu
     let unitPrice = Number(this.preselectedPrice || 0);
-    if (!unitPrice && targetIng?.id && this.recentBatches?.length > 0) {
-      const lastBatch = this.recentBatches.find(b => b.ingredientId === targetIng?.id && b.unitPrice > 0);
-      if (lastBatch) {
-        unitPrice = lastBatch.unitPrice;
-      }
+    if (!unitPrice && targetIng) {
+      unitPrice = this.getDefaultUnitPrice(targetIng);
     }
 
     this.selectedIngredient = targetIng;
@@ -200,10 +226,13 @@ export class CreateInventoryBatchModalComponent implements OnInit, OnChanges {
       this.batchModel.storageType = ing.storageType;
     }
 
+    // Tự động điền đơn giá mặc định của nguyên liệu được chọn (lô gần nhất hoặc giá ước tính)
+    this.batchModel.unitPrice = this.getDefaultUnitPrice(ing);
+
     if (this.isFresh) {
       this.batchModel.expiryDate = this.getTodayDateString();
     } else if (!this.batchModel.expiryDate || this.batchModel.expiryDate === this.getTodayDateString()) {
-      this.batchModel.expiryDate = this.getDefaultExpiryDateString();
+      this.batchModel.expiryDate = this.getDefaultExpiryDateString(ing?.storageType);
     }
   }
 

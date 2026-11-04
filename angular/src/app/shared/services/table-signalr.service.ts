@@ -3,6 +3,11 @@ import * as signalR from '@microsoft/signalr';
 import { Subject, Observable, Subscription } from 'rxjs';
 import { EnvironmentService } from '@abp/ng.core';
 import { OAuthService, OAuthEvent } from 'angular-oauth2-oidc';
+import {
+  OrderPlacedOrUpdatedDto,
+  BillRequestedDto,
+  PaymentCompletedDto,
+} from '../../cashier/models/cashier.models';
 
 export interface TableStatusChangedEvent {
   tableId: string;
@@ -12,6 +17,17 @@ export interface TableStatusChangedEvent {
   statusName?: string;
   occupiedTime?: string | null;
   updatedTime?: string;
+  actionType?: string;
+  performedByRole?: string;
+  performedByName?: string;
+  performedByUserId?: string;
+  reservedCustomerName?: string;
+  reservedCustomerPhone?: string;
+  reservedTime?: string;
+  reservedGuestCount?: number;
+  reservedNote?: string;
+  sourceTableName?: string;
+  targetTableName?: string;
 }
 
 export interface TableOrderUpdatedEvent {
@@ -31,11 +47,20 @@ export class TableSignalrService {
   private authSubscription?: Subscription;
   private tableStatusChangedSubject = new Subject<TableStatusChangedEvent>();
   private tableOrderUpdatedSubject = new Subject<TableOrderUpdatedEvent>();
+  private orderPlacedOrUpdatedSubject = new Subject<OrderPlacedOrUpdatedDto>();
+  private billRequestedSubject = new Subject<BillRequestedDto>();
+  private paymentCompletedSubject = new Subject<PaymentCompletedDto>();
 
   public tableStatusChanged$: Observable<TableStatusChangedEvent> =
     this.tableStatusChangedSubject.asObservable();
   public tableOrderUpdated$: Observable<TableOrderUpdatedEvent> =
     this.tableOrderUpdatedSubject.asObservable();
+  public orderPlacedOrUpdated$: Observable<OrderPlacedOrUpdatedDto> =
+    this.orderPlacedOrUpdatedSubject.asObservable();
+  public billRequested$: Observable<BillRequestedDto> =
+    this.billRequestedSubject.asObservable();
+  public paymentCompleted$: Observable<PaymentCompletedDto> =
+    this.paymentCompletedSubject.asObservable();
 
   constructor() {
     this.initAuthLifecycle();
@@ -91,6 +116,12 @@ export class TableSignalrService {
         statusName: data.statusName || data.StatusName,
         occupiedTime: data.occupiedTime !== undefined ? data.occupiedTime : data.OccupiedTime,
         updatedTime: data.updatedTime || data.UpdatedTime,
+        actionType: data.actionType || data.ActionType,
+        performedByRole: data.performedByRole || data.PerformedByRole,
+        performedByName: data.performedByName || data.PerformedByName,
+        performedByUserId: data.performedByUserId || data.PerformedByUserId,
+        sourceTableName: data.sourceTableName || data.SourceTableName,
+        targetTableName: data.targetTableName || data.TargetTableName,
       });
     });
 
@@ -99,6 +130,45 @@ export class TableSignalrService {
         tableId: data.tableId || data.TableId,
         hasActiveOrder: data.hasActiveOrder !== undefined ? data.hasActiveOrder : data.HasActiveOrder,
         activeOrderId: data.activeOrderId || data.ActiveOrderId || null,
+      });
+    });
+
+    this.hubConnection.on('OrderPlacedOrUpdated', (data: any) => {
+      this.orderPlacedOrUpdatedSubject.next({
+        orderId: data.orderId || data.OrderId,
+        orderCode: data.orderCode || data.OrderCode,
+        tableId: data.tableId || data.TableId,
+        tableNumber: data.tableNumber || data.TableNumber,
+        totalItemCount: data.totalItemCount !== undefined ? data.totalItemCount : data.TotalItemCount,
+        totalEstimatedAmount: data.totalEstimatedAmount !== undefined ? data.totalEstimatedAmount : data.TotalEstimatedAmount,
+        action: data.action || data.Action || 'Placed',
+        waiterName: data.waiterName || data.WaiterName,
+        timestamp: data.timestamp || data.Timestamp || new Date().toISOString(),
+      });
+    });
+
+    this.hubConnection.on('BillRequested', (data: any) => {
+      this.billRequestedSubject.next({
+        tableId: data.tableId || data.TableId,
+        tableNumber: data.tableNumber || data.TableNumber,
+        orderId: data.orderId || data.OrderId,
+        orderCode: data.orderCode || data.OrderCode,
+        totalAmount: data.totalAmount !== undefined ? data.totalAmount : data.TotalAmount,
+        waiterName: data.waiterName || data.WaiterName,
+        requestedTime: data.requestedTime || data.RequestedTime || new Date().toISOString(),
+      });
+    });
+
+    this.hubConnection.on('PaymentCompleted', (data: any) => {
+      this.paymentCompletedSubject.next({
+        orderId: data.orderId || data.OrderId,
+        orderCode: data.orderCode || data.OrderCode,
+        tableId: data.tableId || data.TableId,
+        tableNumber: data.tableNumber || data.TableNumber,
+        paidAmount: data.paidAmount !== undefined ? data.paidAmount : data.PaidAmount,
+        paymentMethod: data.paymentMethod || data.PaymentMethod || 'CASH',
+        cashierName: data.cashierName || data.CashierName || '',
+        completedTime: data.completedTime || data.CompletedTime || new Date().toISOString(),
       });
     });
 

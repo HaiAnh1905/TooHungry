@@ -158,7 +158,12 @@ public class TooHungryDataSeederContributor : IDataSeedContributor, ITransientDe
                 "TooHungry.Forecasts.Create",
                 "TooHungry.Forecasts.Edit",
                 "TooHungry.Forecasts.Delete",
-                "TooHungry.Forecasts.Approve"
+                "TooHungry.Forecasts.Approve",
+
+                "TooHungry.Cashier",
+                "TooHungry.Cashier.ManageTables",
+                "TooHungry.Cashier.ManageOrders",
+                "TooHungry.Cashier.ProcessPayment"
             },
             context.TenantId
         );
@@ -179,6 +184,37 @@ public class TooHungryDataSeederContributor : IDataSeedContributor, ITransientDe
                 "TooHungry.Orders.Edit",
                 "TooHungry.Orders.Cancel",
                 "TooHungry.Orders.Delete",
+                "TooHungry.Reservations",
+                "TooHungry.Reservations.Create",
+                "TooHungry.Reservations.Update",
+                "TooHungry.Reservations.Cancel",
+                "TooHungry.Reservations.CheckIn",
+                "TooHungry.Dishes",
+                "TooHungry.DishCategories"
+            },
+            context.TenantId
+        );
+
+        await _permissionDataSeeder.SeedAsync(
+            RolePermissionValueProvider.ProviderName,
+            "Cashier",
+            new[]
+            {
+                "TooHungry.Cashier",
+                "TooHungry.Cashier.ManageTables",
+                "TooHungry.Cashier.ManageOrders",
+                "TooHungry.Cashier.ProcessPayment",
+                "TooHungry.DiningAreas",
+                "TooHungry.Tables",
+                "TooHungry.Tables.Manage",
+                "TooHungry.Tables.UpdateStatus",
+                "TooHungry.Orders",
+                "TooHungry.Orders.Create",
+                "TooHungry.Orders.Edit",
+                "TooHungry.Orders.Cancel",
+                "TooHungry.Dishes",
+                "TooHungry.DishCategories",
+                "TooHungry.Recipes",
                 "TooHungry.Reservations",
                 "TooHungry.Reservations.Create",
                 "TooHungry.Reservations.Update",
@@ -204,7 +240,12 @@ public class TooHungryDataSeederContributor : IDataSeedContributor, ITransientDe
                 "TooHungry.Forecasts.Create",
                 "TooHungry.Forecasts.Edit",
                 "TooHungry.Forecasts.Delete",
-                "TooHungry.Forecasts.Approve"
+                "TooHungry.Forecasts.Approve",
+
+                "TooHungry.Cashier",
+                "TooHungry.Cashier.ManageTables",
+                "TooHungry.Cashier.ManageOrders",
+                "TooHungry.Cashier.ProcessPayment"
             },
             context.TenantId
         );

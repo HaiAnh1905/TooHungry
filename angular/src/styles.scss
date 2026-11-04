@@ -3633,3 +3633,71 @@ abp-confirmation-dialog,
   z-index: 9999 !important;
 }
 
+/* ==========================================================================
+   GLOBAL FIX: CHẶN CON TRỎ TEXT (TEXT CARET / I-BEAM) TRÊN CÁC THẺ CHỈ SỐ, KPI & FILTER CARDS
+   ========================================================================== */
+.summary-card,
+.bento-kpi-card,
+.stat-card,
+.stat-pill,
+.kpi-card,
+.bento-card[role="button"],
+.bento-kpi-grid .bento-card,
+.status-summary-bar .stat-pill,
+.floor-summary-row .summary-card {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+
+  &, * {
+    user-select: none !important;
+    -webkit-user-select: none !important;
+  }
+}
+
+.summary-card,
+.bento-kpi-card,
+.bento-card[role="button"],
+.bento-kpi-grid .bento-card,
+.floor-summary-row .summary-card {
+  cursor: pointer !important;
+
+  * {
+    cursor: pointer !important;
+  }
+}
+
+
+
+
+/* -------------------------------------------------------------------------- */
+/* TABLE END MEAL MODAL (DIALOG SPACING & ELEVATION)                          */
+/* -------------------------------------------------------------------------- */
+.modal:has(.end-meal-modal-body) .modal-dialog,
+.end-meal-modal-dialog.modal-dialog,
+.end-meal-modal-dialog {
+  max-width: 520px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+
+  .modal-content {
+    border-radius: 18px !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.12) !important;
+    overflow: hidden !important;
+  }
+
+  .modal-header {
+    padding: 1.25rem 1.75rem 1rem !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+  }
+
+  .modal-body {
+    padding: 13px 1.75rem !important;
+  }
+
+  .modal-footer {
+    padding: 1.25rem 1.75rem !important;
+    border-top: 1px solid #f1f5f9 !important;
+    background: #fbfcfe !important;
+  }
+}

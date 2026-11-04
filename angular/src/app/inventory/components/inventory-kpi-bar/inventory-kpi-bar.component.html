@@ -20,8 +20,12 @@
           <span class="kpi-unit">{{ '::ItemsUnit' | abpLocalization }}</span>
         </div>
         @if (kpiSummary?.estimatedTotalValue) {
-          <span class="kpi-subtext">
-            ≈ {{ kpiSummary.estimatedTotalValue | number:'1.0-0' }} ₫
+          <span class="kpi-badge badge-total">
+            <i class="fa fa-coins me-1"></i>≈ {{ kpiSummary.estimatedTotalValue | number:'1.0-0' }} ₫
+          </span>
+        } @else {
+          <span class="kpi-badge badge-total">
+            <i class="fa fa-cubes me-1"></i>{{ '::TotalStockActive' | abpLocalization }}
           </span>
         }
       </div>
@@ -52,7 +56,7 @@
           <span class="kpi-unit text-emerald-600">{{ '::ItemsUnit' | abpLocalization }}</span>
         </div>
         <span class="kpi-badge badge-safe">
-          <i class="fa fa-circle-check me-1"></i>{{ '::StockStatusSafe' | abpLocalization }}
+          <i class="fa fa-circle-check me-1"></i>{{ '::SafeStockBadge' | abpLocalization }}
         </span>
       </div>
       <div class="kpi-icon-wrap icon-safe">

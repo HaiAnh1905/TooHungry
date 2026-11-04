@@ -43,6 +43,101 @@
         <span>{{ userInfo().shiftLocalizationKey | abpLocalization }}</span>
       </span>
 
+      <!-- Chuông thông báo Realtime (Notification Bell) -->
+      <div class="notification-dropdown-wrapper">
+        <button
+          type="button"
+          class="btn-notification-bell"
+          (click)="toggleNotificationDropdown($event)"
+          [title]="'::Notifications' | abpLocalization"
+          aria-label="Notifications"
+          [class.has-unread]="notificationService.unreadCount() > 0"
+        >
+          <i class="fas fa-bell text-primary-orange" [class.fa-shake]="notificationService.hasNewAlert()"></i>
+          @if (notificationService.unreadCount() > 0) {
+            <span class="notification-badge">{{ notificationService.unreadCount() > 99 ? '99+' : notificationService.unreadCount() }}</span>
+          }
+        </button>
+
+        @if (isNotificationDropdownOpen()) {
+          <div class="notification-dropdown-menu shadow-lg">
+            <div class="notification-header d-flex align-items-center justify-content-between p-3 border-bottom">
+              <div class="d-flex align-items-center gap-2">
+                <i class="fas fa-bell text-primary-orange"></i>
+                <span class="font-weight-bold">{{ '::Notifications' | abpLocalization }}</span>
+                @if (notificationService.unreadCount() > 0) {
+                  <span class="badge bg-danger rounded-pill">{{ notificationService.unreadCount() }}</span>
+                }
+              </div>
+              @if (notificationService.notifications().length > 0) {
+                <button
+                  type="button"
+                  class="btn btn-sm btn-link text-muted p-0 text-decoration-none"
+                  (click)="notificationService.markAllAsRead()"
+                >
+                  {{ '::MarkAllAsRead' | abpLocalization }}
+                </button>
+              }
+            </div>
+
+            <div class="notification-list">
+              @if (notificationService.notifications().length === 0) {
+                <div class="notification-empty text-center py-4 text-muted">
+                  <i class="far fa-bell-slash fa-2x mb-2 text-muted"></i>
+                  <p class="small m-0">{{ '::NoNotifications' | abpLocalization }}</p>
+                </div>
+              } @else {
+                @for (item of notificationService.notifications(); track item.id) {
+                  <div
+                    class="notification-item p-3 border-bottom d-flex gap-3 align-items-start"
+                    [class.unread]="!item.read"
+                    (click)="onNotificationItemClick(item)"
+                  >
+                    <div class="notification-icon-circle" [ngClass]="getNotificationIconClass(item.type)">
+                      <i class="fas" [ngClass]="getNotificationIcon(item.type)"></i>
+                    </div>
+                    <div class="notification-content flex-grow-1">
+                      <div class="d-flex align-items-center justify-content-between">
+                        <span class="notification-title font-weight-bold small">{{ getNotificationTitle(item) }}</span>
+                        <span class="notification-time text-muted extra-small">{{ formatNotificationTime(item.timestamp) }}</span>
+                      </div>
+                      <p class="notification-msg small text-secondary m-0 mt-1">{{ getNotificationMessage(item) }}</p>
+                    </div>
+                    @if (!item.read) {
+                      <span class="unread-dot"></span>
+                    }
+                  </div>
+                }
+              }
+            </div>
+
+            @if (notificationService.notifications().length > 0) {
+              <div class="notification-footer p-2 text-center border-top">
+                <button
+                  type="button"
+                  class="btn btn-sm btn-link text-muted text-decoration-none"
+                  (click)="notificationService.clearAll()"
+                >
+                  {{ '::ClearNotifications' | abpLocalization }}
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Nút Bật / Tắt âm thanh thông báo chuông (Audio Mute Toggle) -->
+      <button
+        type="button"
+        class="btn-audio-toggle"
+        [class.muted]="audioService.isMuted()"
+        (click)="toggleAudioMute()"
+        [title]="(audioService.isMuted() ? '::UnmuteAudio' : '::MuteAudio') | abpLocalization"
+        aria-label="Toggle Audio"
+      >
+        <i class="fas" [ngClass]="audioService.isMuted() ? 'fa-volume-xmark text-muted' : 'fa-volume-high text-primary-orange'"></i>
+      </button>
+
       <!-- Nút đổi ngôn ngữ (Language Switcher) -->
       <div class="language-dropdown-wrapper">
         <button

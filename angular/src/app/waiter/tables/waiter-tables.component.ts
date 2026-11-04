@@ -11,7 +11,7 @@ import {
   ChangeDetectorRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
+import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CoreModule, LocalizationService } from '@abp/ng.core';
 import { ConfirmationService, Confirmation, ThemeSharedModule, ToasterService } from '@abp/ng.theme.shared';
@@ -68,12 +68,14 @@ export class WaiterTablesComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly toaster = inject(ToasterService);
   private readonly localizationService = inject(LocalizationService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly fb = inject(FormBuilder);
   private readonly cdr = inject(ChangeDetectorRef);
 
   @ViewChild('tablesSidebarFilter') tablesSidebarFilter!: TemplateRef<any>;
 
   readonly TableStatus = TableStatus;
+  readonly focusedTableId = signal<string | null>(null);
 
   // State signals
   readonly tables = signal<TableDto[]>([]);
@@ -82,6 +84,7 @@ export class WaiterTablesComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly selectedAreaId = signal<string | null>(null);
   readonly selectedStatus = signal<number | null>(null);
   readonly searchQuery = signal<string>('');
+  readonly isReloading = signal<boolean>(false);
 
   // Reservation Modals (RM-009)
   isReservationModalOpen = false;
@@ -146,13 +149,36 @@ export class WaiterTablesComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     }
 
-    return this.diningAreas()
-      .filter(area => area.isActive)
-      .map(area => ({
-        ...area,
-        tableCount: countMap.get(area.id || '') || 0,
-      }))
-      .filter(area => (area.tableCount || 0) > 0);
+    if (this.diningAreas().length > 0) {
+      return this.diningAreas()
+        .filter(area => area.isActive !== false)
+        .map(area => ({
+          ...area,
+          tableCount: countMap.get(area.id || '') || 0,
+        }))
+        .filter(area => (area.tableCount || 0) > 0);
+    }
+
+    // Fallback nếu API diningAreas chưa kịp tải hoặc rỗng:
+    // Tự động phân nhóm khu vực từ danh sách bàn ăn hiện có
+    const areaMap = new Map<string, { id: string; name: string; tableCount: number; isActive: boolean }>();
+    for (const t of matchingTables) {
+      if (t.diningAreaId) {
+        const areaName = t.diningAreaName || t.location || 'Khu vực khác';
+        const existing = areaMap.get(t.diningAreaId);
+        if (existing) {
+          existing.tableCount++;
+        } else {
+          areaMap.set(t.diningAreaId, {
+            id: t.diningAreaId,
+            name: areaName,
+            tableCount: 1,
+            isActive: true,
+          });
+        }
+      }
+    }
+    return Array.from(areaMap.values()) as DiningAreaDto[];
   });
 
   // Computed summary counts
@@ -182,9 +208,15 @@ export class WaiterTablesComponent implements OnInit, AfterViewInit, OnDestroy {
     if (areaId) {
       list = list.filter(t => t.diningAreaId === areaId);
     } else {
-      // Khi chọn "Tất cả", chỉ hiển thị bàn thuộc khu vực đang hoạt động hoặc không thuộc khu nào
-      const activeIds = new Set(this.activeDiningAreas().map(a => a.id));
-      list = list.filter(t => !t.diningAreaId || activeIds.has(t.diningAreaId));
+      // Khi chọn "Tất cả", hiển thị toàn bộ bàn (chỉ loại bỏ bàn thuộc khu vực đã bị vô hiệu hóa rõ ràng isActive === false)
+      const inactiveIds = new Set(
+        this.diningAreas()
+          .filter(a => a.isActive === false)
+          .map(a => a.id)
+      );
+      if (inactiveIds.size > 0) {
+        list = list.filter(t => !t.diningAreaId || !inactiveIds.has(t.diningAreaId));
+      }
     }
 
     // 2. Filter by Status
@@ -225,6 +257,33 @@ export class WaiterTablesComponent implements OnInit, AfterViewInit, OnDestroy {
       this.currentTime.set(new Date());
       this.cdr.markForCheck();
     }, 30000);
+
+    this.route.queryParams.subscribe(params => {
+      const focusId = params['focusTableId'];
+      if (focusId) {
+        this.focusedTableId.set(focusId);
+        setTimeout(() => {
+          const el = document.getElementById(`table-card-${focusId}`);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 300);
+
+        setTimeout(() => {
+          if (this.focusedTableId() === focusId) {
+            this.focusedTableId.set(null);
+          }
+        }, 4000);
+
+        // Dọn sạch query param khỏi URL để khi reload (F5) không bị highlight lại
+        this.router.navigate([], {
+          relativeTo: this.route,
+          queryParams: { focusTableId: null },
+          queryParamsHandling: 'merge',
+          replaceUrl: true,
+        });
+      }
+    });
   }
 
   ngAfterViewInit() {
@@ -266,14 +325,54 @@ export class WaiterTablesComponent implements OnInit, AfterViewInit, OnDestroy {
       .subscribe({
         next: res => {
           this.tables.set(res.items || []);
+
+          // Đảm bảo các bàn Reserved luôn có đầy đủ thông tin khách đặt
+          const reservedTablesWithoutInfo = (res.items || []).filter(
+            t => t.status === TableStatus.Reserved && !t.reservedCustomerName
+          );
+          if (reservedTablesWithoutInfo.length > 0) {
+            reservedTablesWithoutInfo.forEach(t => {
+              if (t.id) {
+                this.tableReservationService.getActiveByTableId(t.id).subscribe(resDto => {
+                  if (resDto) {
+                    this.tables.update(list =>
+                      list.map(item =>
+                        item.id === t.id
+                          ? {
+                              ...item,
+                              reservedCustomerName: resDto.customerName,
+                              reservedCustomerPhone: resDto.customerPhone,
+                              reservedTime: resDto.reservationTime,
+                              reservedGuestCount: resDto.guestCount,
+                              reservedNote: resDto.note || undefined,
+                            }
+                          : item
+                      )
+                    );
+                    this.cdr.markForCheck();
+                  }
+                });
+              }
+            });
+          }
           this.isLoading.set(false);
+          this.isReloading.set(false);
           this.cdr.markForCheck();
         },
         error: () => {
           this.isLoading.set(false);
+          this.isReloading.set(false);
           this.cdr.markForCheck();
         },
       });
+  }
+
+  /**
+   * T017B: In-place reload tables for Waiter
+   */
+  reloadTablesInPlace(): void {
+    this.isReloading.set(true);
+    this.loadData();
   }
 
   listenToSignalr() {
@@ -312,7 +411,29 @@ export class WaiterTablesComponent implements OnInit, AfterViewInit, OnDestroy {
           return table;
         })
       );
-      this.cdr.markForCheck();
+            this.cdr.markForCheck();
+
+      if (event.status === TableStatus.Reserved && !event.reservedCustomerName) {
+        this.tableReservationService.getActiveByTableId(event.tableId).subscribe(resDto => {
+          if (resDto) {
+            this.tables.update(list =>
+              list.map(t =>
+                t.id === event.tableId
+                  ? {
+                      ...t,
+                      reservedCustomerName: resDto.customerName,
+                      reservedCustomerPhone: resDto.customerPhone,
+                      reservedTime: resDto.reservationTime,
+                      reservedGuestCount: resDto.guestCount,
+                      reservedNote: resDto.note || undefined,
+                    }
+                  : t
+              )
+            );
+            this.cdr.markForCheck();
+          }
+        });
+      }
     });
 
     this.signalrSubscription.add(
@@ -324,6 +445,25 @@ export class WaiterTablesComponent implements OnInit, AfterViewInit, OnDestroy {
                 ...table,
                 hasActiveOrder: event.hasActiveOrder,
                 activeOrderId: event.activeOrderId ?? undefined,
+              };
+            }
+            return table;
+          })
+        );
+        this.cdr.markForCheck();
+      })
+    );
+
+    this.signalrSubscription.add(
+      this.signalrService.paymentCompleted$.subscribe(event => {
+        this.tables.update(list =>
+          list.map(table => {
+            if (table.id === event.tableId) {
+              return {
+                ...table,
+                status: TableStatus.Cleaning,
+                hasActiveOrder: false,
+                activeOrderId: undefined,
               };
             }
             return table;

@@ -58,6 +58,9 @@
         class="summary-card card-total"
         (click)="filterByStatus(null)"
         [class.active]="selectedStatus() === null"
+        role="button"
+        tabindex="0"
+        (keydown.enter)="filterByStatus(null)"
       >
         <div class="summary-icon">
           <i class="fa fa-table"></i>
@@ -75,6 +78,9 @@
         class="summary-card card-available"
         (click)="filterByStatus(TableStatus.Available)"
         [class.active]="selectedStatus() === TableStatus.Available"
+        role="button"
+        tabindex="0"
+        (keydown.enter)="filterByStatus(TableStatus.Available)"
       >
         <div class="summary-icon">
           <i class="fa fa-check-circle"></i>
@@ -92,6 +98,9 @@
         class="summary-card card-occupied"
         (click)="filterByStatus(TableStatus.Occupied)"
         [class.active]="selectedStatus() === TableStatus.Occupied"
+        role="button"
+        tabindex="0"
+        (keydown.enter)="filterByStatus(TableStatus.Occupied)"
       >
         <div class="summary-icon">
           <i class="fa fa-utensils"></i>
@@ -109,6 +118,9 @@
         class="summary-card card-reserved"
         (click)="filterByStatus(TableStatus.Reserved)"
         [class.active]="selectedStatus() === TableStatus.Reserved"
+        role="button"
+        tabindex="0"
+        (keydown.enter)="filterByStatus(TableStatus.Reserved)"
       >
         <div class="summary-icon">
           <i class="fa fa-calendar-check"></i>
@@ -126,6 +138,9 @@
         class="summary-card card-cleaning-status"
         (click)="filterByStatus(TableStatus.Cleaning)"
         [class.active]="selectedStatus() === TableStatus.Cleaning"
+        role="button"
+        tabindex="0"
+        (keydown.enter)="filterByStatus(TableStatus.Cleaning)"
       >
         <div class="summary-icon">
           <i class="fa fa-broom"></i>
@@ -143,6 +158,9 @@
         class="summary-card card-disabled-status"
         (click)="filterByStatus(TableStatus.Disabled)"
         [class.active]="selectedStatus() === TableStatus.Disabled"
+        role="button"
+        tabindex="0"
+        (keydown.enter)="filterByStatus(TableStatus.Disabled)"
       >
         <div class="summary-icon">
           <i class="fa fa-wrench"></i>
@@ -291,8 +309,10 @@
             <app-pager
               [totalCount]="filteredTableList().length"
               [pageSize]="gridPageSize()"
+              [pageSizeOptions]="[4, 8, 12, 16]"
               [currentPage]="gridPage()"
               (pageChange)="onGridPageChange($event)"
+              (pageSizeChange)="changeGridPageSize($event)"
             ></app-pager>
           </div>
         }

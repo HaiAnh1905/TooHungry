@@ -48,10 +48,6 @@ export class PagerComponent implements OnChanges {
   pageSizeSelectOptions: CustomSelectOption[] = [];
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['pageSizeOptions']) {
-      this.buildPageSizeOptions();
-    }
-
     if (this.list) {
       if (typeof this.list.page === 'number') {
         this.page = this.list.page + 1;
@@ -61,14 +57,29 @@ export class PagerComponent implements OnChanges {
       }
     }
 
-    if (!this.pageSizeSelectOptions.length) {
+    if (changes['currentPage'] && typeof this.currentPage === 'number') {
+      this.page = this.currentPage;
+    }
+
+    if (
+      changes['pageSizeOptions'] ||
+      changes['pageSize'] ||
+      !this.pageSizeSelectOptions.length ||
+      (this.pageSize && !this.pageSizeSelectOptions.some(opt => Number(opt.value) === Number(this.pageSize)))
+    ) {
       this.buildPageSizeOptions();
     }
   }
 
   private buildPageSizeOptions(): void {
-    const options = this.pageSizeOptions?.length ? this.pageSizeOptions : [5, 10, 20, 50];
-    this.pageSizeSelectOptions = options.map(size => ({
+    const rawOptions = this.pageSizeOptions?.length ? this.pageSizeOptions : [5, 10, 20, 50];
+    const uniqueOptions = Array.from(new Set(rawOptions.map(Number)));
+    if (this.pageSize && !uniqueOptions.includes(Number(this.pageSize))) {
+      uniqueOptions.push(Number(this.pageSize));
+    }
+    uniqueOptions.sort((a, b) => a - b);
+
+    this.pageSizeSelectOptions = uniqueOptions.map(size => ({
       value: size,
       label: `${size} ::RowsPerPage`,
     }));

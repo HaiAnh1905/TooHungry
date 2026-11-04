@@ -108,13 +108,12 @@
     </div>
   </div>
 
-  <!-- 4. DATA TABLE CARD & PAGINATION FOOTER -->
-  <div class="data-card-wrapper" #tableWrapper>
-    <!-- Bulk Actions Bar -->
-    <div
-      class="bulk-actions-bar d-flex align-items-center justify-content-between flex-wrap gap-3 mb-3 p-2 px-3"
-      [class.has-selection]="selectedDishIds.size > 0"
-    >
+  <!-- 4. KHỐI THAO TÁC HÀNG LOẠT (BULK ACTIONS - TÁCH BIỆT RIÊNG KHỎI BẢNG) -->
+  <div
+    class="bulk-actions-card mb-3"
+    [class.has-selection]="selectedDishIds.size > 0"
+  >
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 p-3">
       <div class="d-flex align-items-center gap-3">
         <span
           class="bulk-selected-badge"
@@ -124,7 +123,11 @@
           {{ '::SelectedCount' | abpLocalization: selectedDishIds.size + '' }}
         </span>
         <span class="bulk-info-text">
-          {{ '::BulkActionsPrompt' | abpLocalization }}
+          @if (selectedDishIds.size > 0) {
+            {{ '::BulkActionsPrompt' | abpLocalization }}
+          } @else {
+            {{ '::BulkActionsSelectHint' | abpLocalization }}
+          }
         </span>
       </div>
       <div class="d-flex align-items-center gap-2">
@@ -158,7 +161,10 @@
         </button>
       </div>
     </div>
+  </div>
 
+  <!-- 5. BẢNG DỮ LIỆU MÓN ĂN (DATA TABLE CARD) -->
+  <div class="data-card-wrapper" #tableWrapper>
     <div class="table-responsive-wrapper">
       <ngx-datatable
         #table
@@ -171,11 +177,12 @@
         [externalPaging]="true"
         columnMode="force"
         [headerHeight]="48"
+        [rowClass]="getRowClass"
         [messages]="{
           emptyMessage: '::NoDataAvailable' | abpLocalization,
           totalMessage: '::DishCount' | abpLocalization,
         }"
-        [rowHeight]="60"
+        [rowHeight]="72"
       >
         <!-- Cột Checkbox -->
         <ngx-datatable-column
@@ -222,7 +229,7 @@
             }}</span>
           </ng-template>
           <ng-template let-rowIndex="rowIndex" ngx-datatable-cell-template>
-            <span class="stt-text">{{ list.page * list.maxResultCount + rowIndex + 1 }}</span>
+            <span class="stt-text text-center w-100 d-block">{{ list.page * list.maxResultCount + rowIndex + 1 }}</span>
           </ng-template>
         </ngx-datatable-column>
 
@@ -230,12 +237,12 @@
         <ngx-datatable-column
           [name]="'::DishName' | abpLocalization"
           prop="name"
-          [minWidth]="200"
-          [flexGrow]="3"
+          [minWidth]="220"
+          [flexGrow]="4"
           [canAutoResize]="true"
         >
           <ng-template let-row="row" ngx-datatable-cell-template>
-            <div class="d-flex align-items-center text-truncate gap-2 w-100">
+            <div class="dish-item-cell d-flex align-items-center gap-3 w-100 py-1">
               @if (row.imageUrl) {
                 <div class="dish-thumb-box flex-shrink-0">
                   <img
@@ -250,9 +257,9 @@
                   <i class="fa fa-utensils"></i>
                 </div>
               }
-              <div class="d-flex flex-column text-truncate">
-                <div class="d-flex align-items-center gap-1">
-                  <span class="dish-name-text text-truncate" [title]="row.name">{{ row.name }}</span>
+              <div class="dish-info-content d-flex flex-column justify-content-center overflow-hidden flex-grow-1">
+                <div class="d-flex align-items-center gap-1 flex-wrap">
+                  <span class="dish-name-text" [title]="row.name">{{ row.name }}</span>
                   @if (!row.isActive && row.deletionReason) {
                     <span
                       class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle flex-shrink-0"
@@ -264,13 +271,12 @@
                   }
                 </div>
                 @if (row.description) {
-                  <small
-                    class="text-muted text-truncate"
-                    style="font-size: 0.76rem; max-width: 320px"
+                  <div
+                    class="dish-desc-text"
                     [title]="row.description"
                   >
                     {{ row.description }}
-                  </small>
+                  </div>
                 }
               </div>
             </div>
@@ -281,10 +287,10 @@
         <ngx-datatable-column
           [name]="'::Category' | abpLocalization"
           prop="dishCategoryName"
-          [width]="145"
-          [minWidth]="130"
-          [maxWidth]="170"
-          [canAutoResize]="false"
+          [width]="165"
+          [minWidth]="140"
+          [maxWidth]="195"
+          [canAutoResize]="true"
           [sortable]="false"
         >
           <ng-template let-row="row" ngx-datatable-cell-template>
@@ -304,33 +310,39 @@
           [canAutoResize]="false"
         >
           <ng-template let-row="row" ngx-datatable-cell-template>
-            <div class="d-flex align-items-center">
+            <div class="d-flex align-items-center text-nowrap">
               <span class="dish-amount-text">{{ row.price | number: '1.0-0' }}</span>
               <span class="currency-tag-sm ms-2">VND</span>
             </div>
           </ng-template>
         </ngx-datatable-column>
 
-        <!-- Cột 5: Trạng thái phục vụ (IsActive Switch) -->
+        <!-- Cột 5: Trạng thái phục vụ (IsActive Switch + Label) -->
         <ngx-datatable-column
           [name]="'::Status' | abpLocalization"
-          [width]="140"
-          [minWidth]="125"
-          [maxWidth]="155"
+          [width]="165"
+          [minWidth]="150"
+          [maxWidth]="185"
           [canAutoResize]="false"
           [sortable]="false"
         >
+          <ng-template ngx-datatable-header-template>
+            <span class="w-100 text-center header-title-centered">{{
+              '::Status' | abpLocalization
+            }}</span>
+          </ng-template>
           <ng-template let-row="row" ngx-datatable-cell-template>
-            <div class="form-check form-switch d-flex align-items-center gap-2 m-0 p-0 text-nowrap">
+            <div class="status-switch-wrapper d-flex align-items-center justify-content-center gap-2">
               <input
-                class="form-check-input switch-dish-active m-0"
+                class="form-check-input switch-dish-active m-0 flex-shrink-0"
                 type="checkbox"
                 role="switch"
                 [checked]="row.isActive"
                 (click)="toggleActive(row, $event)"
                 [title]="(row.isActive ? '::ActiveDishes' : '::InactiveDishes') | abpLocalization"
+                [attr.aria-label]="(row.isActive ? '::ActiveDishes' : '::InactiveDishes') | abpLocalization"
               />
-              <span class="status-indicator-label text-nowrap" [class.active]="row.isActive">
+              <span class="status-indicator-label" [class.active]="row.isActive">
                 {{ (row.isActive ? '::ActiveDishes' : '::InactiveDishes') | abpLocalization }}
               </span>
             </div>

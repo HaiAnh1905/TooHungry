@@ -233,7 +233,11 @@ export class CustomSelectComponent implements ControlValueAccessor {
   }
 
   get displayLabel(): string {
-    const raw = this.selectedOption?.label || this.placeholder || '';
+    const raw =
+      this.selectedOption?.label ||
+      (this.value !== null && this.value !== undefined && this.value !== ''
+        ? String(this.value)
+        : this.placeholder || '');
     return this.getLocalizedText(raw);
   }
 

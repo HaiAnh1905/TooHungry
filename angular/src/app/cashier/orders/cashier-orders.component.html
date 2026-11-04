@@ -1,0 +1,187 @@
+<div class="cashier-orders-container">
+  <!-- Controls Bar: Status Tabs, Search, and In-place Reload -->
+  <div class="orders-toolbar card-shadow">
+    <!-- Status Tabs -->
+    <div class="status-tabs" role="tablist">
+      <button
+        *ngFor="let tab of tabs"
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab() === tab.key"
+        (click)="selectTab(tab.key)"
+        role="tab"
+        [attr.aria-selected]="activeTab() === tab.key"
+        [id]="'tab-' + tab.key"
+      >
+        <i class="fa" [ngClass]="tab.icon"></i>
+        <span>{{ tab.labelKey | abpLocalization }}</span>
+      </button>
+    </div>
+
+    <!-- Search & Reload Button -->
+    <div class="search-reload-group">
+      <div class="search-box">
+        <i class="fa fa-search search-icon"></i>
+        <input
+          type="text"
+          class="form-control search-input"
+          [placeholder]="'::SearchOrdersPlaceholder' | abpLocalization"
+          [ngModel]="searchQuery()"
+          (ngModelChange)="searchQuery.set($event)"
+          (keyup.enter)="reloadOrders()"
+        />
+        <button
+          *ngIf="searchQuery()"
+          type="button"
+          class="clear-search-btn"
+          (click)="searchQuery.set(''); reloadOrders()"
+        >
+          <i class="fa fa-times"></i>
+        </button>
+      </div>
+
+      <!-- In-place Reload Button (T018B) -->
+      <button
+        type="button"
+        class="btn btn-reload"
+        (click)="reloadOrders()"
+        [disabled]="isReloading()"
+        [title]="'::ReloadOrdersTooltip' | abpLocalization"
+        id="btn-cashier-reload-orders"
+      >
+        <i class="fa fa-rotate" [class.fa-spin]="isReloading()"></i>
+        <span>{{ '::ReloadOrdersButton' | abpLocalization }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="state.isLoadingOrders()" class="loading-state">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    <p>{{ '::LoadingOrders' | abpLocalization }}</p>
+  </div>
+
+  <!-- Orders Grid -->
+  <div
+    *ngIf="!state.isLoadingOrders() && state.orders().length > 0"
+    class="orders-grid"
+  >
+    <div
+      *ngFor="let order of state.orders()"
+      class="order-card card-shadow"
+      [class.card-bill-requested]="isBillRequestedOrder(order)"
+    >
+      <!-- Card Header -->
+      <div class="order-card-header">
+        <div class="table-badge">
+          <i class="fa fa-utensils"></i>
+          <span class="table-name">{{ order.tableName || ('::TableUnknown' | abpLocalization) }}</span>
+        </div>
+        <div class="status-badge" [ngClass]="getStatusBadgeClass(order.status)">
+          <span *ngIf="order.status === OrderStatus.Pending">{{ '::OrderStatusPending' | abpLocalization }}</span>
+          <span *ngIf="order.status === OrderStatus.Processing">{{ '::OrderStatusProcessing' | abpLocalization }}</span>
+          <span *ngIf="order.status === OrderStatus.Completed">{{ '::OrderStatusCompletedShort' | abpLocalization }}</span>
+          <span *ngIf="order.status === OrderStatus.Cancelled">{{ '::OrderStatusCancelled' | abpLocalization }}</span>
+        </div>
+      </div>
+
+      <!-- Card Body -->
+      <div class="order-card-body">
+        <div class="order-code-row">
+          <span class="order-number">#{{ order.orderNumber }}</span>
+          <span class="order-time">
+            <i class="fa fa-clock"></i>
+            {{ order.creationTime | date: 'HH:mm' }}
+          </span>
+        </div>
+
+        <!-- Bill Requested Callout -->
+        <div *ngIf="isBillRequestedOrder(order)" class="bill-requested-banner">
+          <i class="fa fa-bell fa-shake"></i>
+          <span>{{ '::BillRequestedAlert' | abpLocalization }}</span>
+        </div>
+
+        <!-- Items preview -->
+        <div class="order-items-summary">
+          <span class="item-count">
+            <i class="fa fa-bowl-food"></i>
+            {{ order.items?.length || 0 }} {{ '::DishesCountSuffix' | abpLocalization }}
+          </span>
+          <div *ngIf="order.note" class="order-note-snippet" [title]="order.note | fixMojibake">
+            <i class="fa fa-message"></i> {{ order.note | fixMojibake }}
+          </div>
+        </div>
+
+        <!-- Price Total -->
+        <div class="order-total-row">
+          <span class="total-label">{{ '::TotalAmount' | abpLocalization }}:</span>
+          <span class="total-value">{{ (order.totalAmount || 0) | number: '1.0-0' }} đ</span>
+        </div>
+      </div>
+
+      <!-- Card Actions -->
+      <div class="order-card-footer">
+        <button
+          type="button"
+          class="btn btn-outline-secondary btn-action"
+          (click)="openOrderDetailModal(order)"
+          [title]="'::ViewOrderDetailsTooltip' | abpLocalization"
+          [id]="'btn-view-order-' + order.id"
+        >
+          <i class="fa fa-eye"></i>
+          <span>{{ '::ViewOrderDetailsTooltip' | abpLocalization }}</span>
+        </button>
+
+        <button
+          *ngIf="order.status !== OrderStatus.Completed && order.status !== OrderStatus.Cancelled"
+          type="button"
+          class="btn btn-primary btn-action btn-pay"
+          (click)="openPaymentModal(order)"
+          [title]="'::PayNowTooltip' | abpLocalization"
+          [id]="'btn-pay-order-' + order.id"
+        >
+          <i class="fa fa-money-bill-wave"></i>
+          <span>{{ '::PayNowTooltip' | abpLocalization }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div
+    *ngIf="!state.isLoadingOrders() && state.orders().length === 0"
+    class="empty-state card-shadow"
+  >
+    <div class="empty-icon">
+      <i class="fa fa-clipboard-list"></i>
+    </div>
+    <h4 class="empty-title">{{ '::NoOrdersInTab' | abpLocalization }}</h4>
+    <p class="empty-desc">{{ '::NoOrdersInTabDesc' | abpLocalization }}</p>
+    <button type="button" class="btn btn-outline-primary" (click)="reloadOrders()">
+      <i class="fa fa-rotate"></i>
+      {{ '::ReloadOrdersButton' | abpLocalization }}
+    </button>
+  </div>
+</div>
+
+<!-- Payment Modal -->
+@if (isPaymentModalOpen() && paymentOrderId()) {
+  <app-cashier-payment-modal
+    [orderId]="paymentOrderId()!"
+    [table]="paymentTable()"
+    (closed)="isPaymentModalOpen.set(false)"
+    (paymentSuccess)="onPaymentSuccess()"
+  ></app-cashier-payment-modal>
+}
+
+<!-- Order Detail Modal -->
+@if (isOrderDetailModalOpen() && selectedOrderTable()) {
+  <app-cashier-order-detail-modal
+    [table]="selectedOrderTable()!"
+    [orderInput]="selectedOrderDetail()!"
+    (closed)="isOrderDetailModalOpen.set(false)"
+    (requestPayment)="onModalRequestPayment($event)"
+  ></app-cashier-order-detail-modal>
+}

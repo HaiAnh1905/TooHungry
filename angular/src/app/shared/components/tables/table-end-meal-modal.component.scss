@@ -1,3 +1,35 @@
+::ng-deep {
+  .modal:has(.end-meal-modal-body) .modal-dialog,
+  .end-meal-modal-dialog.modal-dialog,
+  .end-meal-modal-dialog {
+    max-width: 520px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+
+    .modal-content {
+      border-radius: 18px !important;
+      border: 1px solid #e2e8f0 !important;
+      box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.12) !important;
+      overflow: hidden !important;
+    }
+
+    .modal-header {
+      padding: 1.25rem 1.75rem 1rem !important;
+      border-bottom: 1px solid #f1f5f9 !important;
+    }
+
+    .modal-body {
+      padding: 13px 1.75rem !important;
+    }
+
+    .modal-footer {
+      padding: 1.25rem 1.75rem !important;
+      border-top: 1px solid #f1f5f9 !important;
+      background: #fbfcfe !important;
+    }
+  }
+}
+
 .modal-header-endmeal {
   .header-icon-box {
     width: 44px;
@@ -7,6 +39,7 @@
     align-items: center;
     justify-content: center;
     font-size: 1.2rem;
+    flex-shrink: 0;
 
     &.icon-payment {
       background: #eff6ff;
@@ -33,11 +66,16 @@
 }
 
 .end-meal-modal-body {
+  padding: 0 !important;
+  margin: 0 !important;
+
   .meal-session-timeline-card {
     background: #f8fafc;
     border: 1px solid #e2e8f0;
-    border-radius: 14px;
-    padding: 16px;
+    border-radius: 16px;
+    padding: 18px 20px;
+    margin-top: 0 !important;
+    margin-bottom: 1.25rem !important;
 
     .session-badge-icon {
       width: 36px;
@@ -64,22 +102,26 @@
       font-size: 0.88rem;
       padding: 6px 14px;
       border-radius: 20px;
+
+      i {
+        margin-right: 4px !important;
+      }
     }
 
     .timeline-track-wrap {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 8px;
+      gap: 14px;
       background: #ffffff;
-      padding: 14px 18px;
-      border-radius: 12px;
+      padding: 16px 20px;
+      border-radius: 14px;
       border: 1px solid #e2e8f0;
 
       .timeline-node {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 12px;
 
         .node-indicator {
           width: 38px;
@@ -89,6 +131,7 @@
           align-items: center;
           justify-content: center;
           font-size: 1rem;
+          flex-shrink: 0;
         }
 
         &.start .node-indicator {
@@ -130,71 +173,92 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        position: relative;
-        padding: 0 10px;
-
-        .connector-line {
-          position: absolute;
-          top: 50%;
-          left: 0;
-          right: 0;
-          height: 2px;
-          background: #e2e8f0;
-          z-index: 1;
-        }
+        justify-content: center;
+        padding: 0 12px;
+        margin: 0 4px;
 
         .connector-pill {
-          position: relative;
-          z-index: 2;
-          background: #ea580c;
+          background: linear-gradient(135deg, #ea580c, #f97316);
           color: #ffffff;
           font-weight: 700;
           font-size: 0.75rem;
           padding: 2px 10px;
-          border-radius: 12px;
-          margin-bottom: 2px;
+          border-radius: 9999px;
+          margin-bottom: 6px;
+          box-shadow: 0 2px 6px rgba(234, 88, 12, 0.25);
+          white-space: nowrap;
+          letter-spacing: 0.02em;
         }
 
-        .connector-arrow {
+        .connector-arrow-track {
+          width: 100%;
+          display: flex;
+          align-items: center;
           position: relative;
-          z-index: 2;
-          color: #94a3b8;
-          font-size: 0.7rem;
+
+          .arrow-line {
+            flex: 1;
+            height: 2px;
+            background: #cbd5e1;
+            border-radius: 2px 0 0 2px;
+          }
+
+          .arrow-head {
+            width: 0;
+            height: 0;
+            border-top: 5px solid transparent;
+            border-bottom: 5px solid transparent;
+            border-left: 8px solid #94a3b8;
+            flex-shrink: 0;
+          }
         }
       }
     }
   }
 
   .alert-order-card {
-    border-radius: 12px;
+    border-radius: 14px;
     background: #eff6ff;
     border: 1px solid #bfdbfe;
-    padding: 14px;
+    padding: 16px 20px;
+    gap: 16px;
+    margin-bottom: 0 !important;
 
     .alert-heading {
       color: #1e40af;
       font-size: 1rem;
+      margin-bottom: 0.35rem;
     }
   }
 
   .alert-no-order-card {
-    border-radius: 12px;
+    border-radius: 14px;
     background: #fefce8;
     border: 1px solid #fef08a;
-    padding: 14px;
+    padding: 16px 20px;
+    gap: 16px;
+    margin-bottom: 0 !important;
 
     .alert-heading {
       color: #854d0e;
       font-size: 1rem;
+      margin-bottom: 0.35rem;
     }
   }
 }
 
 .btn-action {
   font-weight: 700;
-  border-radius: 8px;
-  padding: 8px 16px;
+  border-radius: 10px;
+  padding: 9px 22px;
   min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  i {
+    margin-right: 6px !important;
+  }
 
   &.btn-payment {
     background: #2563eb;
@@ -220,7 +284,8 @@
 }
 
 .btn-cancel {
-  border-radius: 8px;
-  padding: 8px 16px;
+  border-radius: 10px;
+  padding: 9px 22px;
   min-height: 44px;
+  font-weight: 600;
 }

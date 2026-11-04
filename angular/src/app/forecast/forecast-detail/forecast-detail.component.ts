@@ -49,15 +49,17 @@ export class ForecastDetailComponent implements OnInit {
   // Pagination & filter options
   readonly pageSizeOptions = [10, 20, 50];
 
-  // Tab 1: Dishes Filter & Pagination
+  // Tab 1: Dishes Filter, Sorting & Pagination
   dishSearch = '';
   dishRecipeFilter: 'all' | 'hasRecipe' | 'noRecipe' = 'all';
+  // Chỉ sắp xếp duy nhất theo Số lượng dự báo (Mặc định: Cao -> Thấp, không có trạng thái không sắp xếp)
+  dishSortBy: 'quantityDesc' | 'quantityAsc' = 'quantityDesc';
   dishPageIndex = 1;
   dishPageSize = 10;
 
   get filteredDishes(): DemandForecastItemDto[] {
     if (!this.forecast?.items) return [];
-    let items = this.forecast.items;
+    let items = [...this.forecast.items];
 
     if (this.dishSearch.trim()) {
       const q = this.dishSearch.toLowerCase().trim();
@@ -69,6 +71,14 @@ export class ForecastDetailComponent implements OnInit {
     } else if (this.dishRecipeFilter === 'noRecipe') {
       items = items.filter(d => !d.hasRecipe);
     }
+
+    // Luôn luôn sắp xếp theo Số lượng dự báo (Mặc định: Cao -> Thấp, không có trạng thái không sắp xếp)
+    items.sort((a, b) => {
+      if (this.dishSortBy === 'quantityAsc') {
+        return (a.forecastQuantity ?? 0) - (b.forecastQuantity ?? 0);
+      }
+      return (b.forecastQuantity ?? 0) - (a.forecastQuantity ?? 0);
+    });
 
     return items;
   }
@@ -113,15 +123,33 @@ export class ForecastDetailComponent implements OnInit {
     this.dishPageIndex = 1;
   }
 
-  // Tab 2: Ingredients Filter & Pagination
+  onDishSortChange(): void {
+    this.dishPageIndex = 1;
+    this.cdr.markForCheck();
+  }
+
+  toggleDishSort(): void {
+    this.dishSortBy = this.dishSortBy === 'quantityDesc' ? 'quantityAsc' : 'quantityDesc';
+    this.dishPageIndex = 1;
+    this.cdr.markForCheck();
+  }
+
+  // Tab 2: Ingredients Filter, Sorting & Pagination
   ingredientSearch = '';
   ingredientStockFilter: 'all' | 'needBuy' | 'sufficient' = 'all';
+  ingredientSortBy:
+    | 'suggestedQtyDesc'
+    | 'suggestedQtyAsc'
+    | 'requiredQtyDesc'
+    | 'requiredQtyAsc'
+    | 'nameAsc'
+    | 'nameDesc' = 'suggestedQtyDesc';
   ingredientPageIndex = 1;
   ingredientPageSize = 10;
 
   get filteredIngredients(): IngredientPlanItemDto[] {
     if (!this.ingredientPlan?.items) return [];
-    let items = this.ingredientPlan.items;
+    let items = [...this.ingredientPlan.items];
 
     if (this.ingredientSearch.trim()) {
       const q = this.ingredientSearch.toLowerCase().trim();
@@ -134,7 +162,45 @@ export class ForecastDetailComponent implements OnInit {
       items = items.filter(i => (i.suggestedPurchaseQuantity || 0) <= 0);
     }
 
+    items.sort((a, b) => {
+      switch (this.ingredientSortBy) {
+        case 'suggestedQtyAsc':
+          return (a.suggestedPurchaseQuantity ?? 0) - (b.suggestedPurchaseQuantity ?? 0);
+        case 'suggestedQtyDesc':
+        default:
+          return (b.suggestedPurchaseQuantity ?? 0) - (a.suggestedPurchaseQuantity ?? 0);
+        case 'requiredQtyDesc':
+          return (b.requiredQuantity ?? 0) - (a.requiredQuantity ?? 0);
+        case 'requiredQtyAsc':
+          return (a.requiredQuantity ?? 0) - (b.requiredQuantity ?? 0);
+        case 'nameAsc':
+          return (a.ingredientName || '').localeCompare(b.ingredientName || '', 'vi', { sensitivity: 'base' });
+        case 'nameDesc':
+          return (b.ingredientName || '').localeCompare(a.ingredientName || '', 'vi', { sensitivity: 'base' });
+      }
+    });
+
     return items;
+  }
+
+  onIngredientSortChange(): void {
+    this.ingredientPageIndex = 1;
+    this.cdr.markForCheck();
+  }
+
+  toggleIngredientSort(field: 'suggestedQty' | 'requiredQty' | 'name'): void {
+    if (field === 'suggestedQty') {
+      this.ingredientSortBy =
+        this.ingredientSortBy === 'suggestedQtyDesc' ? 'suggestedQtyAsc' : 'suggestedQtyDesc';
+    } else if (field === 'requiredQty') {
+      this.ingredientSortBy =
+        this.ingredientSortBy === 'requiredQtyDesc' ? 'requiredQtyAsc' : 'requiredQtyDesc';
+    } else if (field === 'name') {
+      this.ingredientSortBy =
+        this.ingredientSortBy === 'nameAsc' ? 'nameDesc' : 'nameAsc';
+    }
+    this.ingredientPageIndex = 1;
+    this.cdr.markForCheck();
   }
 
   get pagedIngredients(): IngredientPlanItemDto[] {

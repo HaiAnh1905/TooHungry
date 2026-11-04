@@ -701,6 +701,19 @@ public class OrderAppService : TooHungryAppService, IOrderAppService
         CurrentUnitOfWork?.OnCompleted(async () =>
         {
             await _realtimeNotifier.NotifyTableOrderUpdatedAsync(table.Id, true, order.Id);
+            await _realtimeNotifier.NotifyOrderPlacedOrUpdatedAsync(new OrderPlacedOrUpdatedDto
+            {
+                OrderId = order.Id,
+                OrderCode = order.OrderNumber,
+                TableId = table.Id,
+                TableNumber = table.Name,
+                TotalItemCount = order.Items?.Sum(i => i.Quantity) ?? 0,
+                TotalEstimatedAmount = order.TotalAmount,
+                Action = isNewOrder ? "Placed" : "Modified",
+                WaiterName = CurrentUser.Name ?? CurrentUser.UserName ?? "Phục vụ",
+                WaiterId = CurrentUser.Id,
+                Timestamp = Clock.Now
+            });
         });
 
         return await GetAsync(order.Id);
@@ -776,9 +789,10 @@ public class OrderAppService : TooHungryAppService, IOrderAppService
         await ProcessOrderInventoryConsumptionAsync(order);
 
         // 2. Chuyển bàn ăn sang trạng thái Dọn dẹp (Cleaning) & phát Realtime SignalR
+        RestaurantTable? table = null;
         if (order.TableId.HasValue)
         {
-            var table = await _tableRepository.FindAsync(order.TableId.Value);
+            table = await _tableRepository.FindAsync(order.TableId.Value);
             if (table != null)
             {
                 table.MarkCleaning();
@@ -787,7 +801,79 @@ public class OrderAppService : TooHungryAppService, IOrderAppService
             }
         }
 
+        await _realtimeNotifier.NotifyPaymentCompletedAsync(new PaymentCompletedDto
+        {
+            OrderId = order.Id,
+            OrderCode = order.OrderNumber,
+            TableId = table?.Id ?? order.TableId ?? Guid.Empty,
+            TableNumber = table?.Name ?? order.Table?.Name ?? string.Empty,
+            PaidAmount = order.TotalAmount,
+            PaymentMethod = input.PaymentMethod == PaymentMethod.VietQr ? "VIETQR" : "CASH",
+            CashierName = CurrentUser.Name ?? CurrentUser.UserName ?? "Thu ngân",
+            CashierId = CurrentUser.Id,
+            CompletedTime = Clock.Now
+        });
+
         return await GetAsync(id);
+    }
+
+    /// <summary>
+    /// Waiter yêu cầu thanh toán (RM-028):
+    /// Cập nhật cờ [Yêu cầu tính tiền] vào ghi chú đơn hàng và phát tín hiệu Realtime SignalR tới Thu ngân.
+    /// </summary>
+    public virtual async Task RequestBillAsync(Guid orderId)
+    {
+        var queryable = await _orderRepository.WithDetailsAsync(x => x.Items, x => x.Table!);
+        var order = await AsyncExecuter.FirstOrDefaultAsync(queryable, x => x.Id == orderId);
+        if (order == null)
+        {
+            throw new EntityNotFoundException(typeof(Order), orderId);
+        }
+
+        if (order.Status == OrderStatus.Completed)
+        {
+            throw new BusinessException("TooHungry:Order:AlreadyCompleted");
+        }
+
+        if (order.Status == OrderStatus.Cancelled)
+        {
+            throw new BusinessException("TooHungry:Order:AlreadyCancelled");
+        }
+
+        const string tag = "[Yêu cầu tính tiền]";
+        if (string.IsNullOrWhiteSpace(order.Note))
+        {
+            order.Note = tag;
+        }
+        else if (!order.Note.Contains(tag))
+        {
+            order.Note = $"{order.Note} {tag}";
+        }
+
+        if (order.TotalAmount == 0 && order.Items?.Count > 0)
+        {
+            order.RecalculateTotalAmount();
+        }
+
+        await _orderRepository.UpdateAsync(order, autoSave: true);
+        
+        var table = order.Table;
+        if (table == null && order.TableId.HasValue)
+        {
+            table = await _tableRepository.FindAsync(order.TableId.Value);
+        }
+
+        await _realtimeNotifier.NotifyBillRequestedAsync(new BillRequestedDto
+        {
+            OrderId = order.Id,
+            OrderCode = order.OrderNumber,
+            TableId = table?.Id ?? order.TableId ?? Guid.Empty,
+            TableNumber = table?.Name ?? string.Empty,
+            TotalAmount = order.TotalAmount,
+            WaiterName = CurrentUser.Name ?? CurrentUser.UserName ?? "Phục vụ",
+            WaiterId = CurrentUser.Id,
+            RequestedTime = Clock.Now
+        });
     }
 
     private async Task PopulateDishInfoAsync(IEnumerable<OrderDto> dtos)

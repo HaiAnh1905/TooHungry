@@ -13,6 +13,7 @@ import { InventoryKeeperSidebarService } from '../services/inventory-keeper-side
 import { InventoryAlertStateService } from '../services/inventory-alert-state.service';
 import { BarcodeScannerService } from '../services/barcode-scanner.service';
 import { InventoryKeeperShiftType } from '../models/inventory-keeper.models';
+import { UserRoleNavigationService } from '../../shared/services/user-role-navigation.service';
 
 describe('InventoryKeeperLayoutComponent', () => {
   let component: InventoryKeeperLayoutComponent;
@@ -25,6 +26,7 @@ describe('InventoryKeeperLayoutComponent', () => {
   let mockAlertStateService: any;
   let mockBarcodeService: any;
   let mockConfirmationService: any;
+  let mockUserRoleNav: any;
 
   beforeEach(() => {
     mockRouter = {
@@ -83,6 +85,10 @@ describe('InventoryKeeperLayoutComponent', () => {
     mockConfirmationService = {
       warn: vi.fn(),
     };
+    mockUserRoleNav = {
+      canNavigateToAdmin: vi.fn().mockReturnValue(false),
+      canNavigateToAdmin$: vi.fn().mockReturnValue(of(false)),
+    };
 
     const injector = Injector.create({
       providers: [
@@ -96,6 +102,7 @@ describe('InventoryKeeperLayoutComponent', () => {
         { provide: InventoryAlertStateService, useValue: mockAlertStateService },
         { provide: BarcodeScannerService, useValue: mockBarcodeService },
         { provide: ConfirmationService, useValue: mockConfirmationService },
+        { provide: UserRoleNavigationService, useValue: mockUserRoleNav },
       ],
     });
 
@@ -118,6 +125,7 @@ describe('InventoryKeeperLayoutComponent', () => {
   });
 
   it('should allow returning to admin if user has Manager or Administrator role', () => {
+    mockUserRoleNav.canNavigateToAdmin.mockReturnValue(true);
     mockConfigState.getOne$.mockReturnValue(
       of({
         id: 'admin-1',
@@ -135,6 +143,13 @@ describe('InventoryKeeperLayoutComponent', () => {
   });
 
   it('should navigate to tab and close mobile drawer', () => {
+    component.navigateToTab('inventory');
+
+    expect(mockRouter.navigate).toHaveBeenCalledWith(['/inventory-keeper/inventory'], {
+      queryParams: undefined,
+    });
+    expect(mockSidebarService.setMobileDrawerOpen).toHaveBeenCalledWith(false);
+
     component.navigateToTab('batches', { status: 'ExpiringSoon' });
 
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/inventory-keeper/batches'], {

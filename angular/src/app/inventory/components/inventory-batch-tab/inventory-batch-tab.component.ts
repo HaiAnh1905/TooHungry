@@ -55,6 +55,40 @@ export class InventoryBatchTabComponent implements OnChanges {
 
   filteredBatches: BatchViewItem[] = [];
 
+  getUnitAbbr(unit?: string): string {
+    if (!unit) return '';
+    const u = unit.trim().toLowerCase();
+    switch (u) {
+      case 'kilogram':
+      case 'kilogam':
+      case 'kilo':
+      case 'kg':
+        return 'kg';
+      case 'gram':
+      case 'gam':
+      case 'g':
+        return 'g';
+      case 'mililit':
+      case 'milliliter':
+      case 'ml':
+        return 'ml';
+      case 'lít':
+      case 'lit':
+      case 'liter':
+      case 'l':
+        return 'l';
+      case 'ounce':
+      case 'oz':
+        return 'oz';
+      case 'pound':
+      case 'lb':
+      case 'lbs':
+        return 'lb';
+      default:
+        return unit;
+    }
+  }
+
   get pageSizeOptions(): CustomSelectOption[] {
     const unit = this.localizationService.instant('::RowsPerPage');
     return [

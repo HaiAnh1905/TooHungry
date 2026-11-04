@@ -148,6 +148,20 @@
             <button
               type="button"
               class="sidebar-pill-btn"
+              (click)="router.navigate(['/inventory-keeper/inventory'])"
+            >
+              <div class="d-flex align-items-center justify-content-between w-100">
+                <span>
+                  <i class="fas fa-warehouse text-primary-orange me-1.5"></i>
+                  {{ '::KeeperInventoryTab' | abpLocalization }}
+                </span>
+                <i class="fas fa-arrow-right text-muted small"></i>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              class="sidebar-pill-btn"
               (click)="router.navigate(['/inventory-keeper/transactions'])"
             >
               <div class="d-flex align-items-center justify-content-between w-100">
@@ -163,7 +177,153 @@
       </div>
     }
 
-    <!-- 2. SIDEBAR CHO TAB DANH MỤC LÔ HÀNG / BATCHES -->
+    <!-- 2. SIDEBAR CHO TAB QUẢN LÝ TỒN KHO / INVENTORY -->
+    @case ('inventory') {
+      <div class="dashboard-sidebar-panel">
+        <!-- Ô TÌM KIẾM NHANH (MÃ LÔ, NGUYÊN LIỆU) KÈM SHORTCUT CTRL + K -->
+        <div class="sidebar-search-block mb-2">
+          <label class="form-label fw-bold text-muted d-flex align-items-center justify-content-between mb-1">
+            <span>{{ '::Search' | abpLocalization }}</span>
+            <span class="badge bg-light text-muted border">Ctrl + K</span>
+          </label>
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-white border-end-0">
+              <i class="fas fa-search text-muted"></i>
+            </span>
+            <input
+              #inventorySearchInput
+              type="text"
+              class="form-control border-start-0 ps-0"
+              [placeholder]="'::QuickSearchBatches' | abpLocalization"
+              [ngModel]="sidebarService.batchesSearchTerm()"
+              (ngModelChange)="onDashboardSearchInput($event)"
+            />
+            @if (sidebarService.batchesSearchTerm()) {
+              <button
+                type="button"
+                class="btn btn-outline-secondary border-start-0"
+                (click)="clearBatchesSearch()"
+              >
+                <i class="fas fa-times"></i>
+              </button>
+            }
+          </div>
+        </div>
+
+        <!-- Nút Quét mã vạch trực tiếp trên Sidebar -->
+        <div class="sidebar-scan-btn mb-3">
+          <button
+            type="button"
+            class="btn btn-primary-orange w-100 py-1.5 d-flex align-items-center justify-content-center gap-2"
+            (click)="openCameraModal()"
+          >
+            <i class="fas fa-barcode"></i>
+            <span>{{ '::KeeperScanBarcode' | abpLocalization }}</span>
+          </button>
+        </div>
+
+        <!-- THÔNG TIN CA TRỰC & TRẠNG THÁI VẬN HÀNH KHO -->
+        <div class="sidebar-filter-group mb-3">
+          <div class="filter-group-title">
+            <i class="fas fa-id-badge me-1 text-primary-orange"></i>
+            {{ '::WarehouseStatus' | abpLocalization }}
+          </div>
+          <div class="shift-info-card">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <span class="shift-label">
+                <i class="far fa-clock me-1 text-primary-orange"></i>
+                {{ '::CurrentShift' | abpLocalization }}:
+              </span>
+              <span class="shift-badge-val">
+                {{ userInfo?.shiftLocalizationKey ? (userInfo?.shiftLocalizationKey | abpLocalization) : ('::OperationalCockpit' | abpLocalization) }}
+              </span>
+            </div>
+            <div class="d-flex align-items-center justify-content-between">
+              <span class="shift-label">
+                <i class="far fa-calendar-check me-1 text-muted"></i>
+                {{ '::DataLastUpdated' | abpLocalization }}:
+              </span>
+              <span class="shift-date-val">
+                {{ alertStateService.kpiSummary().lastUpdated | date:'HH:mm' }} ({{ alertStateService.kpiSummary().lastUpdated | date:'dd/MM' }})
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- LỐI TẮT BỘ LỌC NHANH KHO -->
+        <div class="sidebar-filter-group">
+          <div class="filter-group-title">
+            <i class="fas fa-bolt me-1 text-primary-orange"></i>
+            {{ '::WarehouseQuickShortcuts' | abpLocalization }}
+          </div>
+          <div class="filter-pills-column">
+            <button
+              type="button"
+              class="sidebar-pill-btn"
+              (click)="goToBatchesWithFilter('All')"
+            >
+              <div class="d-flex align-items-center justify-content-between w-100">
+                <span>
+                  <i class="fas fa-boxes-stacked text-primary-orange me-1.5"></i>
+                  {{ '::KeeperBatchesTab' | abpLocalization }}
+                </span>
+                <span class="badge bg-slate-soft text-dark">
+                  {{ alertStateService.kpiSummary().totalActiveBatchesCount }}
+                </span>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              class="sidebar-pill-btn"
+              (click)="goToBatchesWithFilter('ExpiringSoon')"
+            >
+              <div class="d-flex align-items-center justify-content-between w-100">
+                <span>
+                  <i class="fas fa-hourglass-half text-amber me-1.5"></i>
+                  {{ '::BatchStatusExpiringSoon' | abpLocalization }}
+                </span>
+                <span class="badge rounded-pill bg-amber-soft text-amber">
+                  {{ alertStateService.kpiSummary().expiringSoonCount }}
+                </span>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              class="sidebar-pill-btn"
+              (click)="goToBatchesWithFilter('Expired')"
+            >
+              <div class="d-flex align-items-center justify-content-between w-100">
+                <span>
+                  <i class="fas fa-ban text-red me-1.5"></i>
+                  {{ '::BatchStatusExpired' | abpLocalization }}
+                </span>
+                <span class="badge rounded-pill bg-red-soft text-red">
+                  {{ alertStateService.kpiSummary().expiredCount }}
+                </span>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              class="sidebar-pill-btn"
+              (click)="router.navigate(['/inventory-keeper/transactions'])"
+            >
+              <div class="d-flex align-items-center justify-content-between w-100">
+                <span>
+                  <i class="fas fa-clock-rotate-left text-sky me-1.5"></i>
+                  {{ '::KeeperTransactionsTab' | abpLocalization }}
+                </span>
+                <i class="fas fa-arrow-right text-muted small"></i>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- 3. SIDEBAR CHO TAB DANH MỤC LÔ HÀNG / BATCHES -->
     @case ('batches') {
       <div class="batches-sidebar-panel">
         <!-- Ô TÌM KIẾM NHANH (MÃ LÔ, NGUYÊN LIỆU) KÈM SHORTCUT CTRL + K -->

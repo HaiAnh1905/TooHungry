@@ -75,6 +75,10 @@ export class InventoryComponent implements OnInit {
   activeTab: InventoryTabType = 'ingredients';
   kpiFilter: KpiFilterType = 'all';
 
+  get isKeeperPortal(): boolean {
+    return this.router.url.includes('/inventory-keeper');
+  }
+
   // Filters state
   ingredientStockFilter: 'ALL' | 'SAFE' | 'LOW' = 'ALL';
   ingredientStatusFilter: 'all' | 'active' | 'deactivated' = 'all';
@@ -154,8 +158,12 @@ export class InventoryComponent implements OnInit {
 
   ngOnInit(): void {
     this.route.queryParamMap.subscribe(params => {
-      const tab = params.get('tab') as InventoryTabType;
-      if (tab === 'ingredients' || tab === 'batches' || tab === 'transactions') this.activeTab = tab;
+      if (this.isKeeperPortal) {
+        this.activeTab = 'ingredients';
+      } else {
+        const tab = params.get('tab') as InventoryTabType;
+        if (tab === 'ingredients' || tab === 'batches' || tab === 'transactions') this.activeTab = tab;
+      }
       // Nếu URL còn sót param search cũ, dọn sạch ngay khỏi thanh địa chỉ trình duyệt
       if (params.has('search')) {
         this.router.navigate([], {
@@ -301,17 +309,29 @@ export class InventoryComponent implements OnInit {
       this.onTabChange('ingredients');
       this.ingredientStockFilter = 'LOW';
     } else if (filter === 'expired') {
-      this.onTabChange('batches');
-      this.batchStatusFilter = BatchFefoStatus.Expired;
+      if (this.isKeeperPortal) {
+        this.router.navigate(['/inventory-keeper/batches'], {
+          queryParams: { status: 'Expired' },
+        });
+      } else {
+        this.onTabChange('batches');
+        this.batchStatusFilter = BatchFefoStatus.Expired;
+      }
     }
   }
 
   onAlertSelect(alert: InventoryAlertDto): void {
     if (alert.batchCode || alert.batchId) {
-      this.onTabChange('batches');
-      this.highlightedBatchId = alert.batchId || null;
-      this.highlightedBatchCode = alert.batchCode || null;
-      if (alert.batchCode) this.batchSearchQuery = alert.batchCode;
+      if (this.isKeeperPortal) {
+        this.router.navigate(['/inventory-keeper/batches'], {
+          queryParams: { search: alert.batchCode || undefined },
+        });
+      } else {
+        this.onTabChange('batches');
+        this.highlightedBatchId = alert.batchId || null;
+        this.highlightedBatchCode = alert.batchCode || null;
+        if (alert.batchCode) this.batchSearchQuery = alert.batchCode;
+      }
     } else if (alert.ingredientId) {
       this.onTabChange('ingredients');
       this.highlightedIngredientId = alert.ingredientId;
@@ -349,7 +369,7 @@ export class InventoryComponent implements OnInit {
       qty = shortage > 0 ? shortage : 10;
     }
     this.preselectedQuantityForBatch = qty || 10;
-    const defaultPrice = ingredient?.id ? this.latestPriceByIngredientId.get(ingredient.id) : 0;
+    const defaultPrice = ingredient?.id ? (this.latestPriceByIngredientId.get(ingredient.id) || ingredient.estimatedPrice || 0) : 0;
     this.preselectedPriceForBatch = price || defaultPrice || 0;
     this.isCreateBatchModalOpen = true;
   }

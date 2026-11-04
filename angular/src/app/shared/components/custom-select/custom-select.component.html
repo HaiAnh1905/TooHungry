@@ -39,7 +39,7 @@
             type="text"
             class="search-input"
             [(ngModel)]="searchQuery"
-            [placeholder]="searchPlaceholder"
+            [placeholder]="getLocalizedText(searchPlaceholder)"
             (click)="$event.stopPropagation()"
             autofocus
           />

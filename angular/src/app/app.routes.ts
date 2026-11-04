@@ -2,6 +2,7 @@ import { authGuard, eLayoutType } from '@abp/ng.core';
 import { smartPermissionGuard } from './shared/guards/smart-permission.guard';
 import { dashboardGuard, adminTableGuard } from './shared/guards/dashboard.guard';
 import { waiterAuthGuard } from './waiter/guards/waiter-auth.guard';
+import { cashierAuthGuard } from './cashier/guards/cashier-auth.guard';
 import { inventoryKeeperAuthGuard } from './inventory-keeper/guards/inventory-keeper-auth.guard';
 import { Routes } from '@angular/router';
 
@@ -87,6 +88,7 @@ export const APP_ROUTES: Routes = [
     loadComponent: () =>
       import('./waiter/layout/waiter-layout.component').then(c => c.WaiterLayoutComponent),
     canActivate: [authGuard, waiterAuthGuard],
+    canActivateChild: [waiterAuthGuard],
     data: { layout: eLayoutType.empty },
     children: [
       {
@@ -124,6 +126,38 @@ export const APP_ROUTES: Routes = [
     loadComponent: () => import('./payment/payment.component').then(c => c.PaymentComponent),
     canActivate: [authGuard, smartPermissionGuard],
     data: { requiredPolicy: 'TooHungry.Orders', layout: eLayoutType.empty },
+  },
+  {
+    path: 'cashier',
+    loadComponent: () =>
+      import('./cashier/layout/cashier-layout.component').then(c => c.CashierLayoutComponent),
+    canActivate: [authGuard, cashierAuthGuard],
+    data: { layout: eLayoutType.empty },
+    children: [
+      {
+        path: '',
+        redirectTo: 'tables',
+        pathMatch: 'full',
+      },
+      {
+        path: 'tables',
+        loadComponent: () =>
+          import('./cashier/tables/cashier-tables.component').then(c => c.CashierTablesComponent),
+        canActivate: [smartPermissionGuard],
+        data: { requiredPolicy: 'TooHungry.Cashier.ManageTables', layout: eLayoutType.empty },
+      },
+      {
+        path: 'orders',
+        loadComponent: () =>
+          import('./cashier/orders/cashier-orders.component').then(c => c.CashierOrdersComponent),
+        canActivate: [smartPermissionGuard],
+        data: { requiredPolicy: 'TooHungry.Cashier.ManageOrders', layout: eLayoutType.empty },
+      },
+      {
+        path: '**',
+        redirectTo: 'tables',
+      },
+    ],
   },
   {
     path: 'recipes',
@@ -172,6 +206,13 @@ export const APP_ROUTES: Routes = [
           import('./inventory-keeper/dashboard/inventory-keeper-dashboard.component').then(
             c => c.InventoryKeeperDashboardComponent
           ),
+        canActivate: [smartPermissionGuard],
+        data: { requiredPolicy: 'TooHungry.Inventories', layout: eLayoutType.empty },
+      },
+      {
+        path: 'inventory',
+        loadComponent: () =>
+          import('./inventory/inventory.component').then(c => c.InventoryComponent),
         canActivate: [smartPermissionGuard],
         data: { requiredPolicy: 'TooHungry.Inventories', layout: eLayoutType.empty },
       },
