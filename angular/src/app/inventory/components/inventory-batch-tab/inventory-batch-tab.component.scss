@@ -227,7 +227,8 @@
 
   .batch-status-col {
     white-space: nowrap !important;
-    min-width: 140px;
+    min-width: 80px;
+    text-align: center;
   }
 
   .actions-col {
@@ -328,12 +329,22 @@
   .fefo-badge {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     white-space: nowrap;
     word-break: keep-all;
     padding: 0.2rem 0.5rem;
     border-radius: 9999px;
     font-size: 0.75rem;
     font-weight: 600;
+
+    &.icon-only {
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border-radius: 50%;
+      font-size: 0.85rem;
+      cursor: help;
+    }
 
     &.badge-safe {
       background: #ecfdf5;

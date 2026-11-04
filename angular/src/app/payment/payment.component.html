@@ -2,7 +2,12 @@
   <!-- Header Bar -->
   <div class="payment-header-bar">
     <div class="header-left">
-      <button type="button" class="btn btn-back-tables" (click)="onBackToTables()" [attr.aria-label]="'::BackToTables' | abpLocalization">
+      <button
+        type="button"
+        class="btn btn-back-tables"
+        (click)="onBackToTables()"
+        [attr.aria-label]="'::BackToTables' | abpLocalization"
+      >
         <i class="fa fa-arrow-left"></i>
         <span>{{ '::BackToTables' | abpLocalization }}</span>
       </button>
@@ -19,7 +24,9 @@
           <span class="meta-divider">•</span>
           <span class="meta-item">
             <i class="fa fa-chair"></i>
-            <strong class="text-orange">{{ order()?.tableName || ('::DiningTable' | abpLocalization) }}</strong>
+            <strong class="text-orange">{{
+              order()?.tableName || ('::DiningTable' | abpLocalization)
+            }}</strong>
           </span>
           <span class="meta-divider">•</span>
           <span class="meta-item text-muted">
@@ -73,7 +80,9 @@
         <div class="bill-meta-box">
           <div class="meta-row">
             <span class="lbl">{{ '::ServingTable' | abpLocalization }}:</span>
-            <span class="val font-bold text-dark">{{ order()?.tableName || ('::AtTable' | abpLocalization) }}</span>
+            <span class="val font-bold text-dark">{{
+              order()?.tableName || ('::AtTable' | abpLocalization)
+            }}</span>
           </div>
           <div class="meta-row">
             <span class="lbl">{{ '::OrderCode' | abpLocalization }}:</span>
@@ -86,7 +95,7 @@
           @if (order()?.note) {
             <div class="meta-row note-row">
               <span class="lbl">{{ '::OrderNote' | abpLocalization }}:</span>
-              <span class="val text-italic text-secondary">{{ order()?.note }}</span>
+              <span class="val text-italic text-secondary">{{ order()?.note | fixMojibake }}</span>
             </div>
           }
         </div>
@@ -108,20 +117,32 @@
                 <tr>
                   <td class="col-idx text-center text-muted">{{ $index + 1 }}</td>
                   <td class="col-dish font-medium">
-                    <span class="dish-title">{{ item.dishName || ('::Dish' | abpLocalization) }}</span>
+                    <span class="dish-title">{{
+                      item.dishName || ('::Dish' | abpLocalization)
+                    }}</span>
                     @if (item.note) {
-                      <small class="dish-note d-block text-muted">({{ item.note }})</small>
+                      <small class="dish-note d-block text-muted"
+                        >({{ item.note | fixMojibake }})</small
+                      >
                     }
                   </td>
                   <td class="col-qty text-center font-bold">x{{ item.quantity }}</td>
-                  <td class="col-price text-end text-muted">{{ item.unitPrice | number:'1.0-0' }} đ</td>
+                  <td class="col-price text-end text-muted">
+                    {{ item.unitPrice | number: '1.0-0' }} đ
+                  </td>
                   <td class="col-total text-end font-bold text-dark">
-                    {{ (item.totalPrice || ((item.quantity || 0) * (item.unitPrice || 0))) | number:'1.0-0' }} đ
+                    {{
+                      item.totalPrice || (item.quantity || 0) * (item.unitPrice || 0)
+                        | number: '1.0-0'
+                    }}
+                    đ
                   </td>
                 </tr>
               } @empty {
                 <tr>
-                  <td colspan="5" class="text-center text-muted py-3">{{ '::NoItemsInOrder' | abpLocalization }}</td>
+                  <td colspan="5" class="text-center text-muted py-3">
+                    {{ '::NoItemsInOrder' | abpLocalization }}
+                  </td>
                 </tr>
               }
             </tbody>
@@ -132,7 +153,7 @@
         <div class="bill-summary">
           <div class="summary-line">
             <span>{{ '::Subtotal' | abpLocalization }}</span>
-            <span class="font-medium">{{ effectiveTotalAmount() | number:'1.0-0' }} đ</span>
+            <span class="font-medium">{{ effectiveTotalAmount() | number: '1.0-0' }} đ</span>
           </div>
           <div class="summary-line">
             <span>{{ '::TaxAndService' | abpLocalization }} (0%)</span>
@@ -144,7 +165,9 @@
           </div>
           <div class="summary-line total-line">
             <span class="total-label">{{ '::TotalAmount' | abpLocalization }}</span>
-            <span class="total-value">{{ effectiveTotalAmount() | number:'1.0-0' }} <small>đ</small></span>
+            <span class="total-value"
+              >{{ effectiveTotalAmount() | number: '1.0-0' }} <small>đ</small></span
+            >
           </div>
         </div>
 
@@ -162,7 +185,9 @@
               <i class="fa fa-wallet text-orange"></i>
               <span>{{ '::PaymentMethod' | abpLocalization }}</span>
             </h3>
-            <span class="gateway-subtitle">{{ '::SelectPaymentMethodSubtitle' | abpLocalization }}</span>
+            <span class="gateway-subtitle">{{
+              '::SelectPaymentMethodSubtitle' | abpLocalization
+            }}</span>
           </div>
 
           <!-- Method Tabs -->
@@ -214,7 +239,9 @@
                   <div class="bank-row">
                     <div class="bank-field">
                       <span class="field-lbl">{{ '::AccountNumber' | abpLocalization }}:</span>
-                      <span class="field-val font-mono font-bold">{{ vietQrConfig.accountNo }}</span>
+                      <span class="field-val font-mono font-bold">{{
+                        vietQrConfig.accountNo
+                      }}</span>
                     </div>
                     <button
                       type="button"
@@ -222,8 +249,13 @@
                       (click)="copyToClipboard(vietQrConfig.accountNo, 'stk')"
                       [title]="'::Copy' | abpLocalization"
                     >
-                      <i class="fa" [ngClass]="copiedField() === 'stk' ? 'fa-check text-success' : 'fa-copy'"></i>
-                      <span>{{ (copiedField() === 'stk' ? '::Copied' : '::Copy') | abpLocalization }}</span>
+                      <i
+                        class="fa"
+                        [ngClass]="copiedField() === 'stk' ? 'fa-check text-success' : 'fa-copy'"
+                      ></i>
+                      <span>{{
+                        (copiedField() === 'stk' ? '::Copied' : '::Copy') | abpLocalization
+                      }}</span>
                     </button>
                   </div>
 
@@ -238,7 +270,7 @@
                     <div class="bank-field">
                       <span class="field-lbl">{{ '::TransferAmount' | abpLocalization }}:</span>
                       <span class="field-val font-bold text-orange font-mono">
-                        {{ effectiveTotalAmount() | number:'1.0-0' }} đ
+                        {{ effectiveTotalAmount() | number: '1.0-0' }} đ
                       </span>
                     </div>
                     <button
@@ -247,15 +279,22 @@
                       (click)="copyToClipboard(effectiveTotalAmount().toString(), 'amount')"
                       [title]="'::Copy' | abpLocalization"
                     >
-                      <i class="fa" [ngClass]="copiedField() === 'amount' ? 'fa-check text-success' : 'fa-copy'"></i>
-                      <span>{{ (copiedField() === 'amount' ? '::Copied' : '::Copy') | abpLocalization }}</span>
+                      <i
+                        class="fa"
+                        [ngClass]="copiedField() === 'amount' ? 'fa-check text-success' : 'fa-copy'"
+                      ></i>
+                      <span>{{
+                        (copiedField() === 'amount' ? '::Copied' : '::Copy') | abpLocalization
+                      }}</span>
                     </button>
                   </div>
 
                   <div class="bank-row">
                     <div class="bank-field">
                       <span class="field-lbl">{{ '::TransferMemo' | abpLocalization }}:</span>
-                      <span class="field-val font-mono font-bold text-dark">TOOHUNGRY {{ order()?.orderNumber }}</span>
+                      <span class="field-val font-mono font-bold text-dark"
+                        >TOOHUNGRY {{ order()?.orderNumber }}</span
+                      >
                     </div>
                     <button
                       type="button"
@@ -263,8 +302,13 @@
                       (click)="copyToClipboard('TOOHUNGRY ' + (order()?.orderNumber || ''), 'memo')"
                       [title]="'::Copy' | abpLocalization"
                     >
-                      <i class="fa" [ngClass]="copiedField() === 'memo' ? 'fa-check text-success' : 'fa-copy'"></i>
-                      <span>{{ (copiedField() === 'memo' ? '::Copied' : '::Copy') | abpLocalization }}</span>
+                      <i
+                        class="fa"
+                        [ngClass]="copiedField() === 'memo' ? 'fa-check text-success' : 'fa-copy'"
+                      ></i>
+                      <span>{{
+                        (copiedField() === 'memo' ? '::Copied' : '::Copy') | abpLocalization
+                      }}</span>
                     </button>
                   </div>
                 </div>
@@ -279,7 +323,7 @@
                 <div class="cash-calc-row">
                   <span class="lbl">{{ '::TotalBillAmount' | abpLocalization }}:</span>
                   <span class="val font-bold text-orange font-mono">
-                    {{ effectiveTotalAmount() | number:'1.0-0' }} đ
+                    {{ effectiveTotalAmount() | number: '1.0-0' }} đ
                   </span>
                 </div>
 
@@ -303,53 +347,25 @@
 
                 <!-- Quick Cash Presets (T011) -->
                 <div class="quick-cash-tags">
-                  <button
-                    type="button"
-                    class="btn-cash-tag btn-exact"
-                    (click)="setExactCash()"
-                  >
+                  <button type="button" class="btn-cash-tag btn-exact" (click)="setExactCash()">
                     {{ '::ExactAmount' | abpLocalization }}
                   </button>
-                  <button
-                    type="button"
-                    class="btn-cash-tag"
-                    (click)="setQuickCash(50000)"
-                  >
+                  <button type="button" class="btn-cash-tag" (click)="setQuickCash(50000)">
                     50k
                   </button>
-                  <button
-                    type="button"
-                    class="btn-cash-tag"
-                    (click)="setQuickCash(100000)"
-                  >
+                  <button type="button" class="btn-cash-tag" (click)="setQuickCash(100000)">
                     100k
                   </button>
-                  <button
-                    type="button"
-                    class="btn-cash-tag"
-                    (click)="setQuickCash(200000)"
-                  >
+                  <button type="button" class="btn-cash-tag" (click)="setQuickCash(200000)">
                     200k
                   </button>
-                  <button
-                    type="button"
-                    class="btn-cash-tag"
-                    (click)="setQuickCash(500000)"
-                  >
+                  <button type="button" class="btn-cash-tag" (click)="setQuickCash(500000)">
                     500k
                   </button>
-                  <button
-                    type="button"
-                    class="btn-cash-tag"
-                    (click)="setQuickCash(1000000)"
-                  >
+                  <button type="button" class="btn-cash-tag" (click)="setQuickCash(1000000)">
                     1.000k
                   </button>
-                  <button
-                    type="button"
-                    class="btn-cash-tag"
-                    (click)="setQuickCash(2000000)"
-                  >
+                  <button type="button" class="btn-cash-tag" (click)="setQuickCash(2000000)">
                     2.000k
                   </button>
                 </div>
@@ -360,13 +376,16 @@
                     <div class="change-row">
                       <span class="change-lbl">{{ '::ChangeAmount' | abpLocalization }}:</span>
                       <span class="change-val font-mono font-bold text-success">
-                        {{ changeAmount() | number:'1.0-0' }} đ
+                        {{ changeAmount() | number: '1.0-0' }} đ
                       </span>
                     </div>
                   } @else {
                     <div class="change-row text-danger font-medium">
                       <i class="fa fa-exclamation-triangle"></i>
-                      <span>{{ '::ShortageAmount' | abpLocalization: ((cashShortageAmount() | number:'1.0-0') || '') }}</span>
+                      <span>{{
+                        '::ShortageAmount'
+                          | abpLocalization: (cashShortageAmount() | number: '1.0-0') || ''
+                      }}</span>
                     </div>
                   }
                 </div>
@@ -383,7 +402,11 @@
               (click)="onConfirmPayment()"
             >
               @if (isProcessingPayment()) {
-                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                <span
+                  class="spinner-border spinner-border-sm"
+                  role="status"
+                  aria-hidden="true"
+                ></span>
                 <span>{{ '::ProcessingPayment' | abpLocalization }}</span>
               } @else {
                 <i class="fa fa-check-circle"></i>
@@ -418,12 +441,14 @@
             </div>
             <div class="summary-item">
               <span class="item-label">{{ '::ServingTable' | abpLocalization }}:</span>
-              <span class="item-value font-bold text-orange">{{ order()?.tableName || ('::AtTable' | abpLocalization) }}</span>
+              <span class="item-value font-bold text-orange">{{
+                order()?.tableName || ('::AtTable' | abpLocalization)
+              }}</span>
             </div>
             <div class="summary-item">
               <span class="item-label">{{ '::TotalPaidAmount' | abpLocalization }}:</span>
               <span class="item-value font-bold text-success font-mono">
-                {{ effectiveTotalAmount() | number:'1.0-0' }} đ
+                {{ effectiveTotalAmount() | number: '1.0-0' }} đ
               </span>
             </div>
             <div class="summary-item">

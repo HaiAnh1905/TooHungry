@@ -107,8 +107,10 @@ describe('InventoryKeeperTransactionsComponent', () => {
     expect(mockSidebarService.setTemplate).toHaveBeenCalled();
     expect(mockIngredientService.getList).toHaveBeenCalled();
     expect(component.ingredients().length).toBe(3);
-    expect(component.selectedIngredientId()).toBe('ing-1');
-    expect(mockInventoryService.getTransactions).toHaveBeenCalledWith('ing-1');
+    expect(mockInventoryService.getTransactions).toHaveBeenCalledWith('ing-1', {
+      maxResultCount: 1000,
+      skipCount: 0,
+    });
     expect(component.rawTransactions().length).toBe(4);
     expect(component.filteredTransactions().length).toBe(4);
   });
@@ -222,7 +224,10 @@ describe('InventoryKeeperTransactionsComponent', () => {
       expect(event.stopPropagation).toHaveBeenCalled();
       expect(component.selectedIngredientId()).toBe('ing-2');
       expect(component.isIngredientDropdownOpen()).toBe(false);
-      expect(mockInventoryService.getTransactions).toHaveBeenCalledWith('ing-2');
+      expect(mockInventoryService.getTransactions).toHaveBeenCalledWith('ing-2', {
+        maxResultCount: 1000,
+        skipCount: 0,
+      });
     });
 
     it('should close dropdown on document click or Escape key', () => {

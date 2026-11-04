@@ -2,7 +2,8 @@ import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, C
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { CoreModule, LocalizationService } from '@abp/ng.core';
+import { CoreModule, LocalizationService, PermissionService } from '@abp/ng.core';
+import { UserRoleNavigationService } from '../shared/services/user-role-navigation.service';
 import { ThemeSharedModule, ToasterService, ConfirmationService, Confirmation } from '@abp/ng.theme.shared';
 import { OrderService } from '../proxy/orders/order.service';
 import { OrderDto, CompletePaymentInputDto, PaymentMethod } from '../proxy/orders/models';
@@ -10,11 +11,12 @@ import { OrderStatus } from '../proxy/orders/order-status.enum';
 import { TableService } from '../proxy/tables/table.service';
 import { TableStatus } from '../proxy/tables/table-status.enum';
 import { environment } from '../../environments/environment';
+import { FixMojibakePipe } from '../shared/pipes/fix-mojibake.pipe';
 
 @Component({
   selector: 'app-payment',
   standalone: true,
-  imports: [CommonModule, FormsModule, CoreModule, ThemeSharedModule],
+  imports: [CommonModule, FormsModule, CoreModule, ThemeSharedModule, FixMojibakePipe],
   templateUrl: './payment.component.html',
   styleUrl: './payment.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -28,6 +30,8 @@ export class PaymentComponent implements OnInit {
   private readonly confirmation = inject(ConfirmationService);
   private readonly localizationService = inject(LocalizationService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly userRoleNav = inject(UserRoleNavigationService);
+  private readonly permissionService = inject(PermissionService);
 
   readonly vietQrConfig = environment.vietQrConfig;
 
@@ -89,7 +93,7 @@ export class PaymentComponent implements OnInit {
       this.fetchOrder(this.orderId);
     } else {
       this.toaster.error(this.localizationService.instant('::OrderNotFound') || 'Không tìm thấy mã đơn hàng!');
-      this.router.navigate(['/waiter/tables']);
+      this.navigateBack();
     }
   }
 
@@ -118,7 +122,7 @@ export class PaymentComponent implements OnInit {
       error: () => {
         this.toaster.error(this.localizationService.instant('::CannotLoadOrder') || 'Không thể tải thông tin đơn hàng!');
         this.isLoading.set(false);
-        this.router.navigate(['/waiter/tables']);
+        this.navigateBack();
         this.cdr.markForCheck();
       },
     });
@@ -205,10 +209,14 @@ export class PaymentComponent implements OnInit {
         const successTitle = this.localizationService.instant('::PaymentSuccess') || 'Thanh toán thành công!';
         this.toaster.success(successMsg, successTitle);
         this.cdr.markForCheck();
+        this.navigateBack();
       },
-      error: () => {
+      error: (err: any) => {
         this.isProcessingPayment.set(false);
-        this.toaster.error(this.localizationService.instant('::PaymentError') || 'Có lỗi xảy ra trong quá trình xử lý thanh toán!');
+        const detailedError = err?.error?.error?.message || err?.error?.message;
+        this.toaster.error(
+          detailedError || this.localizationService.instant('::PaymentError') || 'Có lỗi xảy ra trong quá trình xử lý thanh toán!'
+        );
         this.cdr.markForCheck();
       },
     });
@@ -219,6 +227,22 @@ export class PaymentComponent implements OnInit {
   }
 
   onBackToTables(): void {
-    this.router.navigate(['/waiter/tables']);
+    this.navigateBack();
+  }
+
+  private navigateBack(): void {
+    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+    if (returnUrl) {
+      this.router.navigateByUrl(returnUrl);
+      return;
+    }
+    if (this.userRoleNav.hasRole('Cashier') || this.permissionService.getGrantedPolicy('TooHungry.Cashier')) {
+      this.router.navigate(['/cashier/tables']);
+    } else if (this.userRoleNav.hasRole('Waiter')) {
+      this.router.navigate(['/waiter/tables']);
+    } else {
+      const defaultRoute = this.userRoleNav.getDefaultHomeRoute();
+      this.router.navigate([defaultRoute || '/']);
+    }
   }
 }

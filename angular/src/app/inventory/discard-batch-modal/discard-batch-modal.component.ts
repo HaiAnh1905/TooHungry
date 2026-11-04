@@ -28,6 +28,7 @@ export class DiscardBatchModalComponent {
   selectedCategory = 'EXPIRED';
   customNotes = '';
   isSubmittedAttempt = false;
+  isSafeConfirmModalOpen = false;
 
   get isBulk(): boolean {
     return (this.batches?.length ?? 0) > 1;
@@ -35,6 +36,18 @@ export class DiscardBatchModalComponent {
 
   get effectiveBatch(): InventoryBatchDto | undefined {
     return this.batch || (this.batches?.length === 1 ? this.batches[0] : undefined);
+  }
+
+  get selectedCategoryLabel(): string {
+    const matchedCategory = this.reasonCategories.find((c) => c.value === this.selectedCategory);
+    return matchedCategory ? this.localizationService.instant(matchedCategory.key) : this.selectedCategory;
+  }
+
+  get safeBatchesCount(): number {
+    if (!this.batches || this.batches.length === 0) {
+      return this.effectiveBatch && this.isBatchSafe(this.effectiveBatch) ? 1 : 0;
+    }
+    return this.batches.filter((b) => this.isBatchSafe(b)).length;
   }
 
   readonly reasonCategories = [
@@ -59,6 +72,33 @@ export class DiscardBatchModalComponent {
     },
   ];
 
+  isBatchSafe(batch?: any): boolean {
+    if (!batch) return false;
+    if (batch.fefoStatus === 'safe' || batch.fefoStatus === 'Safe') {
+      return true;
+    }
+    if (!batch.expiryDate) {
+      return false;
+    }
+    const now = Date.now();
+    const exp = new Date(batch.expiryDate).getTime();
+    if (isNaN(exp)) return false;
+
+    // Đã quá hạn
+    if (exp <= now) {
+      return false;
+    }
+
+    const storageType = batch.storageType ?? this.ingredient?.storageType;
+    if (storageType === 0) {
+      // Đối với nguyên liệu tươi sống (FRESH / 0), chưa đến hạn thì luôn là safe
+      return true;
+    }
+
+    const diffDays = Math.ceil((exp - now) / (1000 * 60 * 60 * 24));
+    return diffDays > 3;
+  }
+
   applyPresetNote(valueKey: string): void {
     const text = this.localizationService.instant(valueKey);
     this.customNotes = text;
@@ -66,6 +106,7 @@ export class DiscardBatchModalComponent {
 
   close(): void {
     if (this.isSubmitting) return;
+    this.isSafeConfirmModalOpen = false;
     this.visible = false;
     this.visibleChange.emit(false);
   }
@@ -79,6 +120,20 @@ export class DiscardBatchModalComponent {
       return;
     }
 
+    const targetBatches = this.batches?.length
+      ? this.batches
+      : (this.effectiveBatch ? [this.effectiveBatch] : []);
+
+    const hasSafeBatch = targetBatches.some((b) => this.isBatchSafe(b));
+    if (hasSafeBatch) {
+      this.isSafeConfirmModalOpen = true;
+      return;
+    }
+
+    this.executeSubmit();
+  }
+
+  executeSubmit(): void {
     const matchedCategory = this.reasonCategories.find((c) => c.value === this.selectedCategory);
     const categoryLabel = matchedCategory
       ? this.localizationService.instant(matchedCategory.key)
@@ -86,16 +141,41 @@ export class DiscardBatchModalComponent {
 
     const notes = this.customNotes.trim();
     const finalReason = notes ? `[${categoryLabel}] ${notes}` : categoryLabel;
+    const targetBatches = this.batches?.length
+      ? this.batches
+      : (this.effectiveBatch ? [this.effectiveBatch] : []);
 
     this.confirmed.emit({
       reason: finalReason,
-      batches: this.batches?.length ? this.batches : (this.effectiveBatch ? [this.effectiveBatch] : [])
+      batches: targetBatches,
     });
+  }
+
+  confirmSafeDiscard(): void {
+    this.isSafeConfirmModalOpen = false;
+    this.executeSubmit();
+  }
+
+  cancelSafeConfirm(): void {
+    this.isSafeConfirmModalOpen = false;
+  }
+
+  onSafeConfirmVisibleChange(isOpen: boolean): void {
+    if (!isOpen) {
+      this.cancelSafeConfirm();
+    }
+  }
+
+  onMainModalVisibleChange(isOpen: boolean): void {
+    if (!isOpen && !this.isSafeConfirmModalOpen) {
+      this.close();
+    }
   }
 
   resetForm(): void {
     this.selectedCategory = 'EXPIRED';
     this.customNotes = '';
     this.isSubmittedAttempt = false;
+    this.isSafeConfirmModalOpen = false;
   }
 }

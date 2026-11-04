@@ -1,7 +1,9 @@
 <div class="pos-order-container">
   <!-- TOP HEADER CARD -->
   <header class="pos-header card shadow-sm mb-4">
-    <div class="card-body py-3 px-4 d-flex align-items-center justify-content-between flex-wrap gap-3">
+    <div
+      class="card-body py-3 px-4 d-flex align-items-center justify-content-between flex-wrap gap-3"
+    >
       <div class="d-flex align-items-center gap-3">
         <button
           type="button"
@@ -88,7 +90,9 @@
 
       <!-- 2. MENU CATEGORIES SIDEBAR -->
       <div class="card categories-card shadow-sm border-0">
-        <div class="card-header bg-white py-2 px-3 border-bottom d-flex align-items-center justify-content-between">
+        <div
+          class="card-header bg-white py-2 px-3 border-bottom d-flex align-items-center justify-content-between"
+        >
           <span class="font-weight-bold text-dark small text-uppercase">
             <i class="fas fa-th-list text-primary-orange me-1"></i>
             {{ '::AllMenuCategories' | abpLocalization }}
@@ -174,15 +178,12 @@
               <!-- Square Image Container with Black Background -->
               <div class="food-image-wrapper">
                 @if (dish.imageUrl) {
-                  <img
-                    [src]="dish.imageUrl"
-                    [alt]="dish.name"
-                    class="food-image"
-                    loading="lazy"
-                  />
+                  <img [src]="dish.imageUrl" [alt]="dish.name" class="food-image" loading="lazy" />
                 } @else {
                   <div class="food-placeholder">
-                    <i class="fas fa-bowl-food fa-2x"></i>
+                    <div class="placeholder-icon-circle">
+                      <i class="fas fa-utensils"></i>
+                    </div>
                   </div>
                 }
 
@@ -212,7 +213,7 @@
 
                 <div class="d-flex align-items-center justify-content-between mt-2 pt-2 border-top">
                   <div class="food-price">
-                    {{ dish.price | number:'1.0-0' }} <span class="currency">đ</span>
+                    {{ dish.price | number: '1.0-0' }} <span class="currency">đ</span>
                   </div>
                   <span class="text-muted small click-detail-hint">
                     <i class="fas fa-info-circle me-1"></i>
@@ -226,6 +227,17 @@
       }
     </main>
   </div>
+  <!-- FLOATING SCROLL TO TOP BUTTON -->
+  <button
+    type="button"
+    class="btn-scroll-top"
+    [class.show]="showScrollToTop()"
+    (click)="scrollToTop()"
+    [title]="'::ScrollToTop' | abpLocalization"
+    [attr.aria-label]="'::ScrollToTop' | abpLocalization"
+  >
+    <i class="fas fa-arrow-up"></i>
+  </button>
 </div>
 
 <!-- ============================================== -->
@@ -244,10 +256,14 @@
         />
       } @else {
         <div class="modal-dish-placeholder">
-          <i class="fas fa-bowl-food fa-4x text-light"></i>
+          <div class="placeholder-icon-circle-lg">
+            <i class="fas fa-utensils"></i>
+          </div>
         </div>
       }
-      <div class="modal-image-gradient-overlay"></div>
+      @if (selectedDishForModal.imageUrl) {
+        <div class="modal-image-gradient-overlay"></div>
+      }
 
       <!-- Category badge over image -->
       @if (selectedDishForModal.dishCategoryName) {
@@ -277,7 +293,7 @@
           {{ selectedDishForModal.name }}
         </h2>
         <div class="food-modal-price-tag">
-          <span class="price-val">{{ selectedDishForModal.price | number:'1.0-0' }}</span>
+          <span class="price-val">{{ selectedDishForModal.price | number: '1.0-0' }}</span>
           <span class="price-curr">đ</span>
         </div>
       </div>
@@ -323,7 +339,9 @@
       <!-- Item Note Input & Quick Tags -->
       <div class="cooking-note-section mb-1">
         <div class="d-flex align-items-center justify-content-between mb-1">
-          <label class="form-label font-weight-bold small text-dark mb-0 d-flex align-items-center gap-1">
+          <label
+            class="form-label font-weight-bold small text-dark mb-0 d-flex align-items-center gap-1"
+          >
             <i class="fas fa-pen-to-square text-primary-orange"></i>
             <span>{{ '::ItemNote' | abpLocalization }}</span>
           </label>
@@ -333,11 +351,7 @@
         <!-- Quick Tags -->
         <div class="quick-notes-container mb-2">
           @for (tag of quickCookingNotes; track tag.key) {
-            <button
-              type="button"
-              class="quick-note-chip"
-              (click)="addQuickNote(tag.key)"
-            >
+            <button type="button" class="quick-note-chip" (click)="addQuickNote(tag.key)">
               + {{ tag.key | abpLocalization }}
             </button>
           }
@@ -353,12 +367,10 @@
     </div>
 
     <!-- Modal Footer Actions -->
-    <div class="modal-footer-custom px-4 py-3 border-top bg-light d-flex align-items-center justify-content-between gap-3">
-      <button
-        type="button"
-        class="btn btn-outline-cancel"
-        (click)="closeFoodModal()"
-      >
+    <div
+      class="modal-footer-custom px-4 py-3 border-top bg-light d-flex align-items-center justify-content-between gap-3"
+    >
+      <button type="button" class="btn btn-outline-cancel" (click)="closeFoodModal()">
         {{ '::Close' | abpLocalization }}
       </button>
 
@@ -370,14 +382,16 @@
         <i class="fas fa-cart-plus fa-lg"></i>
         <span class="btn-text">{{ '::AddToCart' | abpLocalization }}</span>
         <span class="total-dot">•</span>
-        <span class="total-badge">{{ modalTotalPrice | currency:'VND':'symbol':'1.0-0' }}</span>
+        <span class="total-badge">{{
+          modalTotalPrice | currency: 'VND' : 'symbol' : '1.0-0'
+        }}</span>
       </button>
     </div>
   </div>
 }
 
 <!-- ============================================== -->
-<!-- 2. ORDER DRAWER (SLIDE-OVER FROM RIGHT)       -->
+<!-- 2. ORDER DRAWER (SLIDE-OVER FROM RIGHT)        -->
 <!-- ============================================== -->
 @if (isDrawerOpen) {
   <div class="drawer-backdrop" (click)="closeDrawer()"></div>
@@ -442,7 +456,7 @@
   <!-- Drawer Main Content: Modern 2 Columns -->
   <div class="drawer-content-split">
     <!-- CỘT TRÁI (~62%): Danh sách món ăn & Ghi chú thông minh -->
-    <div class="drawer-body p-3.5 flex-grow-1 overflow-auto">
+    <div class="drawer-body p-4 flex-grow-1 overflow-auto">
       @if (cartItems().length === 0) {
         <div class="empty-cart-state text-center py-5 px-3">
           <div class="empty-cart-icon-wrapper mb-3">
@@ -494,7 +508,7 @@
                     />
                   } @else {
                     <div class="cart-item-thumb-placeholder">
-                      <i class="fas fa-bowl-food"></i>
+                      <i class="fas fa-utensils"></i>
                     </div>
                   }
                 </div>
@@ -518,7 +532,7 @@
                     [title]="item.quantity === 1 ? ('::Delete' | abpLocalization) : ('::Decrease' | abpLocalization)"
                     aria-label="Decrease quantity"
                   >
-                    <i [class]="item.quantity === 1 ? 'fas fa-trash-alt text-danger' : 'fas fa-minus'"></i>
+                    <i [class]="item.quantity === 1 ? 'fas fa-trash-can text-danger' : 'fas fa-minus'"></i>
                   </button>
                   <span class="stepper-count">
                     {{ item.quantity }}
@@ -548,7 +562,7 @@
                   [title]="'::Delete' | abpLocalization"
                   aria-label="Remove item"
                 >
-                  <i class="fas fa-trash-alt"></i>
+                  <i class="fas fa-trash-can"></i>
                 </button>
               </div>
 
@@ -613,10 +627,10 @@
                 <!-- Thanh nhập ghi chú nhanh & gợi ý -->
                 <div class="note-input-row d-flex align-items-center gap-2 flex-wrap">
                   <div class="quick-dish-tags d-flex align-items-center gap-1 flex-wrap">
-                    <button type="button" class="btn-dish-quick-tag" (click)="addItemNoteTag(item, 'Ít cay')">+ Ít cay</button>
-                    <button type="button" class="btn-dish-quick-tag" (click)="addItemNoteTag(item, 'Không tiêu')">+ Không tiêu</button>
-                    <button type="button" class="btn-dish-quick-tag" (click)="addItemNoteTag(item, 'Không hành')">+ Không hành</button>
-                    <button type="button" class="btn-dish-quick-tag" (click)="addItemNoteTag(item, 'Ít đá')">+ Ít đá</button>
+                    <button type="button" class="btn-dish-quick-tag" (click)="addLocalizedItemNote(item, 'MildSpicy')">+ {{ '::MildSpicy' | abpLocalization }}</button>
+                    <button type="button" class="btn-dish-quick-tag" (click)="addLocalizedItemNote(item, 'NoPepper')">+ {{ '::NoPepper' | abpLocalization }}</button>
+                    <button type="button" class="btn-dish-quick-tag" (click)="addLocalizedItemNote(item, 'NoOnion')">+ {{ '::NoOnion' | abpLocalization }}</button>
+                    <button type="button" class="btn-dish-quick-tag" (click)="addLocalizedItemNote(item, 'LessIce')">+ {{ '::LessIce' | abpLocalization }}</button>
                   </div>
 
                   <div class="custom-note-input-box d-flex align-items-center flex-grow-1">
@@ -643,7 +657,7 @@
         </div>
 
         <!-- Khối Ghi chú chung cho đơn hàng (General Order Note) -->
-        <div class="order-general-note mt-3.5 p-3.5">
+        <div class="order-general-note mt-3 p-3">
           <div class="d-flex align-items-center justify-content-between mb-2">
             <label class="form-label small fw-bold text-dark mb-0 d-flex align-items-center gap-1.5">
               <i class="fas fa-comment-dots text-primary-orange"></i>
@@ -676,15 +690,65 @@
           }
 
           <!-- Quick Chips Gợi ý nhanh -->
-          <div class="quick-notes-chips d-flex flex-wrap gap-1.5 mb-2.5">
+          <div class="quick-notes-chips d-flex flex-wrap gap-1.5 mb-3">
             <span class="quick-chip-label text-muted smaller d-flex align-items-center me-1">
               <i class="fas fa-bolt text-warning me-1 font-size-xs"></i>{{ '::QuickSuggestions' | abpLocalization }}:
             </span>
-            <button type="button" class="btn-quick-chip" (click)="addQuickOrderNote('Ít cay')">+ {{ '::MildSpicy' | abpLocalization }}</button>
-            <button type="button" class="btn-quick-chip" (click)="addQuickOrderNote('Không tiêu')">+ {{ '::NoPepper' | abpLocalization }}</button>
-            <button type="button" class="btn-quick-chip" (click)="addQuickOrderNote('Không hành')">+ {{ '::NoOnion' | abpLocalization }}</button>
-            <button type="button" class="btn-quick-chip" (click)="addQuickOrderNote('Lên cùng lúc')">+ {{ '::ServeTogether' | abpLocalization }}</button>
-            <button type="button" class="btn-quick-chip" (click)="addQuickOrderNote('Lên nước trước')">+ {{ '::DrinksFirst' | abpLocalization }}</button>
+            <button
+              type="button"
+              class="btn-quick-chip"
+              [class.active]="isQuickNoteActive('::ServeTogether')"
+              (click)="toggleQuickOrderNote('::ServeTogether')"
+            >
+              @if (isQuickNoteActive('::ServeTogether')) {
+                <i class="fas fa-check me-1"></i>
+              }
+              {{ '::ServeTogether' | abpLocalization }}
+            </button>
+            <button
+              type="button"
+              class="btn-quick-chip"
+              [class.active]="isQuickNoteActive('::DrinksFirst')"
+              (click)="toggleQuickOrderNote('::DrinksFirst')"
+            >
+              @if (isQuickNoteActive('::DrinksFirst')) {
+                <i class="fas fa-check me-1"></i>
+              }
+              {{ '::DrinksFirst' | abpLocalization }}
+            </button>
+            <button
+              type="button"
+              class="btn-quick-chip"
+              [class.active]="isQuickNoteActive('::RushOrder')"
+              (click)="toggleQuickOrderNote('::RushOrder')"
+            >
+              @if (isQuickNoteActive('::RushOrder')) {
+                <i class="fas fa-check me-1"></i>
+              }
+              {{ '::RushOrder' | abpLocalization }}
+            </button>
+            <button
+              type="button"
+              class="btn-quick-chip"
+              [class.active]="isQuickNoteActive('::WindowSeat')"
+              (click)="toggleQuickOrderNote('::WindowSeat')"
+            >
+              @if (isQuickNoteActive('::WindowSeat')) {
+                <i class="fas fa-check me-1"></i>
+              }
+              {{ '::WindowSeat' | abpLocalization }}
+            </button>
+            <button
+              type="button"
+              class="btn-quick-chip"
+              [class.active]="isQuickNoteActive('::Takeaway')"
+              (click)="toggleQuickOrderNote('::Takeaway')"
+            >
+              @if (isQuickNoteActive('::Takeaway')) {
+                <i class="fas fa-check me-1"></i>
+              }
+              {{ '::Takeaway' | abpLocalization }}
+            </button>
           </div>
 
           <textarea
@@ -699,10 +763,10 @@
     </div>
 
     <!-- CỘT PHẢI (~38%): Bảng Hóa Đơn Tóm Tắt & Nút Hành Động (Full POS Checkout Sidebar) -->
-    <div class="drawer-footer p-3.5 d-flex flex-column justify-content-between">
+    <div class="drawer-footer p-4 d-flex flex-column justify-content-between">
       <div class="summary-top-content d-flex flex-column gap-3">
         <!-- Receipt Header & Info Card -->
-        <div class="drawer-summary-card p-3.5">
+        <div class="drawer-summary-card p-3">
           <div class="summary-card-header d-flex align-items-center justify-content-between mb-3 pb-2.5 border-bottom">
             <div class="d-flex align-items-center gap-2.5 min-w-0">
               <div class="summary-icon-circle">
@@ -815,14 +879,6 @@
             </div>
           </div>
         </div>
-
-        <!-- Kitchen Status Tip Card -->
-        <div class="order-service-tip-card p-3 rounded-3 d-flex align-items-start gap-2.5">
-          <i class="fas fa-fire-burner text-primary-orange mt-0.5 flex-shrink-0"></i>
-          <div class="smaller text-muted">
-            {{ '::KitchenStatusNotice' | abpLocalization }}
-          </div>
-        </div>
       </div>
 
       <!-- Action Buttons -->
@@ -831,7 +887,8 @@
         <button
           type="button"
           class="btn btn-submit-order w-100"
-          [disabled]="cartItems().length === 0 || isSubmitting"
+          [disabled]="isSubmitDisabled()"
+          [title]="activeOrderId && !hasUnsavedChanges() ? ('::NoChangesToUpdate' | abpLocalization) : ''"
           (click)="submitOrder()"
         >
           @if (isSubmitting) {
@@ -882,14 +939,21 @@
 <!-- 3. CANCEL ORDER CONFIRMATION MODAL             -->
 <!-- ============================================== -->
 @if (isCancelModalOpen) {
-  <div class="modal-backdrop-custom" (click)="closeCancelModal()"></div>
+  <div class="modal-backdrop-custom modal-backdrop-high" (click)="closeCancelModal()"></div>
   <div class="cancel-modal card shadow-lg" role="dialog" aria-modal="true">
     <div class="card-body p-4">
-      <div class="d-flex align-items-center gap-3 mb-3 text-danger">
-        <i class="fas fa-exclamation-triangle fa-2x"></i>
-        <h5 class="font-weight-bold text-dark mb-0">
-          {{ '::CancelOrderTitle' | abpLocalization }}
-        </h5>
+      <div class="d-flex align-items-center gap-3 mb-3">
+        <div class="cancel-modal-icon-badge danger flex-shrink-0">
+          <i class="fas fa-triangle-exclamation"></i>
+        </div>
+        <div>
+          <h5 class="fw-bold text-dark mb-0">
+            {{ '::CancelOrderTitle' | abpLocalization }}
+          </h5>
+          @if (currentTable()?.name) {
+            <span class="text-muted smaller">Bàn {{ currentTable()?.name }}</span>
+          }
+        </div>
       </div>
 
       <p class="text-muted small mb-3">
@@ -897,11 +961,11 @@
       </p>
 
       <div class="form-group mb-4">
-        <label class="form-label font-weight-bold small text-dark mb-1">
+        <label class="form-label fw-bold small text-dark mb-1">
           {{ '::CancelOrderReason' | abpLocalization }}
         </label>
         <textarea
-          class="form-control"
+          class="form-control form-control-sm"
           rows="2"
           [placeholder]="'::CancelOrderReasonPlaceholder' | abpLocalization"
           [(ngModel)]="cancelReason"
@@ -909,11 +973,7 @@
       </div>
 
       <div class="d-flex align-items-center justify-content-end gap-2">
-        <button
-          type="button"
-          class="btn btn-light"
-          (click)="closeCancelModal()"
-        >
+        <button type="button" class="btn btn-light" (click)="closeCancelModal()">
           {{ '::Cancel' | abpLocalization }}
         </button>
         <button
@@ -932,14 +992,19 @@
 <!-- 4. UNSAVED CHANGES MODAL                       -->
 <!-- ============================================== -->
 @if (isUnsavedChangesModalOpen) {
-  <div class="modal-backdrop-custom" (click)="closeUnsavedChangesModal()"></div>
+  <div class="modal-backdrop-custom modal-backdrop-high" (click)="closeUnsavedChangesModal()"></div>
   <div class="cancel-modal card shadow-lg" role="dialog" aria-modal="true">
     <div class="card-body p-4">
-      <div class="d-flex align-items-center gap-3 mb-3 text-warning">
-        <i class="fas fa-question-circle fa-2x"></i>
-        <h5 class="font-weight-bold text-dark mb-0">
-          {{ '::UnsavedChangesTitle' | abpLocalization }}
-        </h5>
+      <div class="d-flex align-items-center gap-3 mb-3">
+        <div class="cancel-modal-icon-badge warning flex-shrink-0">
+          <i class="fas fa-circle-question"></i>
+        </div>
+        <div>
+          <h5 class="fw-bold text-dark mb-0">
+            {{ '::UnsavedChangesTitle' | abpLocalization }}
+          </h5>
+          <span class="text-muted smaller">Bạn có thay đổi chưa được lưu</span>
+        </div>
       </div>
 
       <p class="text-muted small mb-4">
@@ -947,11 +1012,7 @@
       </p>
 
       <div class="d-flex align-items-center justify-content-end gap-2">
-        <button
-          type="button"
-          class="btn btn-light"
-          (click)="closeUnsavedChangesModal()"
-        >
+        <button type="button" class="btn btn-light" (click)="closeUnsavedChangesModal()">
           {{ '::StayOnPage' | abpLocalization }}
         </button>
         <button

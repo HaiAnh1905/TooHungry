@@ -23,6 +23,7 @@ import { DishService } from '../../proxy/controllers/dish.service';
 import { DishDto } from '../../proxy/dishes/models';
 import { DishCategoryService } from '../../proxy/dishes/dish-category.service';
 import { DishCategoryDto } from '../../proxy/dishes/models';
+import { fixVietnameseMojibake } from '../../shared/pipes/fix-mojibake.pipe';
 import { OrderService } from '../../proxy/orders/order.service';
 import {
   OrderDto,
@@ -79,6 +80,9 @@ export class WaiterOrderComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly cdr = inject(ChangeDetectorRef);
 
   @ViewChild('orderSidebarFilter') orderSidebarFilter!: TemplateRef<any>;
+  readonly showScrollToTop = signal<boolean>(false);
+  private scrollContainer: HTMLElement | null = null;
+  private scrollHandler?: (event?: Event) => void;
 
   readonly TableStatus = TableStatus;
 
@@ -98,12 +102,23 @@ export class WaiterOrderComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly cartItems = signal<CartItem[]>([]);
   readonly activeOrder = signal<OrderDto | null>(null);
   activeOrderId: string | null = null;
-  orderNote: string = '';
-  initialCartSnapshot: string = '[]';
+  private _orderNote: string = '';
+  readonly orderNoteSignal = signal<string>('');
+
+  get orderNote(): string {
+    return this._orderNote;
+  }
+  set orderNote(value: string) {
+    this._orderNote = value;
+    this.orderNoteSignal.set(value);
+  }
+
+  initialCartSnapshot: string = '';
   isSubmitting = false;
 
   // Drawer & Modal States
   isDrawerOpen = false;
+  readonly expandedNoteDishIds = signal<Set<string>>(new Set<string>());
   selectedDishForModal: DishDto | null = null;
   modalItemNote: string = '';
   modalQuantity: number = 1;
@@ -153,16 +168,27 @@ export class WaiterOrderComponent implements OnInit, AfterViewInit, OnDestroy {
 
   readonly dishTypesCount = computed(() => this.cartItems().length);
 
-  // Unsaved changes check
+  // Unsaved changes check (món ăn, số lượng, ghi chú món và ghi chú toàn đơn)
   readonly hasUnsavedChanges = computed(() => {
-    const current = JSON.stringify(
-      this.cartItems().map(x => ({
+    const current = JSON.stringify({
+      items: this.cartItems().map(x => ({
         id: x.dishId,
         q: x.quantity,
-        n: x.note || '',
-      }))
-    );
+        n: (x.note || '').trim(),
+      })),
+      note: (this.orderNoteSignal() || '').trim(),
+    });
     return current !== this.initialCartSnapshot;
+  });
+
+  // Submit/Update disabled state: Không thể nhấn Update nếu không có thay đổi
+  readonly isSubmitDisabled = computed(() => {
+    if (this.isSubmitting) return true;
+    if (this.cartItems().length === 0) return true;
+    if (this.activeOrderId && !this.hasUnsavedChanges()) {
+      return true;
+    }
+    return false;
   });
 
   ngOnInit() {
@@ -184,11 +210,142 @@ export class WaiterOrderComponent implements OnInit, AfterViewInit, OnDestroy {
         this.selectedCategoryId() ? 1 : 0
       );
     }
+    this.initScrollListener();
   }
 
   ngOnDestroy() {
     this.routeSub?.unsubscribe();
     this.sidebarService.clearTemplate();
+    if (this.scrollHandler) {
+      window.removeEventListener('scroll', this.scrollHandler, { capture: true });
+      this.scrollContainer?.removeEventListener('scroll', this.scrollHandler);
+    }
+  }
+
+  private initScrollListener() {
+    this.scrollContainer = document.querySelector('.waiter-main-content');
+
+    this.scrollHandler = (event?: Event) => {
+      const container = this.scrollContainer || (document.querySelector('.waiter-main-content') as HTMLElement);
+      const target = event?.target as HTMLElement;
+
+      const currentScrollTop = Math.max(
+        container ? container.scrollTop : 0,
+        target && typeof target.scrollTop === 'number' ? target.scrollTop : 0,
+        window.pageYOffset || 0,
+        document.documentElement.scrollTop || 0,
+        document.body.scrollTop || 0
+      );
+
+      // Hạ ngưỡng xuống 80px để người dùng chỉ cần cuộn nhẹ là thấy ngay nút
+      const isBeyondThreshold = currentScrollTop > 80;
+      if (this.showScrollToTop() !== isBeyondThreshold) {
+        this.showScrollToTop.set(isBeyondThreshold);
+        this.cdr.detectChanges();
+      }
+    };
+
+    // Bắt sự kiện cuộn ở capture phase trên window để nhận diện bất kỳ container nào cuộn
+    window.addEventListener('scroll', this.scrollHandler, { passive: true, capture: true });
+    if (this.scrollContainer) {
+      this.scrollContainer.addEventListener('scroll', this.scrollHandler, { passive: true });
+    }
+
+    // Chạy kiểm tra ngay lần đầu
+    this.scrollHandler();
+  }
+
+  scrollToTop(event?: Event): void {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
+    // 1. Thu thập tất cả các phần tử đang có vị trí cuộn > 0
+    const targets: (HTMLElement | Window)[] = [];
+    if ((window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop) > 0) {
+      targets.push(window);
+    }
+
+    const allElements = document.querySelectorAll<HTMLElement>('*');
+    allElements.forEach(el => {
+      if (el.scrollTop > 0) {
+        targets.push(el);
+      }
+    });
+
+    const knownSelectors = [
+      '.waiter-main-content',
+      '.pos-order-container',
+      '.waiter-body-layout',
+      '.waiter-app-wrapper',
+      'main',
+      'body',
+      'html',
+    ];
+    knownSelectors.forEach(sel => {
+      const el = document.querySelector<HTMLElement>(sel);
+      if (el && !targets.includes(el)) {
+        targets.push(el);
+      }
+    });
+
+    // 2. Thử cuộn mượt gốc (native smooth scroll)
+    targets.forEach(t => {
+      try {
+        t.scrollTo({ top: 0, behavior: 'smooth' });
+      } catch {
+        if ('scrollTop' in t) {
+          (t as HTMLElement).scrollTop = 0;
+        }
+      }
+    });
+
+    // 3. Fallback animation bằng requestAnimationFrame (250ms) đảm bảo 100% về đỉnh mượt mà
+    const startTime = performance.now();
+    const duration = 250;
+    const initialPositions = targets.map(t => {
+      if (t === window) {
+        return window.pageYOffset || document.documentElement.scrollTop || 0;
+      }
+      return (t as HTMLElement).scrollTop || 0;
+    });
+
+    const step = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const ease = 1 - Math.pow(1 - progress, 3);
+
+      targets.forEach((t, i) => {
+        const start = initialPositions[i];
+        const val = Math.round(start * (1 - ease));
+        if (t === window) {
+          window.scrollTo(0, val);
+          document.documentElement.scrollTop = val;
+          document.body.scrollTop = val;
+        } else {
+          (t as HTMLElement).scrollTop = val;
+        }
+      });
+
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      } else {
+        targets.forEach(t => {
+          if (t === window) {
+            window.scrollTo(0, 0);
+            document.documentElement.scrollTop = 0;
+            document.body.scrollTop = 0;
+          } else {
+            (t as HTMLElement).scrollTop = 0;
+          }
+        });
+        this.showScrollToTop.set(false);
+        this.cdr.detectChanges();
+      }
+    };
+
+    requestAnimationFrame(step);
   }
 
   // --- DATA LOADING ---
@@ -240,7 +397,7 @@ export class WaiterOrderComponent implements OnInit, AfterViewInit, OnDestroy {
         if (activeOrder && activeOrder.id) {
           this.activeOrderId = activeOrder.id;
           this.activeOrder.set(activeOrder);
-          this.orderNote = activeOrder.note || '';
+          this.orderNote = fixVietnameseMojibake(activeOrder.note) || '';
 
           if (activeOrder.items && activeOrder.items.length > 0) {
             const items: CartItem[] = activeOrder.items.map(item => ({
@@ -249,7 +406,7 @@ export class WaiterOrderComponent implements OnInit, AfterViewInit, OnDestroy {
               dishPhotoUrl: item.dishPhotoUrl,
               unitPrice: item.unitPrice || 0,
               quantity: item.quantity || 1,
-              note: item.note || '',
+              note: fixVietnameseMojibake(item.note) || '',
             }));
             this.cartItems.set(items);
             this.takeSnapshot();
@@ -275,13 +432,14 @@ export class WaiterOrderComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private takeSnapshot() {
-    this.initialCartSnapshot = JSON.stringify(
-      this.cartItems().map(x => ({
+    this.initialCartSnapshot = JSON.stringify({
+      items: this.cartItems().map(x => ({
         id: x.dishId,
         q: x.quantity,
-        n: x.note || '',
-      }))
-    );
+        n: (x.note || '').trim(),
+      })),
+      note: (this.orderNote || '').trim(),
+    });
   }
 
   // --- CATEGORY & SEARCH ---
@@ -491,6 +649,28 @@ export class WaiterOrderComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  toggleNoteSection(dishId: string): void {
+    this.expandedNoteDishIds.update(set => {
+      const next = new Set(set);
+      if (next.has(dishId)) {
+        next.delete(dishId);
+      } else {
+        next.add(dishId);
+      }
+      return next;
+    });
+    this.cdr.markForCheck();
+  }
+
+  isNoteSectionOpen(item: CartItem): boolean {
+    return !!item.note || this.expandedNoteDishIds().has(item.dishId);
+  }
+
+  addLocalizedItemNote(item: CartItem, key: string): void {
+    const text = this.localizationService.instant('::' + key) || key;
+    this.addItemNoteTag(item, text);
+  }
+
   // Cập nhật ghi chú trực tiếp trong Order Drawer
   updateItemNote(item: CartItem, event: Event) {
     const input = event.target as HTMLInputElement;
@@ -554,13 +734,62 @@ export class WaiterOrderComponent implements OnInit, AfterViewInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  addQuickOrderNote(tag: string): void {
+  private readonly quickNoteAliases: Record<string, string[]> = {
+    '::ServeTogether': ['serve together', 'lên cùng lúc', 'cùng lúc'],
+    '::DrinksFirst': ['drinks first', 'lên nước trước', 'nước trước'],
+    '::RushOrder': ['rush order', 'làm gấp', 'gấp'],
+    '::WindowSeat': ['window seat', 'bàn cửa sổ', 'cửa sổ'],
+    '::Takeaway': ['takeaway', 'mang về', 'đóng gói mang về'],
+  };
+
+  isQuickNoteActive(key: string): boolean {
+    const current = this.editableOrderNote.trim().toLowerCase();
+    if (!current) return false;
+
+    const localizedText = this.localizationService.instant(key);
+    const aliases = [...(this.quickNoteAliases[key] || [])];
+    if (localizedText) {
+      aliases.push(localizedText.toLowerCase());
+    }
+
+    const parts = current.split(/\s*\|\s*/).map(p => p.trim());
+    return parts.some(p => aliases.some(alias => p === alias || p.includes(alias)));
+  }
+
+  toggleQuickOrderNote(key: string): void {
+    const localizedText = this.localizationService.instant(key) || key.replace(/^::/, '');
     const current = this.editableOrderNote.trim();
     if (!current) {
-      this.updateEditableOrderNote(tag);
-    } else if (!current.toLowerCase().includes(tag.toLowerCase())) {
-      this.updateEditableOrderNote(`${current} | ${tag}`);
+      this.updateEditableOrderNote(localizedText);
+      return;
     }
+
+    const aliases = [...(this.quickNoteAliases[key] || [])].map(a => a.toLowerCase());
+    if (localizedText) {
+      aliases.push(localizedText.toLowerCase());
+    }
+
+    const parts = current.split(/\s*\|\s*/).map(p => p.trim()).filter(Boolean);
+    const existingIndex = parts.findIndex(p => {
+      const lower = p.toLowerCase();
+      return aliases.some(a => lower === a || lower.includes(a));
+    });
+
+    if (existingIndex >= 0) {
+      parts.splice(existingIndex, 1);
+    } else {
+      parts.push(localizedText);
+    }
+
+    this.updateEditableOrderNote(parts.join(' | '));
+  }
+
+  addQuickOrderNote(tag: string): void {
+    this.toggleQuickOrderNote(tag);
+  }
+
+  clearOrderNote(): void {
+    this.updateEditableOrderNote('');
   }
 
   // --- ORDER SUMMARY HELPERS ---
@@ -612,19 +841,26 @@ export class WaiterOrderComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       error: err => {
         // Trong trường hợp lỗi mạng hoặc server, cảnh báo lỗi
-        this.toaster.error(err.error?.error?.message || err.message || 'Lỗi kiểm tra kho!');
+        this.toaster.error(err.error?.error?.message || err.message || this.localizationService.instant('::StockCheckFailed'));
       },
     });
   }
 
   private displayStockShortageAlert(shortages: StockShortageItemDto[]) {
     if (!shortages || shortages.length === 0) return;
-    const first = shortages[0];
-    const message = this.localizationService.instant(
-      '::StockShortageWarning',
-      first.dishName || ''
-    ) + ` (${first.ingredientName}: cần ${first.requiredQuantity} ${first.unitName}, còn ${first.availableQuantity} ${first.unitName})`;
-    this.toaster.warn(message);
+    const dishNames: string[] = Array.from(
+      new Set(shortages.map(s => s.dishName).filter((name): name is string => !!name))
+    );
+    const title = this.localizationService.instant('::StockShortageReportTitle');
+    let message = '';
+    if (dishNames.length === 1) {
+      message = this.localizationService.instant('::DishInsufficientToServe', dishNames[0] || '');
+    } else if (dishNames.length > 1) {
+      message = this.localizationService.instant('::MultipleDishesInsufficientToServe', dishNames.join(', '));
+    } else {
+      message = this.localizationService.instant('::GenericInsufficientToServe');
+    }
+    this.toaster.warn(message, title);
   }
 
   // --- DRAWER TOGGLE ---
@@ -675,8 +911,13 @@ export class WaiterOrderComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       error: err => {
         this.isSubmitting = false;
-        const msg = err.error?.error?.message || err.message || this.localizationService.instant('::ActionFailedError');
-        this.toaster.error(msg);
+        let msg = err.error?.error?.message || err.message;
+        if (err.error?.error?.code === 'TooHungry:Order:InsufficientStock') {
+          msg = this.localizationService.instant('::TooHungry:Order:InsufficientStockWaiter') || msg;
+        } else if (!msg) {
+          msg = this.localizationService.instant('::ActionFailedError');
+        }
+        this.toaster.error(msg, this.localizationService.instant('::StockShortageReportTitle'));
         this.cdr.markForCheck();
       },
     });

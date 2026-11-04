@@ -68,20 +68,20 @@ export class InventoryIngredientTabComponent implements OnChanges {
   }
 
   readonly storageFilterOptions: CustomSelectOption[] = [
-    { value: StorageFilterType.All, label: '::AllStorage', icon: 'fa-layer-group' },
+    { value: StorageFilterType.All, label: '::AllStorage', icon: 'fa-warehouse' },
     { value: StorageFilterType.Chilled, label: '::StorageType_SHORT_TERM', icon: 'fa-snowflake' },
     { value: StorageFilterType.Frozen, label: '::StorageType_LONG_TERM', icon: 'fa-box-archive' },
     { value: StorageFilterType.Dry, label: '::StorageType_FRESH', icon: 'fa-leaf' },
   ];
 
   readonly stockFilterOptions: CustomSelectOption[] = [
-    { value: 'ALL', label: '::AllStockLevels', icon: 'fa-layer-group' },
-    { value: 'SAFE', label: '::StockStatusSafe', icon: 'fa-shield-halved' },
+    { value: 'ALL', label: '::AllStockLevels', icon: 'fa-shield-halved' },
+    { value: 'SAFE', label: '::StockStatusSafe', icon: 'fa-circle-check' },
     { value: 'LOW', label: '::StockStatusLow', icon: 'fa-triangle-exclamation' },
   ];
 
   readonly statusFilterOptions: CustomSelectOption[] = [
-    { value: 'all', label: '::AllStatuses', icon: 'fa-layer-group' },
+    { value: 'all', label: '::AllStatuses', icon: 'fa-circle-dot' },
     { value: 'active', label: '::ActiveOnly', icon: 'fa-circle-check' },
     { value: 'deactivated', label: '::DeactivatedOnly', icon: 'fa-pause-circle' },
   ];

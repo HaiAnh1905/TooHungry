@@ -56,6 +56,7 @@ export class InventoryKeeperLayoutComponent implements OnInit, OnDestroy {
 
   private getInitialTab(): string {
     const url = this.router?.url || '';
+    if (url.includes('/inventory-keeper/inventory')) return 'inventory';
     if (url.includes('/inventory-keeper/batches')) return 'batches';
     if (url.includes('/inventory-keeper/transactions')) return 'transactions';
     return 'dashboard';
@@ -159,7 +160,9 @@ export class InventoryKeeperLayoutComponent implements OnInit, OnDestroy {
   }
 
   private updateActiveTab(url: string): void {
-    if (url.includes('/inventory-keeper/batches')) {
+    if (url.includes('/inventory-keeper/inventory')) {
+      this.currentActiveTab.set('inventory');
+    } else if (url.includes('/inventory-keeper/batches')) {
       this.currentActiveTab.set('batches');
     } else if (url.includes('/inventory-keeper/transactions')) {
       this.currentActiveTab.set('transactions');

@@ -82,9 +82,16 @@ public class OrderController : TooHungryController, IOrderAppService
     }
 
     [HttpPost("{id:guid}/complete-payment")]
-    [Authorize(TooHungryPermissions.Orders.Default)]
+    [Authorize]
     public virtual Task<OrderDto> CompletePaymentAsync(Guid id, [FromBody] CompletePaymentInputDto input)
     {
         return _orderAppService.CompletePaymentAsync(id, input);
+    }
+
+    [HttpPost("{id:guid}/request-bill")]
+    [Authorize]
+    public virtual Task RequestBillAsync(Guid id)
+    {
+        return _orderAppService.RequestBillAsync(id);
     }
 }

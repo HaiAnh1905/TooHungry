@@ -1,3 +1,4 @@
+using Acme.TooHungry.Reservations;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,19 +25,22 @@ public class TableAppService : TooHungryAppService, ITableAppService
     private readonly IRepository<DiningArea, Guid> _diningAreaRepository;
     private readonly ITableRealtimeNotifier _realtimeNotifier;
     private readonly IRepository<Dish, Guid> _dishRepository;
+    private readonly IRepository<TableReservation, Guid> _reservationRepository;
 
     public TableAppService(
         IRepository<RestaurantTable, Guid> tableRepository,
         IRepository<Order, Guid> orderRepository,
         IRepository<DiningArea, Guid> diningAreaRepository,
         ITableRealtimeNotifier realtimeNotifier,
-        IRepository<Dish, Guid> dishRepository)
+        IRepository<Dish, Guid> dishRepository,
+        IRepository<TableReservation, Guid> reservationRepository)
     {
         _tableRepository = tableRepository;
         _orderRepository = orderRepository;
         _diningAreaRepository = diningAreaRepository;
         _realtimeNotifier = realtimeNotifier;
         _dishRepository = dishRepository;
+        _reservationRepository = reservationRepository;
     }
 
     /// <summary>
@@ -130,6 +134,13 @@ public class TableAppService : TooHungryAppService, ITableAppService
 
         var activeOrderMap = activeOrders.ToDictionary(x => x.TableId, x => x.Id);
 
+        var activeReservationsQuery = (await _reservationRepository.GetQueryableAsync())
+            .Where(x => tableIds.Contains(x.TableId) && x.Status == ReservationStatus.Confirmed);
+        var activeReservations = await AsyncExecuter.ToListAsync(activeReservationsQuery);
+        var activeReservationMap = activeReservations
+            .GroupBy(x => x.TableId)
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(x => x.ReservationTime).First());
+
         foreach (var dto in dtos)
         {
             if (string.IsNullOrWhiteSpace(dto.DiningAreaName) && !string.IsNullOrWhiteSpace(dto.Location))
@@ -145,6 +156,15 @@ public class TableAppService : TooHungryAppService, ITableAppService
             {
                 dto.ActiveOrderId = orderId;
                 dto.HasActiveOrder = true;
+            }
+
+            if (activeReservationMap.TryGetValue(dto.Id, out var activeRes))
+            {
+                dto.ReservedCustomerName = activeRes.CustomerName;
+                dto.ReservedCustomerPhone = activeRes.CustomerPhone;
+                dto.ReservedTime = activeRes.ReservationTime;
+                dto.ReservedGuestCount = activeRes.GuestCount;
+                dto.ReservedNote = activeRes.Note;
             }
 
             if (dto.Status == TableStatus.Occupied && !dto.OccupiedTime.HasValue)
@@ -381,6 +401,7 @@ public class TableAppService : TooHungryAppService, ITableAppService
             }
         }
 
+        var previousStatus = table.Status;
         if (status == TableStatus.Occupied)
         {
             table.Occupy(Clock.Now);
@@ -400,10 +421,15 @@ public class TableAppService : TooHungryAppService, ITableAppService
         }
 
         await _tableRepository.UpdateAsync(table, autoSave: true);
-        CurrentUnitOfWork?.OnCompleted(async () =>
+        string actionType = status switch
         {
-            await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name, table.DiningAreaId, table.OccupiedTime);
-        });
+            TableStatus.Occupied => previousStatus == TableStatus.Reserved ? "reservation_seated" : "seated",
+            TableStatus.Available => "freed",
+            TableStatus.Cleaning => "cleaning",
+            TableStatus.Reserved => "reserved",
+            _ => "status_changed"
+        };
+        await _realtimeNotifier.NotifyTableStatusChangedAsync(table.Id, table.Status, table.Name, table.DiningAreaId, table.OccupiedTime, actionType);
 
         var dto = ObjectMapper.Map<RestaurantTable, TableDto>(table);
         if (string.IsNullOrWhiteSpace(dto.DiningAreaName))
@@ -529,8 +555,24 @@ public class TableAppService : TooHungryAppService, ITableAppService
         // 4. Phát sự kiện SignalR cho cả 2 bàn sau khi commit UoW
         CurrentUnitOfWork?.OnCompleted(async () =>
         {
-            await _realtimeNotifier.NotifyTableStatusChangedAsync(sourceTable.Id, sourceTable.Status, sourceTable.Name, sourceTable.DiningAreaId, sourceTable.OccupiedTime);
-            await _realtimeNotifier.NotifyTableStatusChangedAsync(targetTable.Id, targetTable.Status, targetTable.Name, targetTable.DiningAreaId, targetTable.OccupiedTime);
+            await _realtimeNotifier.NotifyTableStatusChangedAsync(
+                sourceTable.Id, 
+                sourceTable.Status, 
+                sourceTable.Name, 
+                sourceTable.DiningAreaId, 
+                sourceTable.OccupiedTime,
+                actionType: "table_transferred_source",
+                sourceTableName: sourceTable.Name,
+                targetTableName: targetTable.Name);
+            await _realtimeNotifier.NotifyTableStatusChangedAsync(
+                targetTable.Id, 
+                targetTable.Status, 
+                targetTable.Name, 
+                targetTable.DiningAreaId, 
+                targetTable.OccupiedTime,
+                actionType: "table_transferred",
+                sourceTableName: sourceTable.Name,
+                targetTableName: targetTable.Name);
             if (activeOrder != null)
             {
                 await _realtimeNotifier.NotifyTableOrderUpdatedAsync(sourceTable.Id, false, null);

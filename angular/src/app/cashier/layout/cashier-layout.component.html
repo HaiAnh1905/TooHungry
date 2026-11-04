@@ -1,0 +1,277 @@
+<div class="cashier-app-wrapper">
+  <!-- 1. TOPBAR CỐ ĐỊNH TRÊN CÙNG (64px) -->
+  <header class="cashier-topbar">
+    <div class="topbar-left">
+      <button
+        type="button"
+        class="btn-toggle-drawer d-lg-none"
+        (click)="toggleMobileSidebar()"
+        [title]="'::ToggleNavigation' | abpLocalization"
+        aria-label="Toggle Navigation"
+      >
+        <i class="fas fa-bars"></i>
+      </button>
+
+      <div class="brand-logo" routerLink="/cashier/tables">
+        <div class="brand-icon-wrapper">
+          <i class="fas fa-cash-register brand-icon"></i>
+        </div>
+        <span class="brand-name">Acme.TooHungry</span>
+      </div>
+
+      <span class="portal-badge d-none d-sm-inline-flex">
+        {{ '::CashierPortalTitle' | abpLocalization }}
+      </span>
+    </div>
+
+    <div class="topbar-right">
+      <!-- Chuông thông báo Realtime (Notification Bell) -->
+      <div class="notification-dropdown-wrapper">
+        <button
+          type="button"
+          class="btn-notification-bell"
+          (click)="toggleNotificationDropdown($event)"
+          [title]="'::Notifications' | abpLocalization"
+          aria-label="Notifications"
+          [class.has-unread]="state.unreadNotificationCount() > 0"
+        >
+          <i class="fas fa-bell text-primary-orange" [class.fa-shake]="state.hasNewAlert()"></i>
+          @if (state.unreadNotificationCount() > 0) {
+            <span class="notification-badge">{{ state.unreadNotificationCount() > 99 ? '99+' : state.unreadNotificationCount() }}</span>
+          }
+        </button>
+
+        @if (isNotificationDropdownOpen()) {
+          <div class="notification-dropdown-menu shadow-lg">
+            <div class="notification-header d-flex align-items-center justify-content-between p-3 border-bottom">
+              <div class="d-flex align-items-center gap-2">
+                <i class="fas fa-bell text-primary-orange"></i>
+                <span class="font-weight-bold">{{ '::Notifications' | abpLocalization }}</span>
+                @if (state.unreadNotificationCount() > 0) {
+                  <span class="badge bg-danger rounded-pill">{{ state.unreadNotificationCount() }}</span>
+                }
+              </div>
+              @if (state.notifications().length > 0) {
+                <button
+                  type="button"
+                  class="btn btn-sm btn-link text-muted p-0 text-decoration-none"
+                  (click)="state.markAllNotificationsAsRead()"
+                >
+                  {{ '::MarkAllAsRead' | abpLocalization }}
+                </button>
+              }
+            </div>
+
+            <div class="notification-list">
+              @if (state.notifications().length === 0) {
+                <div class="notification-empty text-center py-4 text-muted">
+                  <i class="far fa-bell-slash fa-2x mb-2 text-muted"></i>
+                  <p class="small m-0">{{ '::NoNotifications' | abpLocalization }}</p>
+                </div>
+              } @else {
+                @for (item of state.notifications(); track item.id) {
+                  <div
+                    class="notification-item p-3 border-bottom d-flex gap-3 align-items-start"
+                    [class.unread]="!item.read"
+                    (click)="onNotificationItemClick(item)"
+                  >
+                    <div class="notification-icon-circle" [ngClass]="getNotificationIconClass(item.type)">
+                      <i class="fas" [ngClass]="getNotificationIcon(item.type)"></i>
+                    </div>
+                    <div class="notification-content flex-grow-1">
+                      <div class="d-flex align-items-center justify-content-between">
+                        <span class="notification-title font-weight-bold small">{{ getNotificationTitle(item) }}</span>
+                        <span class="notification-time text-muted extra-small">{{ formatNotificationTime(item.timestamp) }}</span>
+                      </div>
+                      <p class="notification-msg small text-secondary m-0 mt-1">{{ getNotificationMessage(item) }}</p>
+                    </div>
+                    @if (!item.read) {
+                      <span class="unread-dot"></span>
+                    }
+                  </div>
+                }
+              }
+            </div>
+
+            @if (state.notifications().length > 0) {
+              <div class="notification-footer p-2 text-center border-top">
+                <button
+                  type="button"
+                  class="btn btn-sm btn-link text-muted text-decoration-none"
+                  (click)="state.clearAllNotifications()"
+                >
+                  {{ '::ClearNotifications' | abpLocalization }}
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Nút Bật / Tắt âm thanh thông báo chuông (Audio Mute Toggle) -->
+      <button
+        type="button"
+        class="btn-audio-toggle"
+        [class.muted]="audioService.isMuted()"
+        (click)="toggleAudioMute()"
+        [title]="(audioService.isMuted() ? '::UnmuteAudio' : '::MuteAudio') | abpLocalization"
+        aria-label="Toggle Audio"
+      >
+        <i class="fas" [ngClass]="audioService.isMuted() ? 'fa-volume-xmark text-muted' : 'fa-volume-high text-primary-orange'"></i>
+      </button>
+
+      <!-- Đổi ngôn ngữ (Language Switcher) -->
+      <div class="language-dropdown-wrapper">
+        <button
+          type="button"
+          class="btn-lang-switcher"
+          (click)="toggleLanguageDropdown($event)"
+          [title]="'::ChangeLanguage' | abpLocalization"
+          aria-label="Change Language"
+          [attr.aria-expanded]="isLanguageDropdownOpen()"
+        >
+          <i class="fas fa-globe lang-icon text-primary-orange"></i>
+          <span class="lang-text">{{ currentLangItem().shortName }}</span>
+          <i class="fas fa-chevron-down lang-chevron ms-1" [class.rotated]="isLanguageDropdownOpen()"></i>
+        </button>
+
+        @if (isLanguageDropdownOpen()) {
+          <div class="language-dropdown-menu shadow-lg">
+            @for (lang of supportedLanguages; track lang.code) {
+              <button
+                type="button"
+                class="dropdown-item-lang"
+                [class.active]="currentLanguage() === lang.code"
+                (click)="switchLanguage(lang.code)"
+              >
+                <i class="fas fa-globe dropdown-lang-icon" [class.text-primary-orange]="currentLanguage() === lang.code"></i>
+                <span class="dropdown-lang-name">{{ lang.displayName | abpLocalization }}</span>
+                <span class="dropdown-lang-badge">{{ lang.shortName }}</span>
+                @if (currentLanguage() === lang.code) {
+                  <i class="fas fa-check text-primary-orange ms-2"></i>
+                }
+              </button>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Thông tin nhân viên Thu ngân -->
+      <div class="user-profile">
+        <div class="avatar-circle">{{ userInitials() }}</div>
+        <div class="user-meta d-none d-md-block">
+          <div class="user-name">{{ userInfo().fullName }}</div>
+          <div class="user-role">{{ '::Role:Cashier' | abpLocalization }}</div>
+        </div>
+      </div>
+
+      <!-- Nút lối tắt quay lại quản trị (Admin / Manager) -->
+      @if (userInfo().canReturnToAdmin) {
+        <button
+          type="button"
+          class="btn btn-outline-admin"
+          (click)="returnToAdmin()"
+          [title]="'::ReturnToAdmin' | abpLocalization"
+          aria-label="Return to Admin"
+        >
+          <i class="fas fa-arrow-left"></i>
+          <span class="d-none d-md-inline ms-1">{{ '::ReturnToAdminShort' | abpLocalization }}</span>
+        </button>
+      }
+
+      <!-- Nút Đăng xuất an toàn -->
+      <button
+        type="button"
+        class="btn btn-logout"
+        (click)="logout()"
+        [title]="'::Logout' | abpLocalization"
+        aria-label="Logout"
+      >
+        <i class="fas fa-power-off"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- 2. BODY CONTAINER: SIDEBAR + MAIN CONTENT -->
+  <div class="cashier-body">
+    <!-- Backdrop cho mobile drawer -->
+    @if (isSidebarOpenMobile()) {
+      <div class="mobile-sidebar-backdrop" (click)="closeMobileSidebar()"></div>
+    }
+
+    <!-- SIDEBAR ĐIỀU HƯỚNG 2 TAB CHÍNH -->
+    <aside class="cashier-sidebar" [class.open-mobile]="isSidebarOpenMobile()">
+      <div class="sidebar-header d-flex align-items-center justify-content-between p-3 border-bottom d-lg-none">
+        <span class="font-weight-bold text-dark">{{ '::CashierNavigation' | abpLocalization }}</span>
+        <button type="button" class="btn btn-sm btn-link text-muted p-0" (click)="closeMobileSidebar()">
+          <i class="fas fa-times fa-lg"></i>
+        </button>
+      </div>
+
+      <nav class="sidebar-nav">
+        <!-- Tab 1: Sơ đồ bàn ăn -->
+        <a
+          routerLink="/cashier/tables"
+          routerLinkActive="active"
+          (click)="closeMobileSidebar()"
+          class="nav-tab-item"
+        >
+          <div class="tab-icon-box">
+            <i class="fas fa-table-cells"></i>
+          </div>
+          <div class="tab-info">
+            <div class="tab-title">{{ '::CashierNavTables' | abpLocalization }}</div>
+            <div class="tab-subtitle">{{ '::CashierNavTablesDesc' | abpLocalization }}</div>
+          </div>
+          @if (state.activeTableCount() > 0) {
+            <span class="badge-tab-count">{{ state.activeTableCount() }}</span>
+          }
+        </a>
+
+        <!-- Tab 2: Danh sách đơn hàng -->
+        <a
+          routerLink="/cashier/orders"
+          routerLinkActive="active"
+          (click)="closeMobileSidebar()"
+          class="nav-tab-item"
+        >
+          <div class="tab-icon-box">
+            <i class="fas fa-receipt"></i>
+          </div>
+          <div class="tab-info">
+            <div class="tab-title">{{ '::CashierNavOrders' | abpLocalization }}</div>
+            <div class="tab-subtitle">{{ '::CashierNavOrdersDesc' | abpLocalization }}</div>
+          </div>
+          @if (state.pendingOrderCount() > 0) {
+            <span class="badge-tab-count badge-warning">{{ state.pendingOrderCount() }}</span>
+          }
+        </a>
+      </nav>
+
+      <!-- Tóm tắt ca trực trên Sidebar -->
+      <div class="sidebar-shift-card mt-auto p-3 m-3 rounded">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-muted small font-weight-bold">{{ '::ShiftSummaryTitle' | abpLocalization }}</span>
+          <span class="badge bg-success-light text-success small">{{ '::ShiftActive' | abpLocalization }}</span>
+        </div>
+        <div class="shift-metric d-flex justify-content-between py-1 border-bottom">
+          <span class="text-secondary small">{{ '::TotalRevenue' | abpLocalization }}</span>
+          <span class="font-weight-bold text-success small">{{ state.totalRevenue().toLocaleString('vi-VN') }} đ</span>
+        </div>
+        <div class="shift-metric d-flex justify-content-between py-1 border-bottom">
+          <span class="text-secondary small">{{ '::ServingTables' | abpLocalization }}</span>
+          <span class="font-weight-bold small">{{ state.activeTableCount() }}</span>
+        </div>
+        <div class="shift-metric d-flex justify-content-between py-1">
+          <span class="text-secondary small">{{ '::PendingOrders' | abpLocalization }}</span>
+          <span class="font-weight-bold small text-warning">{{ state.pendingOrderCount() }}</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 3. MAIN CONTENT: HIỂN THỊ CÁC ROUTE CON -->
+    <main class="cashier-main-content">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

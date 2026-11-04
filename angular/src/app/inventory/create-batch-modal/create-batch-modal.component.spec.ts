@@ -77,4 +77,17 @@ describe('CreateInventoryBatchModalComponent', () => {
 
     expect(mockInventoryService.createBatch).toHaveBeenCalled();
   });
+
+  it('should regenerate batch code with LOT- prefix', () => {
+    component.batchModel.batchCode = 'LOT-OLD';
+    component.generateNewBatchCode();
+    expect(component.batchModel.batchCode).toContain('LOT-');
+    expect(component.batchModel.batchCode).not.toBe('LOT-OLD');
+  });
+
+  it('should return correct storage type label key', () => {
+    expect(component.getStorageTypeLabel(StorageType.FRESH)).toBe('::StorageType_FRESH');
+    expect(component.getStorageTypeLabel(StorageType.LONG_TERM)).toBe('::StorageType_LONG_TERM');
+    expect(component.getStorageTypeLabel(StorageType.SHORT_TERM)).toBe('::StorageType_SHORT_TERM');
+  });
 });

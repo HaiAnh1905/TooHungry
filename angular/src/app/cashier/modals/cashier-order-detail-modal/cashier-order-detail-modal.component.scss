@@ -1,0 +1,392 @@
+.cashier-detail-dialog {
+  border-radius: 16px;
+  overflow: hidden;
+  border: none;
+  background: #ffffff;
+
+  .header-icon-box {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+    border: 1.5px solid #fed7aa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ea580c;
+    font-size: 1.1rem;
+    box-shadow: 0 2px 6px rgba(234, 88, 12, 0.12);
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1;
+
+    &.status-pending {
+      background: #fef3c7;
+      color: #b45309;
+      border: 1px solid #fde68a;
+    }
+
+    &.status-processing {
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+    }
+
+    &.status-completed {
+      background: #dcfce7;
+      color: #15803d;
+      border: 1px solid #bbf7d0;
+    }
+
+    &.status-cancelled {
+      background: #fee2e2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+    }
+  }
+
+  .btn-close-custom {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: #f1f5f9;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    &:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+  }
+
+  /* Bento Meta Cards */
+  .order-meta-row {
+    .meta-bento-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 0.8rem 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      height: 100%;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+      &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+      }
+
+      .meta-icon {
+        width: 38px;
+        height: 38px;
+        min-width: 38px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.95rem;
+
+        &.bg-orange-light {
+          background: #fff7ed;
+          color: #ea580c;
+          border: 1px solid #fed7aa;
+        }
+
+        &.bg-blue-light {
+          background: #eff6ff;
+          color: #2563eb;
+          border: 1px solid #bfdbfe;
+        }
+
+        &.bg-purple-light {
+          background: #f5f3ff;
+          color: #7c3aed;
+          border: 1px solid #ddd6fe;
+        }
+
+        &.bg-emerald-light {
+          background: #ecfdf5;
+          color: #059669;
+          border: 1px solid #a7f3d0;
+        }
+      }
+
+      .meta-body {
+        min-width: 0;
+        flex-grow: 1;
+
+        .meta-label {
+          font-size: 0.7rem;
+          font-weight: 700;
+          color: #64748b;
+          text-transform: uppercase;
+          letter-spacing: 0.03em;
+        }
+
+        .meta-value {
+          font-size: 0.92rem;
+          font-weight: 700;
+          color: #0f172a;
+          line-height: 1.25;
+          margin-top: 2px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .meta-subtext {
+          font-size: 0.74rem;
+          color: #64748b;
+          margin-top: 2px;
+          line-height: 1.3;
+          word-break: break-word;
+        }
+      }
+    }
+  }
+
+  /* Items Table */
+  .items-card-wrapper {
+    overflow: hidden;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+
+    .items-table-scrollable {
+      max-height: 290px;
+      overflow-y: auto;
+    }
+
+    .items-table {
+      border-collapse: collapse;
+
+      thead th {
+        background: #f8fafc;
+        padding: 0.7rem 1rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #475569;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        border-bottom: 1px solid #e2e8f0;
+        position: sticky;
+        top: 0;
+        z-index: 2;
+      }
+
+      tbody td {
+        padding: 0.75rem 1rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 0.9rem;
+        color: #334155;
+      }
+
+      tbody tr:last-child td {
+        border-bottom: none;
+      }
+
+      tbody tr:hover {
+        background-color: #fffaf5;
+      }
+
+      .dish-item-cell {
+        display: flex;
+        align-items: center;
+        gap: 0.95rem;
+        width: 100%;
+      }
+
+      .dish-thumb {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        border-radius: 8px;
+        object-fit: cover;
+        border: 1px solid #e2e8f0;
+        flex-shrink: 0;
+      }
+
+      .dish-thumb-placeholder {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        border-radius: 8px;
+        background: #fff7ed;
+        border: 1px solid #fed7aa;
+        color: #ea580c;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.95rem;
+        flex-shrink: 0;
+      }
+
+      .dish-name-box {
+        min-width: 0;
+
+        .dish-name {
+          font-weight: 600;
+          color: #0f172a;
+          font-size: 0.92rem;
+          line-height: 1.3;
+        }
+
+        .dish-note-tag {
+          font-size: 0.72rem;
+          color: #ea580c;
+          background: #fff7ed;
+          border: 1px solid #fed7aa;
+          border-radius: 4px;
+          padding: 1px 7px;
+          display: inline-flex;
+          align-items: center;
+          margin-top: 3px;
+        }
+      }
+
+      .qty-pill {
+        background: #f1f5f9;
+        color: #334155;
+        font-weight: 700;
+        font-size: 0.82rem;
+        padding: 3px 10px;
+        border-radius: 999px;
+        display: inline-block;
+      }
+    }
+  }
+
+  /* Financial Summary & Notes */
+  .extra-info-card {
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+
+    .note-box-content {
+      background: #fffaf5;
+      border: 1px solid #fed7aa;
+      color: #7c2d12;
+      border-radius: 8px;
+      padding: 0.65rem 0.85rem;
+      font-size: 0.85rem;
+      line-height: 1.45;
+    }
+
+    .method-badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 600;
+
+      &.badge-vietqr {
+        background: #eff6ff;
+        color: #1d4ed8;
+        border: 1px solid #bfdbfe;
+      }
+
+      &.badge-cash {
+        background: #ecfdf5;
+        color: #047857;
+        border: 1px solid #a7f3d0;
+      }
+    }
+  }
+
+  .cost-summary-card {
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+
+    .cost-divider {
+      border-top: 1px dashed #cbd5e1;
+    }
+
+    .grand-total-row {
+      .total-title {
+        font-size: 0.85rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #0f172a;
+      }
+
+      .badge-payment-status {
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 999px;
+        display: inline-block;
+        margin-top: 2px;
+
+        &.paid {
+          background: #dcfce7;
+          color: #15803d;
+          border: 1px solid #bbf7d0;
+        }
+
+        &.unpaid {
+          background: #fef3c7;
+          color: #b45309;
+          border: 1px solid #fde68a;
+        }
+      }
+
+      .total-amount-number {
+        font-size: 1.45rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+
+      .total-amount-unit {
+        font-size: 1rem;
+        font-weight: 700;
+      }
+    }
+  }
+}
+
+/* Print bill styling */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .cashier-detail-dialog,
+  .cashier-detail-dialog * {
+    visibility: visible;
+  }
+
+  .cashier-detail-dialog {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  .modal-backdrop,
+  .btn-close-custom,
+  .modal-footer {
+    display: none !important;
+  }
+}

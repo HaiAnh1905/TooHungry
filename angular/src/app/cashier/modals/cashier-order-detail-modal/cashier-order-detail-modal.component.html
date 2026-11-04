@@ -1,0 +1,282 @@
+<div class="modal-backdrop fade show"></div>
+<div class="modal d-block" tabindex="-1" role="dialog" (click)="close()">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document" (click)="$event.stopPropagation()">
+    <div class="modal-content cashier-detail-dialog shadow-xl">
+
+      <!-- MODAL HEADER -->
+      <div class="modal-header border-bottom bg-white py-3 px-4">
+        <div class="header-left-content d-flex align-items-center gap-3">
+          <div class="header-icon-box">
+            <i class="fas fa-receipt"></i>
+          </div>
+          <div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <h5 class="modal-title m-0 fw-bold text-dark">
+                {{ '::OrderDetailsTitle' | abpLocalization }}
+              </h5>
+              @if (order()) {
+                <span class="status-badge" [ngClass]="orderStatusBadge().class">
+                  <i class="fas" [ngClass]="orderStatusBadge().icon"></i>
+                  <span>{{ orderStatusBadge().labelKey | abpLocalization }}</span>
+                </span>
+              }
+            </div>
+            <div class="order-code-sub text-muted small mt-1">
+              <span class="fw-semibold font-mono text-dark">{{ order()?.orderNumber || table.activeOrderCode || ('::ActiveOrder' | abpLocalization) }}</span>
+            </div>
+          </div>
+        </div>
+        <button type="button" class="btn-close-custom" (click)="close()" [title]="'::Close' | abpLocalization" aria-label="Close">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <!-- MODAL BODY -->
+      <div class="modal-body p-4 bg-slate-50">
+        @if (isLoading()) {
+          <div class="loading-state text-center py-5">
+            <div class="spinner-border text-orange" role="status"></div>
+            <p class="mt-3 text-muted small fw-medium">{{ '::LoadingOrderDetails' | abpLocalization }}</p>
+          </div>
+        } @else if (!order() || (order()?.items?.length ?? 0) === 0) {
+          <div class="empty-state text-center py-5">
+            <div class="empty-icon-circle mb-3">
+              <i class="fas fa-bowl-food fa-2x text-muted opacity-50"></i>
+            </div>
+            <h6 class="fw-bold text-dark">{{ '::NoOrderItems' | abpLocalization }}</h6>
+            <p class="text-muted small m-0">{{ '::NoItemsInOrder' | abpLocalization }}</p>
+          </div>
+        } @else {
+
+          <!-- 1. KHỐI THÔNG TIN TỔNG QUAN (META INFO CARDS) -->
+          <div class="row g-2.5 mb-3.5 order-meta-row">
+            <!-- Box 1: Bàn & Khu vực -->
+            <div class="col-sm-6 col-md-3">
+              <div class="meta-bento-card">
+                <div class="meta-icon bg-orange-light text-orange">
+                  <i class="fas fa-chair"></i>
+                </div>
+                <div class="meta-body">
+                  <div class="meta-label">{{ '::TableAndArea' | abpLocalization }}</div>
+                  <div class="meta-value">{{ table.tableNumber || order()?.tableName || 'Bàn ăn' }}</div>
+                  <div class="meta-subtext">{{ table.diningAreaName || ('::MainArea' | abpLocalization) }}{{ table.capacity ? (' • ' + table.capacity + ' chỗ') : '' }}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Box 2: Thời gian tạo đơn -->
+            <div class="col-sm-6 col-md-3">
+              <div class="meta-bento-card">
+                <div class="meta-icon bg-blue-light text-blue">
+                  <i class="far fa-clock"></i>
+                </div>
+                <div class="meta-body">
+                  <div class="meta-label">{{ '::OrderTime' | abpLocalization }}</div>
+                  <div class="meta-value font-mono">{{ (order()?.orderDate || order()?.creationTime) | date:'HH:mm' }}</div>
+                  <div class="meta-subtext">{{ (order()?.orderDate || order()?.creationTime) | date:'dd/MM/yyyy' }}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Box 3: Nhân viên phụ trách -->
+            <div class="col-sm-6 col-md-3">
+              <div class="meta-bento-card">
+                <div class="meta-icon bg-purple-light text-purple">
+                  <i class="fas fa-user-tie"></i>
+                </div>
+                <div class="meta-body">
+                  <div class="meta-label">{{ '::ServingStaff' | abpLocalization }}</div>
+                  <div class="meta-value text-truncate" [title]="table.assignedWaiterName || ('::StaffOnDuty' | abpLocalization)">
+                    {{ table.assignedWaiterName || ('::StaffOnDuty' | abpLocalization) }}
+                  </div>
+                  <div class="meta-subtext">{{ '::FloorStaff' | abpLocalization }}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Box 4: Tổng số món & phần -->
+            <div class="col-sm-6 col-md-3">
+              <div class="meta-bento-card">
+                <div class="meta-icon bg-emerald-light text-emerald">
+                  <i class="fas fa-utensils"></i>
+                </div>
+                <div class="meta-body">
+                  <div class="meta-label">{{ '::TotalDishesCount' | abpLocalization }}</div>
+                  <div class="meta-value">{{ totalDishCount() }} {{ '::DishesUnit' | abpLocalization }}</div>
+                  <div class="meta-subtext">{{ totalItemsCount() }} {{ '::PortionsUnit' | abpLocalization }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. BẢNG MÓN ĂN CHI TIẾT (ITEMS TABLE) -->
+          <div class="items-card-wrapper mb-3 bg-white rounded-3 shadow-2xs border">
+            <div class="items-header d-flex justify-content-between align-items-center p-3 border-bottom">
+              <span class="fw-bold text-dark d-flex align-items-center gap-2">
+                <i class="fas fa-list-check text-orange"></i>
+                <span>{{ '::Menu:Dishes' | abpLocalization }} ({{ totalDishCount() }})</span>
+              </span>
+              <span class="badge bg-orange-subtle text-orange rounded-pill px-2.5 py-1 small fw-bold">
+                {{ totalItemsCount() }} {{ '::PortionsUnit' | abpLocalization }}
+              </span>
+            </div>
+
+            <div class="items-table-scrollable">
+              <table class="items-table w-100">
+                <colgroup>
+                  <col style="width: 48px;" />
+                  <col style="width: auto;" />
+                  <col style="width: 130px;" />
+                  <col style="width: 100px;" />
+                  <col style="width: 140px;" />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th class="text-center">#</th>
+                    <th>{{ '::Dish' | abpLocalization }}</th>
+                    <th class="text-end">{{ '::Price' | abpLocalization }}</th>
+                    <th class="text-center">{{ '::Quantity' | abpLocalization }}</th>
+                    <th class="text-end">{{ '::TotalPrice' | abpLocalization }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (item of (order()?.items || []); track item.id; let idx = $index) {
+                    <tr>
+                      <td class="text-center font-mono text-muted small">{{ idx + 1 }}</td>
+                      <td>
+                        <div class="dish-item-cell d-flex align-items-center gap-3 py-1">
+                          @if (item.dishPhotoUrl) {
+                            <img [src]="item.dishPhotoUrl" [alt]="item.dishName" class="dish-thumb" appImgFallback />
+                          } @else {
+                            <div class="dish-thumb-placeholder">
+                              <i class="fas fa-utensils"></i>
+                            </div>
+                          }
+                          <div class="dish-name-box">
+                            <div class="dish-name fw-bold text-dark">{{ item.dishName }}</div>
+                            @if (item.note) {
+                              <span class="dish-note-tag">
+                                <i class="fas fa-pen-to-square me-1"></i>{{ item.note | fixMojibake }}
+                              </span>
+                            }
+                          </div>
+                        </div>
+                      </td>
+                      <td class="text-end font-mono text-slate">
+                        {{ item.unitPrice | number:'1.0-0' }} đ
+                      </td>
+                      <td class="text-center">
+                        <span class="qty-pill">× {{ item.quantity }}</span>
+                      </td>
+                      <td class="text-end font-mono fw-bold text-dark">
+                        {{ (item.totalPrice || ((item.quantity || 0) * (item.unitPrice || 0))) | number:'1.0-0' }} đ
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 3. TÀI CHÍNH & GHI CHÚ (2 CỘT) -->
+          <div class="row g-3">
+            <!-- Cột Trái: Ghi chú đơn & Phương thức thanh toán -->
+            <div class="col-md-6">
+              <div class="extra-info-card p-3 bg-white rounded-3 border h-100 d-flex flex-column gap-2.5">
+                <!-- Ghi chú đơn hàng -->
+                @if (order()?.note) {
+                  <div class="order-note-block">
+                    <div class="d-flex align-items-center gap-1.5 text-orange small fw-bold mb-1">
+                      <i class="fas fa-clipboard-list"></i>
+                      <span>{{ '::GeneralOrderNote' | abpLocalization }}</span>
+                    </div>
+                    <div class="note-box-content p-2.5 rounded-2 bg-orange-50 border border-orange-200 small text-dark">
+                      {{ order()!.note | fixMojibake }}
+                    </div>
+                  </div>
+                }
+
+                <!-- Phương thức thanh toán -->
+                @if (paymentMethodInfo()) {
+                  <div class="payment-method-block">
+                    <div class="d-flex align-items-center gap-1.5 text-secondary small fw-bold mb-1">
+                      <i class="fas fa-credit-card"></i>
+                      <span>{{ '::PaymentMethodLabel' | abpLocalization }}</span>
+                    </div>
+                    <div>
+                      <span class="method-badge-pill" [ngClass]="paymentMethodInfo()!.color">
+                        <i class="fas me-1.5" [ngClass]="paymentMethodInfo()!.icon"></i>
+                        <span>{{ paymentMethodInfo()!.label }}</span>
+                      </span>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Cột Phải: Bảng tổng kết số tiền -->
+            <div class="col-md-6">
+              <div class="cost-summary-card p-3 bg-white rounded-3 border h-100">
+                <div class="cost-line d-flex justify-content-between align-items-center py-1">
+                  <span class="text-muted small">{{ '::SubtotalAmount' | abpLocalization }}:</span>
+                  <span class="font-mono text-dark fw-semibold">
+                    {{ order()!.totalAmount | number:'1.0-0' }} đ
+                  </span>
+                </div>
+
+                <div class="cost-line d-flex justify-content-between align-items-center py-1">
+                  <span class="text-muted small">{{ '::DiscountAmount' | abpLocalization }}:</span>
+                  <span class="font-mono text-muted small">0 đ</span>
+                </div>
+
+                <div class="cost-line d-flex justify-content-between align-items-center py-1">
+                  <span class="text-muted small">{{ '::VATFee' | abpLocalization }}:</span>
+                  <span class="text-success small fw-semibold">{{ '::VATIncluded' | abpLocalization }}</span>
+                </div>
+
+                <div class="cost-divider my-2"></div>
+
+                <div class="grand-total-row d-flex justify-content-between align-items-center pt-1">
+                  <div>
+                    <div class="total-title fw-bold text-dark">{{ '::TotalPaymentAmount' | abpLocalization }}</div>
+                    <span class="badge-payment-status" [ngClass]="isPaid() ? 'paid' : 'unpaid'">
+                      {{ (isPaid() ? '::PaymentStatusCompleted' : '::PaymentStatusPending') | abpLocalization }}
+                    </span>
+                  </div>
+                  <div class="text-end">
+                    <span class="total-amount-number font-mono fw-bold text-success">
+                      {{ order()!.totalAmount | number:'1.0-0' }}
+                    </span>
+                    <span class="total-amount-unit text-success ms-1">đ</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        }
+      </div>
+
+      <!-- MODAL FOOTER -->
+      <div class="modal-footer bg-white border-top py-2.5 px-4 d-flex justify-content-between align-items-center">
+        <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center px-3" [disabled]="isPrinting()" (click)="printBill()">
+          <i class="fas me-2" [class.fa-print]="!isPrinting()" [class.fa-spinner]="isPrinting()" [class.fa-spin]="isPrinting()"></i>
+          <span>{{ '::PrintBill' | abpLocalization }}</span>
+        </button>
+
+        <div class="d-flex align-items-center gap-2">
+          <button type="button" class="btn btn-light border btn-sm px-3" (click)="close()">
+            {{ '::Close' | abpLocalization }}
+          </button>
+          @if (!isPaid() && order() && (order()?.items?.length ?? 0) > 0) {
+            <button type="button" class="btn btn-success btn-sm px-3 fw-bold d-flex align-items-center gap-1.5" (click)="proceedToPay()">
+              <i class="fas fa-credit-card"></i>
+              <span>{{ '::PayNow' | abpLocalization }}</span>
+            </button>
+          }
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

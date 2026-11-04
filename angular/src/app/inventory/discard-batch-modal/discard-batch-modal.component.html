@@ -1,6 +1,6 @@
 <abp-modal
-  [(visible)]="visible"
-  (visibleChange)="visibleChange.emit($event)"
+  [visible]="visible && !isSafeConfirmModalOpen"
+  (visibleChange)="onMainModalVisibleChange($event)"
   [options]="{ size: isBulk ? 'lg' : 'md', centered: true }"
   [busy]="isSubmitting"
   [suppressUnsavedChangesWarning]="true"
@@ -185,3 +185,147 @@
     </button>
   </ng-template>
 </abp-modal>
+
+<!-- Secondary Confirmation Modal for Safe Batches -->
+<abp-modal
+  [visible]="visible && isSafeConfirmModalOpen"
+  (visibleChange)="onSafeConfirmVisibleChange($event)"
+  [options]="{ size: 'md', centered: true }"
+  [busy]="isSubmitting"
+  [suppressUnsavedChangesWarning]="true"
+>
+  <ng-template #abpHeader>
+    <div class="d-flex align-items-center gap-3">
+      <div class="modal-header-icon-warning">
+        <i class="fa fa-triangle-exclamation"></i>
+      </div>
+      <div>
+        <h5 class="m-0 modal-title-text text-warning">
+          {{ '::DiscardSafeBatchConfirmTitle' | abpLocalization }}
+        </h5>
+        <span class="modal-subtitle-text">
+          {{ '::DiscardSafeBatchConfirmSubtitle' | abpLocalization }}
+        </span>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #abpBody>
+    <!-- Warning alert card -->
+    <div class="alert alert-warning border-warning d-flex align-items-start gap-2 mb-3">
+      <i class="fa fa-circle-exclamation text-warning mt-1 fs-5"></i>
+      <div>
+        <strong class="d-block text-dark">{{ '::DiscardSafeBatchWarningHeading' | abpLocalization }}</strong>
+        <span class="small text-muted">
+          @if (isBulk) {
+            {{ '::DiscardSafeBatchBulkWarningDesc' | abpLocalization: (safeBatchesCount + '') }}
+          } @else {
+            {{ '::DiscardSafeBatchWarningDesc' | abpLocalization }}
+          }
+        </span>
+      </div>
+    </div>
+
+    <!-- Batch details summary -->
+    @if (!isBulk && effectiveBatch) {
+      <div class="card bg-light border-0 p-3 mb-3 rounded-3">
+        <div class="row g-2 text-muted small">
+          <div class="col-6">
+            <span>{{ '::BatchCode' | abpLocalization }}:</span>
+            <strong class="text-dark d-block font-monospace">{{ effectiveBatch.batchCode }}</strong>
+          </div>
+          <div class="col-6">
+            <span>{{ '::Ingredient' | abpLocalization }}:</span>
+            <strong class="text-dark d-block">{{ effectiveBatch.ingredientName || ingredient?.name }}</strong>
+          </div>
+          <div class="col-6">
+            <span>{{ '::ExpiryDate' | abpLocalization }}:</span>
+            <strong class="text-dark d-block">
+              {{ effectiveBatch.expiryDate ? (effectiveBatch.expiryDate | date:'dd/MM/yyyy') : ('::NoExpiry' | abpLocalization) }}
+            </strong>
+          </div>
+          <div class="col-6">
+            <span>{{ '::Status' | abpLocalization }}:</span>
+            <div>
+              <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill fw-semibold">
+                <i class="fa fa-shield-check me-1"></i>Safe
+              </span>
+            </div>
+          </div>
+          <div class="col-12 mt-2 pt-2 border-top">
+            <span>{{ '::DiscardReasonCategoryLabel' | abpLocalization }}:</span>
+            <span class="badge bg-secondary-subtle text-dark ms-1">{{ selectedCategoryLabel }}</span>
+            <div class="text-dark mt-1 fst-italic">"{{ customNotes }}"</div>
+          </div>
+        </div>
+      </div>
+    } @else if (isBulk) {
+      <div class="card bg-light border-0 p-3 mb-3 rounded-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="fw-bold small text-dark d-flex align-items-center gap-2">
+            <i class="fa fa-boxes-stacked text-warning"></i>
+            {{ '::SelectedBatchesPreview' | abpLocalization }}
+          </span>
+          <span class="badge bg-success text-white rounded-pill px-2 py-1">
+            {{ '::SafeBatchesCount' | abpLocalization: (safeBatchesCount + '') }}
+          </span>
+        </div>
+        <div class="bulk-batches-preview-list d-flex flex-wrap gap-2" style="max-height: 140px; overflow-y: auto;">
+          @for (b of batches; track b.id) {
+            <div class="badge p-2 d-flex align-items-center gap-2 font-monospace shadow-xs border"
+                 [ngClass]="isBatchSafe(b) ? 'bg-success-subtle text-success border-success' : 'bg-white text-dark'">
+              <span class="fw-bold">{{ b.batchCode }}</span>
+              <span class="small">
+                @if (isBatchSafe(b)) {
+                  [Safe - {{ b.expiryDate | date:'dd/MM/yyyy' }}]
+                } @else {
+                  ({{ b.expiryDate ? (b.expiryDate | date:'dd/MM/yyyy') : '—' }})
+                }
+              </span>
+            </div>
+          }
+        </div>
+        <div class="col-12 mt-2 pt-2 border-top small">
+          <span class="text-muted">{{ '::DiscardReasonCategoryLabel' | abpLocalization }}:</span>
+          <span class="badge bg-secondary-subtle text-dark ms-1">{{ selectedCategoryLabel }}</span>
+          <div class="text-dark mt-1 fst-italic">"{{ customNotes }}"</div>
+        </div>
+      </div>
+    }
+
+    <p class="text-danger fw-bold small mb-0 text-center">
+      <i class="fa fa-question-circle me-1"></i>
+      @if (isBulk) {
+        {{ '::DiscardSafeBatchBulkFinalQuestion' | abpLocalization }}
+      } @else {
+        {{ '::DiscardSafeBatchFinalQuestion' | abpLocalization }}
+      }
+    </p>
+  </ng-template>
+
+  <ng-template #abpFooter>
+    <button
+      type="button"
+      class="btn btn-outline-secondary"
+      (click)="cancelSafeConfirm()"
+      [disabled]="isSubmitting"
+    >
+      <i class="fa fa-arrow-left me-1"></i>
+      {{ '::BackToReview' | abpLocalization }}
+    </button>
+    <button
+      type="button"
+      class="btn btn-danger"
+      (click)="confirmSafeDiscard()"
+      [disabled]="isSubmitting"
+    >
+      @if (isSubmitting) {
+        <i class="fa fa-spin fa-spinner me-1"></i>
+      } @else {
+        <i class="fa fa-check me-1"></i>
+      }
+      {{ '::ConfirmDiscardSafeBtn' | abpLocalization }}
+    </button>
+  </ng-template>
+</abp-modal>
+

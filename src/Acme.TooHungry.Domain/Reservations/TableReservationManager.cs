@@ -94,13 +94,8 @@ public class TableReservationManager : DomainService
             ReservationStatus.Confirmed
         );
 
-        var now = _clock.Now;
-        // Bàn chỉ tự động chuyển Reserved nếu thời gian đặt trong vòng 60 phút tới
-        if (reservationTime <= now.AddMinutes(60))
-        {
-            table.Reserve(reservation.CustomerName, reservation.CustomerPhone, reservation.ReservationTime, reservation.GuestCount, reservation.Note);
-            await _tableRepository.UpdateAsync(table, autoSave: true);
-        }
+        table.Reserve(reservation.CustomerName, reservation.CustomerPhone, reservation.ReservationTime, reservation.GuestCount, reservation.Note);
+        await _tableRepository.UpdateAsync(table, autoSave: true);
 
         await _reservationRepository.InsertAsync(reservation, autoSave: true);
 
@@ -135,17 +130,8 @@ public class TableReservationManager : DomainService
         reservation.GuestCount = guestCount;
         reservation.Note = note?.Trim();
 
-        var now = _clock.Now;
-        if (reservationTime <= now.AddMinutes(60))
-        {
-            table.Reserve(reservation.CustomerName, reservation.CustomerPhone, reservation.ReservationTime, reservation.GuestCount, reservation.Note);
-            await _tableRepository.UpdateAsync(table, autoSave: true);
-        }
-        else if (table.Status == TableStatus.Reserved)
-        {
-            table.Release();
-            await _tableRepository.UpdateAsync(table, autoSave: true);
-        }
+        table.Reserve(reservation.CustomerName, reservation.CustomerPhone, reservation.ReservationTime, reservation.GuestCount, reservation.Note);
+        await _tableRepository.UpdateAsync(table, autoSave: true);
 
         await _reservationRepository.UpdateAsync(reservation, autoSave: true);
 

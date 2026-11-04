@@ -28,16 +28,18 @@
         <i class="fa fa-sync-alt" [class.fa-spin]="isLoading"></i>
       </button>
 
-      <!-- Lối tắt sang Phân hệ Thủ kho (RM-020) -->
-      <button
-        type="button"
-        class="btn btn-outline-orange btn-keeper-portal"
-        (click)="openKeeperPortal()"
-        [title]="'::DashboardInventory:OpenKeeperPortal' | abpLocalization"
-      >
-        <i class="fa fa-warehouse me-1"></i>
-        <span>{{ '::DashboardInventory:OpenKeeperPortal' | abpLocalization }}</span>
-      </button>
+      <!-- Lối tắt sang Phân hệ Thủ kho (RM-020) - Chỉ hiển thị khi đang ở giao diện Quản trị -->
+      @if (!isKeeperPortal) {
+        <button
+          type="button"
+          class="btn btn-outline-orange btn-keeper-portal"
+          (click)="openKeeperPortal()"
+          [title]="'::DashboardInventory:OpenKeeperPortal' | abpLocalization"
+        >
+          <i class="fa fa-warehouse me-1"></i>
+          <span>{{ '::DashboardInventory:OpenKeeperPortal' | abpLocalization }}</span>
+        </button>
+      }
 
       <!-- Nút Thêm nguyên liệu -->
       <button
@@ -46,7 +48,7 @@
         class="btn btn-outline-orange btn-header-action"
         (click)="openCreateIngredient()"
       >
-        <i class="fa fa-sliders me-1"></i>
+        <i class="fa fa-plus-circle me-1"></i>
         <span>{{ '::AddIngredientAction' | abpLocalization }}</span>
       </button>
 
@@ -90,51 +92,53 @@
     (quickInbound)="onReplenishmentQuickInbound($event)"
   ></app-replenishment-insights-widget>
 
-  <!-- Thanh Chuyển Tab Hiện Đại Bento (US1, US2, US3, US4) -->
-  <div class="bento-tabs-nav mb-3">
-    <div class="tabs-list">
-      <!-- Tab 1: Nguyên liệu -->
-      <button
-        type="button"
-        class="tab-btn"
-        [class.active]="activeTab === 'ingredients'"
-        (click)="onTabChange('ingredients')"
-      >
-        <i class="fa fa-cubes me-1"></i>
-        <span>{{ '::DashboardInventory:TabIngredients' | abpLocalization }}</span>
-        <span class="tab-pill">{{ ingredients.length }}</span>
-      </button>
+  <!-- Thanh Chuyển Tab Hiện Đại Bento (US1, US2, US3, US4) - Ẩn khi ở phân hệ Thủ kho -->
+  @if (!isKeeperPortal) {
+    <div class="bento-tabs-nav mb-3">
+      <div class="tabs-list">
+        <!-- Tab 1: Nguyên liệu -->
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="activeTab === 'ingredients'"
+          (click)="onTabChange('ingredients')"
+        >
+          <i class="fa fa-cubes me-1"></i>
+          <span>{{ '::DashboardInventory:TabIngredients' | abpLocalization }}</span>
+          <span class="tab-pill">{{ ingredients.length }}</span>
+        </button>
 
-      <!-- Tab 2: Lô hàng FEFO -->
-      <button
-        type="button"
-        class="tab-btn"
-        [class.active]="activeTab === 'batches'"
-        (click)="onTabChange('batches')"
-      >
-        <i class="fa fa-boxes-stacked me-1"></i>
-        <span>{{ '::DashboardInventory:TabBatches' | abpLocalization }}</span>
-        <span class="tab-pill">{{ batches.length }}</span>
-      </button>
+        <!-- Tab 2: Lô hàng FEFO -->
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="activeTab === 'batches'"
+          (click)="onTabChange('batches')"
+        >
+          <i class="fa fa-boxes-stacked me-1"></i>
+          <span>{{ '::DashboardInventory:TabBatches' | abpLocalization }}</span>
+          <span class="tab-pill">{{ batches.length }}</span>
+        </button>
 
-      <!-- Tab 3: Nhật ký biến động & Kiểm kê -->
-      <button
-        type="button"
-        class="tab-btn"
-        [class.active]="activeTab === 'transactions'"
-        (click)="onTabChange('transactions')"
-      >
-        <i class="fa fa-clock-rotate-left me-1"></i>
-        <span>{{ '::DashboardInventory:TabTransactions' | abpLocalization }}</span>
-        @if (transactions.length > 0) {
-          <span class="tab-pill">{{ transactions.length }}</span>
-        }
-      </button>
+        <!-- Tab 3: Nhật ký biến động & Kiểm kê -->
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="activeTab === 'transactions'"
+          (click)="onTabChange('transactions')"
+        >
+          <i class="fa fa-clock-rotate-left me-1"></i>
+          <span>{{ '::DashboardInventory:TabTransactions' | abpLocalization }}</span>
+          @if (transactions.length > 0) {
+            <span class="tab-pill">{{ transactions.length }}</span>
+          }
+        </button>
+      </div>
     </div>
-  </div>
+  }
 
   <!-- Nội dung Động của Tab Đang Chọn -->
-  @if (activeTab === 'ingredients') {
+  @if (isKeeperPortal || activeTab === 'ingredients') {
     <app-inventory-ingredient-tab
       [ingredients]="ingredients"
       [searchQuery]="ingredientSearchQuery"
@@ -155,7 +159,7 @@
       (stockFilterChange)="ingredientStockFilter = $event"
       (statusFilterChange)="ingredientStatusFilter = $event"
     ></app-inventory-ingredient-tab>
-  } @else if (activeTab === 'batches') {
+  } @else if (!isKeeperPortal && activeTab === 'batches') {
     <app-inventory-batch-tab
       [batches]="batches"
       [searchQuery]="batchSearchQuery"
@@ -174,7 +178,7 @@
       (activeFilterChange)="batchActiveFilter = $event"
       (sortDirectionChange)="batchSortDirection = $event"
     ></app-inventory-batch-tab>
-  } @else if (activeTab === 'transactions') {
+  } @else if (!isKeeperPortal && activeTab === 'transactions') {
     <app-inventory-transaction-tab
       [transactions]="transactions"
       [ingredients]="ingredients"

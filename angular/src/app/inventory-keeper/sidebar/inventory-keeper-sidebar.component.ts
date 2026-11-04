@@ -35,6 +35,7 @@ export class InventoryKeeperSidebarComponent {
   @Input() userInfo?: InventoryKeeperUserInfo;
 
   @ViewChild('dashboardSearchInput') dashboardSearchInputRef?: ElementRef<HTMLInputElement>;
+  @ViewChild('inventorySearchInput') inventorySearchInputRef?: ElementRef<HTMLInputElement>;
   @ViewChild('batchesSearchInput') batchesSearchInputRef?: ElementRef<HTMLInputElement>;
   @ViewChild('transactionsSearchInput') transactionsSearchInputRef?: ElementRef<HTMLInputElement>;
   @ViewChild('ingredientSearchInput') ingredientSearchInputRef?: ElementRef<HTMLInputElement>;
@@ -51,6 +52,9 @@ export class InventoryKeeperSidebarComponent {
         if (this.activeTab === 'dashboard') {
           this.dashboardSearchInputRef?.nativeElement?.focus();
           this.dashboardSearchInputRef?.nativeElement?.select();
+        } else if (this.activeTab === 'inventory') {
+          this.inventorySearchInputRef?.nativeElement?.focus();
+          this.inventorySearchInputRef?.nativeElement?.select();
         } else if (this.activeTab === 'batches') {
           this.batchesSearchInputRef?.nativeElement?.focus();
           this.batchesSearchInputRef?.nativeElement?.select();

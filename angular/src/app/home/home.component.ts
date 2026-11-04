@@ -111,6 +111,22 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     if (this.hasLoggedIn) {
+      const isManagerOrAdmin = ['Manager', 'Administrator', 'admin'].some(r => this.userRoleNav.hasRole(r));
+      if (!isManagerOrAdmin) {
+        if (this.userRoleNav.hasRole('Cashier')) {
+          this.router.navigate(['/cashier/tables']);
+          return;
+        }
+        if (this.userRoleNav.hasRole('Waiter')) {
+          this.router.navigate(['/waiter/tables']);
+          return;
+        }
+        if (this.userRoleNav.hasRole('InventoryStaff')) {
+          this.router.navigate(['/inventory-keeper/dashboard']);
+          return;
+        }
+      }
+
       if (!this.permissionService.getGrantedPolicy('TooHungry.Dashboard')) {
         const targetRoute = this.userRoleNav.getDefaultHomeRoute();
         if (targetRoute && targetRoute !== '/') {

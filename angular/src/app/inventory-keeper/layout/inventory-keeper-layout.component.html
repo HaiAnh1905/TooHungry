@@ -122,7 +122,7 @@
                 @if (alertStateService.kpiSummary().lowStockCount > 0) {
                   <div
                     class="notification-item item-lowstock"
-                    (click)="navigateToTab('dashboard'); isNotificationDropdownOpen.set(false)"
+                    (click)="navigateToTab('inventory'); isNotificationDropdownOpen.set(false)"
                   >
                     <div class="item-icon-box">
                       <i class="fas fa-triangle-exclamation"></i>
@@ -277,7 +277,18 @@
             <span>{{ '::KeeperDashboardTab' | abpLocalization }}</span>
           </button>
 
-          <!-- Tab 2: Danh mục Lô hàng -->
+          <!-- Tab 2: Quản lý Tồn kho -->
+          <button
+            type="button"
+            class="tab-btn"
+            [class.active]="currentActiveTab() === 'inventory'"
+            (click)="navigateToTab('inventory')"
+          >
+            <i class="fas fa-warehouse me-2"></i>
+            <span>{{ '::KeeperInventoryTab' | abpLocalization }}</span>
+          </button>
+
+          <!-- Tab 3: Danh mục Lô hàng -->
           <button
             type="button"
             class="tab-btn"

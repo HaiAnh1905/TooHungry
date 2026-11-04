@@ -66,7 +66,7 @@
     </div>
 
     <!-- Card 4: Thiếu tồn kho an toàn -->
-    <div class="bento-card kpi-lowstock" (click)="alertStateService.refreshAlerts()">
+    <div class="bento-card kpi-lowstock" [routerLink]="['/inventory-keeper/inventory']">
       <div class="card-top">
         <span class="kpi-title">{{ '::KeeperAlertLowStock' | abpLocalization }}</span>
         <div class="kpi-icon-pill bg-slate">
@@ -81,8 +81,8 @@
       </div>
       <div class="card-bottom">
         <span class="sub-hint text-muted">
-          <i class="fas fa-rotate me-1"></i>
-          {{ '::ClickToRefresh' | abpLocalization }}
+          <i class="fas fa-arrow-right me-1"></i>
+          {{ '::KeeperInventoryTab' | abpLocalization }}
         </span>
       </div>
     </div>

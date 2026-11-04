@@ -167,18 +167,60 @@
 
     .reserved-info-box {
       background: #fffbeb;
-      border: 1px solid #fef3c7;
+      border: 1px solid #fde68a;
       border-radius: 10px;
-      padding: 0.5rem 0.75rem;
-      transition: background 0.2s ease;
+      padding: 0.65rem 0.8rem;
+      transition: all 0.2s ease;
 
       &:hover {
-        background: #fef3c7;
+        background: #fef9c3;
+        border-color: #fde047;
       }
 
       .guest-name {
         font-size: 0.875rem;
         color: #78350f;
+        display: inline-flex;
+        align-items: center;
+      }
+
+      .guest-count {
+        font-size: 0.725rem;
+        font-weight: 600;
+      }
+
+      .guest-phone,
+      .guest-time,
+      .guest-note {
+        display: flex;
+        align-items: center;
+
+        i {
+          width: 18px;
+          text-align: center;
+          flex-shrink: 0;
+          margin-right: 0.25rem;
+        }
+      }
+
+      .guest-phone {
+        font-size: 0.775rem;
+        color: #64748b;
+        margin-top: 0.2rem;
+      }
+
+      .guest-time {
+        font-size: 0.775rem;
+        color: #d97706;
+        font-weight: 600;
+        margin-top: 0.2rem;
+      }
+
+      .guest-note {
+        font-size: 0.75rem;
+        color: #64748b;
+        font-style: italic;
+        margin-top: 0.2rem;
       }
     }
 
@@ -212,15 +254,17 @@
     .table-actions-2rows {
       display: flex;
       flex-direction: column;
-      gap: 0.4rem;
+      gap: 0.45rem;
 
       .btn-action-main-full {
         width: 100%;
+        height: 38px;
+        min-height: 38px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        padding: 0.55rem 0.85rem;
-        border-radius: 10px;
+        padding: 0 0.85rem;
+        border-radius: 8px;
         font-size: 0.85rem;
         font-weight: 600;
         border: none;
@@ -246,34 +290,95 @@
 
         .btn-action-sub-pill {
           flex: 1;
+          min-width: 0;
+          height: 36px;
+          min-height: 36px;
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          padding: 0.35rem 0.5rem;
+          padding: 0 0.65rem;
           border-radius: 8px;
           font-size: 0.775rem;
-          font-weight: 500;
+          font-weight: 600;
+          white-space: nowrap;
           border: 1px solid #e2e8f0;
           background: #f8fafc;
           color: #475569;
           cursor: pointer;
           transition: all 0.15s ease;
 
+          i {
+            font-size: 0.8rem;
+            flex-shrink: 0;
+          }
+
+          span {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
           &:hover {
             background: #e2e8f0;
             color: #0f172a;
           }
 
-          &.btn-sub-reserve:hover {
-            background: #fef3c7;
+          &.btn-sub-reserve {
+            background: #fffbeb;
             border-color: #fde68a;
-            color: #92400e;
+            color: #b45309;
+
+            &:hover {
+              background: #fef3c7;
+              border-color: #fcd34d;
+              color: #92400e;
+            }
+          }
+        }
+
+        .btn-action-sub-icon {
+          width: 36px;
+          min-width: 36px;
+          height: 36px;
+          min-height: 36px;
+          flex: 0 0 36px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0;
+          border-radius: 8px;
+          font-size: 0.8rem;
+          border: 1px solid #e2e8f0;
+          background: #f8fafc;
+          color: #64748b;
+          cursor: pointer;
+          transition: all 0.15s ease;
+
+          i {
+            font-size: 0.8rem;
+          }
+
+          &:hover {
+            background: #e2e8f0;
+            color: #0f172a;
+          }
+
+          &.btn-sub-edit:hover {
+            background: #e0f2fe;
+            border-color: #bae6fd;
+            color: #0284c7;
           }
 
           &.btn-sub-disable:hover {
-            background: #fee2e2;
+            background: #fff7ed;
+            border-color: #fed7aa;
+            color: #c2410c;
+          }
+
+          &.btn-sub-delete:hover {
+            background: #fef2f2;
             border-color: #fecaca;
-            color: #991b1b;
+            color: #dc2626;
           }
         }
       }
@@ -377,6 +482,81 @@
       }
     }
 
+    .reserved-actions-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.1fr) 36px;
+      gap: 0.35rem;
+      align-items: center;
+
+      .btn-card-action {
+        height: 38px;
+        min-height: 38px;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        line-height: 1;
+
+        i {
+          font-size: 0.8rem;
+          flex-shrink: 0;
+        }
+
+        span {
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        &.btn-action-checkin {
+          background: #f59e0b;
+          border-color: #f59e0b;
+          color: #ffffff;
+          padding: 0 0.45rem;
+
+          &:hover {
+            background: #d97706;
+            border-color: #d97706;
+          }
+        }
+
+        &.btn-action-cancel {
+          background: #f8fafc;
+          border-color: #e2e8f0;
+          color: #64748b;
+          padding: 0 0.45rem;
+
+          &:hover {
+            background: #fee2e2;
+            border-color: #fca5a5;
+            color: #dc2626;
+          }
+        }
+
+        &.btn-action-detail {
+          width: 36px;
+          min-width: 36px;
+          padding: 0;
+          background: #f8fafc;
+          border-color: #e2e8f0;
+          color: #64748b;
+
+          &:hover {
+            background: #f1f5f9;
+            border-color: #cbd5e1;
+            color: #334155;
+          }
+        }
+      }
+    }
+
     .btn-action-main-full {
       display: inline-flex;
       align-items: center;
@@ -442,3 +622,22 @@
     opacity: 0.65;
   }
 }
+
+// Highlight viền sáng khi click điều hướng từ Notification
+.table-card.focus-highlight {
+  border: 2.5px solid #ea580c !important;
+  box-shadow: 0 0 0 6px rgba(234, 88, 12, 0.25), 0 12px 24px rgba(234, 88, 12, 0.15) !important;
+  transform: scale(1.02);
+  transition: all 0.3s ease;
+  animation: waiter-focus-card-pulse 2s ease-in-out infinite alternate;
+}
+
+@keyframes waiter-focus-card-pulse {
+  0% {
+    box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.2), 0 8px 16px rgba(234, 88, 12, 0.1);
+  }
+  100% {
+    box-shadow: 0 0 0 8px rgba(234, 88, 12, 0.35), 0 12px 28px rgba(234, 88, 12, 0.2);
+  }
+}
+

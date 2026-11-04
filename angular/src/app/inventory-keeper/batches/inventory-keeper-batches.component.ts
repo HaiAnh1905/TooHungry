@@ -189,6 +189,40 @@ export class InventoryKeeperBatchesComponent implements OnInit, OnDestroy {
   readonly totalBatches = computed(() => this.filteredBatches().length);
   readonly totalPages = computed(() => Math.ceil(this.totalBatches() / this.pageSize()) || 1);
 
+  getUnitAbbr(unit?: string): string {
+    if (!unit) return '';
+    const u = unit.trim().toLowerCase();
+    switch (u) {
+      case 'kilogram':
+      case 'kilogam':
+      case 'kilo':
+      case 'kg':
+        return 'kg';
+      case 'gram':
+      case 'gam':
+      case 'g':
+        return 'g';
+      case 'mililit':
+      case 'milliliter':
+      case 'ml':
+        return 'ml';
+      case 'lít':
+      case 'lit':
+      case 'liter':
+      case 'l':
+        return 'l';
+      case 'ounce':
+      case 'oz':
+        return 'oz';
+      case 'pound':
+      case 'lb':
+      case 'lbs':
+        return 'lb';
+      default:
+        return unit;
+    }
+  }
+
   readonly pagedBatches = computed(() => {
     const page = this.currentPage();
     const size = this.pageSize();

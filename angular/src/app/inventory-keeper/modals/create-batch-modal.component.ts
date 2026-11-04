@@ -152,7 +152,7 @@ export class CreateBatchModalComponent implements OnInit {
       ingredientId: firstIng ? firstIng.id : '',
       batchCode: `LOT-${dateStr}-${randSuffix}`,
       initialQuantity: 10,
-      unitPrice: 20000,
+      unitPrice: firstIng?.estimatedPrice || 0,
       expiryDate: isFresh ? todayStr : this.getDefaultExpiryDateString(),
       storageType: firstIng?.storageType !== undefined ? firstIng.storageType : StorageType.SHORT_TERM,
     };
@@ -180,6 +180,9 @@ export class CreateBatchModalComponent implements OnInit {
     this.selectedIngredient = ing;
     if (ing.storageType !== undefined) {
       this.batchModel.storageType = ing.storageType;
+    }
+    if (ing.estimatedPrice && ing.estimatedPrice > 0) {
+      this.batchModel.unitPrice = ing.estimatedPrice;
     }
 
     if (this.isFresh) {

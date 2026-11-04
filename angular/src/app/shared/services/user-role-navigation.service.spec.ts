@@ -113,18 +113,34 @@ describe('UserRoleNavigationService', () => {
       expect(service.getDefaultHomeRoute()).toBe('/');
     });
 
-    it('should return "/tables" for Cashier role when granted TooHungry.Tables.Create permission', () => {
-      mockConfigState.getOne.mockReturnValue({ roles: ['Cashier'] });
-      mockPermissionService.getGrantedPolicy.mockImplementation(
-        (p: string) => p === 'TooHungry.Tables.Create'
-      );
-      expect(service.getDefaultHomeRoute()).toBe('/tables');
-    });
-
-    it('should return "/waiter/tables" for Cashier role when not granted table admin permission', () => {
+    it('should return "/cashier/tables" for Cashier role', () => {
       mockConfigState.getOne.mockReturnValue({ roles: ['Cashier'] });
       mockPermissionService.getGrantedPolicy.mockReturnValue(false);
+      expect(service.getDefaultHomeRoute()).toBe('/cashier/tables');
+    });
+
+    it('should return "/cashier/tables" for Cashier role even when granted operational policies like TooHungry.Dishes or Tables', () => {
+      mockConfigState.getOne.mockReturnValue({ roles: ['Cashier'] });
+      mockPermissionService.getGrantedPolicy.mockImplementation(
+        (p: string) => ['TooHungry.Dishes', 'TooHungry.Tables', 'TooHungry.DiningAreas'].includes(p)
+      );
+      expect(service.getDefaultHomeRoute()).toBe('/cashier/tables');
+    });
+
+    it('should return "/waiter/tables" for Waiter role even when granted operational policies like TooHungry.Dishes', () => {
+      mockConfigState.getOne.mockReturnValue({ roles: ['Waiter'] });
+      mockPermissionService.getGrantedPolicy.mockImplementation(
+        (p: string) => ['TooHungry.Dishes', 'TooHungry.Tables'].includes(p)
+      );
       expect(service.getDefaultHomeRoute()).toBe('/waiter/tables');
+    });
+
+    it('should return "/cashier/tables" when user has TooHungry.Cashier permission', () => {
+      mockConfigState.getOne.mockReturnValue({ roles: ['Staff'] });
+      mockPermissionService.getGrantedPolicy.mockImplementation(
+        (p: string) => p === 'TooHungry.Cashier'
+      );
+      expect(service.getDefaultHomeRoute()).toBe('/cashier/tables');
     });
 
     it('should return "/inventory-keeper/dashboard" for InventoryStaff role', () => {
@@ -147,6 +163,12 @@ describe('UserRoleNavigationService', () => {
     it('should return "::InventoryKeeperPortal" for InventoryStaff', () => {
       mockConfigState.getOne.mockReturnValue({ roles: ['InventoryStaff'] });
       expect(service.getDefaultHomeLabelKey()).toBe('::InventoryKeeperPortal');
+    });
+
+    it('should return "::CashierPortal" for Cashier', () => {
+      mockConfigState.getOne.mockReturnValue({ roles: ['Cashier'] });
+      mockPermissionService.getGrantedPolicy.mockReturnValue(false);
+      expect(service.getDefaultHomeLabelKey()).toBe('::CashierPortal');
     });
 
     it('should return "ErrorPages.BackToTableList" for Waiter', () => {
@@ -226,9 +248,9 @@ describe('UserRoleNavigationService', () => {
       expect(service.canNavigateToAdmin()).toBe(true);
     });
 
-    it('should return true when user has TooHungry.Dishes policy', () => {
+    it('should return true when user has TooHungry.Forecasts policy', () => {
       mockPermissionService.getGrantedPolicy.mockImplementation(
-        (p: string) => p === 'TooHungry.Dishes'
+        (p: string) => p === 'TooHungry.Forecasts'
       );
       expect(service.canNavigateToAdmin()).toBe(true);
     });
@@ -238,6 +260,14 @@ describe('UserRoleNavigationService', () => {
         (p: string) => p === 'AbpIdentity.Users'
       );
       expect(service.canNavigateToAdmin()).toBe(true);
+    });
+
+    it('should return false when user has Cashier role even with operational policies like Dishes', () => {
+      mockConfigState.getOne.mockReturnValue({ roles: ['Cashier'] });
+      mockPermissionService.getGrantedPolicy.mockImplementation(
+        (p: string) => p === 'TooHungry.Dishes' || p === 'TooHungry.Cashier'
+      );
+      expect(service.canNavigateToAdmin()).toBe(false);
     });
 
     it('should return false when user has only Waiter role and no admin policies', () => {

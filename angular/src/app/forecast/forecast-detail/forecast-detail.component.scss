@@ -188,6 +188,13 @@
     transition: transform 0.2s, box-shadow 0.2s;
     overflow: hidden;
     min-width: 0;
+    user-select: none;
+    -webkit-user-select: none;
+
+    * {
+      user-select: none;
+      -webkit-user-select: none;
+    }
 
     &:hover {
       transform: translateY(-2px);
@@ -451,6 +458,18 @@
           border-color: #ea580c;
           box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.12);
         }
+
+        &.toolbar-sort-select {
+          border-color: #fed7aa;
+          background-color: #fff7ed;
+          color: #c2410c;
+          font-weight: 600;
+
+          &:focus {
+            border-color: #ea580c;
+            box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.16);
+          }
+        }
       }
     }
   }
@@ -627,18 +646,57 @@
 
 .detail-table {
   width: 100%;
+  min-width: 1050px;
+  table-layout: fixed;
   border-collapse: collapse;
 
   thead {
     background: #f8fafc;
     th {
-      padding: 0.85rem 1.25rem;
+      padding: 0.85rem 0.85rem;
       font-size: 0.8rem;
       font-weight: 700;
       color: #475569;
       text-transform: uppercase;
       letter-spacing: 0.04em;
       border-bottom: 2px solid #e2e8f0;
+      white-space: nowrap;
+
+      &.sortable-th {
+        cursor: pointer;
+        user-select: none;
+        transition: all 0.15s ease-in-out;
+
+        &:hover {
+          background-color: #f1f5f9;
+          color: #0f172a;
+
+          .th-sort-icon {
+            color: #64748b;
+          }
+        }
+
+        &.active-sort {
+          color: #ea580c !important;
+          background-color: #fff7ed !important;
+
+          .th-sort-icon {
+            color: #ea580c !important;
+          }
+        }
+
+        .th-content {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.4rem;
+        }
+
+        .th-sort-icon {
+          font-size: 0.75rem;
+          color: #cbd5e1;
+          transition: color 0.15s;
+        }
+      }
     }
   }
 

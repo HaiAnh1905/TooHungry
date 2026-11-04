@@ -52,22 +52,21 @@ export class AppComponent {
         // Fetch current user and redirect based on role CHỈ KHI vừa login xong
         this.configState.getOne$('currentUser').pipe(take(1)).subscribe(user => {
           if (user?.isAuthenticated) {
-            const roles = user.roles || [];
+            const roles: string[] = user.roles || [];
+            const isManagerOrAdmin = ['Manager', 'Administrator', 'admin'].some(adm =>
+              roles.some((r: string) => r.toLowerCase() === adm.toLowerCase())
+            );
+
             if (roles.includes('Administrator') || roles.includes('admin')) {
               this.router.navigate(['/identity/users']);
             } else if (roles.includes('Manager')) {
               this.router.navigate(['/']);
-            } else if (roles.includes('InventoryStaff')) {
-              this.router.navigate(['/inventory-keeper/dashboard']);
-            } else if (roles.includes('Waiter')) {
+            } else if (roles.some((r: string) => r.toLowerCase() === 'cashier')) {
+              this.router.navigate(['/cashier/tables']);
+            } else if (roles.some((r: string) => r.toLowerCase() === 'waiter')) {
               this.router.navigate(['/waiter/tables']);
-            } else if (roles.includes('Cashier')) {
-              const canAdminTables =
-                this.permissionService.getGrantedPolicy('TooHungry.Tables.Create') ||
-                this.permissionService.getGrantedPolicy('TooHungry.Tables') ||
-                roles.includes('Administrator') ||
-                roles.includes('admin');
-              this.router.navigate([canAdminTables ? '/tables' : '/waiter/tables']);
+            } else if (roles.some((r: string) => r.toLowerCase() === 'inventorystaff')) {
+              this.router.navigate(['/inventory-keeper/dashboard']);
             } else {
               this.router.navigate(['/']);
             }

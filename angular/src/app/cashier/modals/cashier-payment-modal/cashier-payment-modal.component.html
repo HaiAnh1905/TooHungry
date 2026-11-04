@@ -1,0 +1,279 @@
+<div class="modal-backdrop fade show"></div>
+<div class="modal d-block" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content cashier-payment-dialog">
+      <!-- Modal Header -->
+      <div class="modal-header bg-white border-bottom">
+        <div class="d-flex align-items-center gap-2">
+          <div class="header-icon-box bg-success-light text-success">
+            <i class="fas fa-credit-card"></i>
+          </div>
+          <div>
+            <h5 class="modal-title m-0 font-weight-bold text-dark">
+              {{ '::CashierCheckoutTitle' | abpLocalization }}
+            </h5>
+            <div class="small text-muted">
+              <span>{{ table?.tableNumber || ('::ServingTable' | abpLocalization) }}</span>
+              @if (order()?.orderNumber) {
+                <span class="ms-1">({{ order()!.orderNumber }})</span>
+              }
+            </div>
+          </div>
+        </div>
+        <button type="button" class="btn-close" (click)="close()" aria-label="Close"></button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body p-4">
+        @if (isLoading()) {
+          <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted">{{ '::LoadingOrderDetails' | abpLocalization }}</p>
+          </div>
+        } @else if (order()) {
+          <div class="row g-4">
+            <!-- Cột trái: Hóa đơn tạm tính (Pre-bill) -->
+            <div class="col-md-6 border-end">
+              <div class="pre-bill-card bg-light p-3 rounded">
+                <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+                  <h6 class="m-0 font-weight-bold text-dark">
+                    <i class="fas fa-receipt me-1 text-primary-orange"></i>
+                    {{ '::OrderSummaryPreBill' | abpLocalization }}
+                  </h6>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-secondary"
+                    (click)="triggerPrint()"
+                    [title]="'::PrintPreBill' | abpLocalization"
+                  >
+                    <i class="fas fa-print me-1.5"></i>
+                    <span>{{ '::Print' | abpLocalization }}</span>
+                  </button>
+                </div>
+
+                <!-- Danh sách món -->
+                <div class="pre-bill-items-list mb-3">
+                  @for (item of order()!.items; track item.id) {
+                    <div class="pre-bill-item d-flex justify-content-between py-2 border-bottom">
+                      <div class="item-meta">
+                        <div class="item-name font-weight-bold small text-dark">{{ item.dishName }}</div>
+                        <div class="item-qty text-muted small">
+                          {{ item.quantity }} × {{ item.unitPrice?.toLocaleString('vi-VN') }} đ
+                        </div>
+                        @if (item.note) {
+                          <div class="item-note text-warning small italic">{{ item.note | fixMojibake }}</div>
+                        }
+                      </div>
+                      <div class="item-total font-weight-bold small text-dark">
+                        {{ item.totalPrice?.toLocaleString('vi-VN') }} đ
+                      </div>
+                    </div>
+                  }
+                </div>
+
+                <!-- Tóm tắt số tiền -->
+                <div class="pre-bill-totals pt-2">
+                  <div class="d-flex justify-content-between py-1 small text-secondary">
+                    <span>{{ '::Subtotal' | abpLocalization }}:</span>
+                    <span>{{ order()!.totalAmount?.toLocaleString('vi-VN') }} đ</span>
+                  </div>
+
+                  @if (discountAmount() > 0) {
+                    <div class="d-flex justify-content-between py-1 small text-danger font-weight-bold">
+                      <span>{{ '::Discount' | abpLocalization }}:</span>
+                      <span>-{{ discountAmount().toLocaleString('vi-VN') }} đ</span>
+                    </div>
+                  }
+
+                  <div class="d-flex justify-content-between py-2 border-top mt-2">
+                    <span class="font-weight-bold text-dark">{{ '::TotalAmount' | abpLocalization }}:</span>
+                    <span class="h5 m-0 text-success font-weight-bold">
+                      {{ finalTotal().toLocaleString('vi-VN') }} đ
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Cột phải: Phương thức & Thu tiền -->
+            <div class="col-md-6">
+              <!-- Chọn phương thức thanh toán -->
+              <div class="payment-method-selector mb-3">
+                <label class="form-label font-weight-bold text-dark small mb-2">
+                  {{ '::PaymentMethod' | abpLocalization }}
+                </label>
+                <div class="btn-group w-100" role="group">
+                  <button
+                    type="button"
+                    class="btn btn-method"
+                    [class.active]="paymentMethod() === 'Cash'"
+                    (click)="paymentMethod.set('Cash')"
+                  >
+                    <i class="fas fa-money-bill-wave me-1"></i>
+                    <span>{{ '::CashPayment' | abpLocalization }}</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-method"
+                    [class.active]="paymentMethod() === 'VietQr'"
+                    (click)="paymentMethod.set('VietQr')"
+                  >
+                    <i class="fas fa-qrcode me-1"></i>
+                    <span>{{ '::VietQrPayment' | abpLocalization }}</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Nội dung thanh toán TIỀN MẶT -->
+              @if (paymentMethod() === 'Cash') {
+                <div class="cash-input-group mb-3">
+                  <label class="form-label font-weight-bold text-dark small">
+                    {{ '::CashGiven' | abpLocalization }}
+                  </label>
+                  <div class="input-group mb-2">
+                    <input
+                      type="number"
+                      class="form-control form-control-lg font-weight-bold text-dark"
+                      [ngModel]="cashGiven()"
+                      (ngModelChange)="cashGiven.set($event)"
+                      min="0"
+                      step="10000"
+                    />
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary"
+                      (click)="setExactAmount()"
+                    >
+                      {{ '::ExactAmount' | abpLocalization }}
+                    </button>
+                  </div>
+
+                  <!-- Quick cash buttons -->
+                  <div class="quick-cash-pills d-flex flex-wrap gap-2 mb-3">
+                    @for (amt of quickCashAmounts; track amt) {
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-light text-dark border"
+                        (click)="setCashAmount(amt)"
+                      >
+                        {{ amt.toLocaleString('vi-VN') }} đ
+                      </button>
+                    }
+                  </div>
+
+                  <!-- Tiền thừa trả khách / Cảnh báo thiếu -->
+                  @if (isCashShortage()) {
+                    <div class="alert alert-warning py-2 px-3 small d-flex align-items-center gap-2 m-0">
+                      <i class="fas fa-exclamation-triangle"></i>
+                      <span>{{ '::ShortageAmount' | abpLocalization: (finalTotal() - cashGiven()).toLocaleString('vi-VN') }}</span>
+                    </div>
+                  } @else {
+                    <div class="alert alert-success py-2 px-3 small d-flex align-items-center justify-content-between m-0">
+                      <span class="font-weight-bold">{{ '::ChangeAmount' | abpLocalization }}:</span>
+                      <span class="h6 m-0 font-weight-bold text-success">
+                        {{ changeAmount().toLocaleString('vi-VN') }} đ
+                      </span>
+                    </div>
+                  }
+                </div>
+              }
+
+              <!-- Nội dung thanh toán VIETQR -->
+              @if (paymentMethod() === 'VietQr') {
+                <div class="vietqr-box text-center p-3 bg-light rounded mb-3">
+                  <div class="qr-mock-box p-3 bg-white border rounded d-inline-block shadow-sm mb-2">
+                    <!-- Standard VietQR Representation SVG -->
+                    <div class="vietqr-preview-svg">
+                      <i class="fas fa-qrcode fa-5x text-dark"></i>
+                    </div>
+                    <div class="vietqr-amount mt-2 font-weight-bold text-primary-orange">
+                      {{ finalTotal().toLocaleString('vi-VN') }} đ
+                    </div>
+                    <div class="vietqr-memo small text-muted">
+                      THUNGAN {{ order()?.orderNumber }}
+                    </div>
+                  </div>
+                  <div class="small text-muted">
+                    {{ '::ScanQrInstruction' | abpLocalization }}
+                  </div>
+                </div>
+              }
+
+              <!-- Giảm giá / Khuyến mãi -->
+              <div class="discount-box mb-3 p-2 bg-light rounded">
+                <div class="row g-2">
+                  <div class="col-6">
+                    <label class="form-label small text-muted m-0">{{ '::Discount' | abpLocalization }}</label>
+                    <input
+                      type="number"
+                      class="form-control form-control-sm"
+                      [ngModel]="discountAmount()"
+                      (ngModelChange)="discountAmount.set($event)"
+                      min="0"
+                      step="5000"
+                    />
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small text-muted m-0">{{ '::DiscountNote' | abpLocalization }}</label>
+                    <input
+                      type="text"
+                      class="form-control form-control-sm"
+                      [placeholder]="'::DiscountNotePlaceholder' | abpLocalization"
+                      [ngModel]="discountNote()"
+                      (ngModelChange)="discountNote.set($event)"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Ghi chú thanh toán -->
+              <div class="mb-3">
+                <input
+                  type="text"
+                  class="form-control form-control-sm"
+                  [placeholder]="'::PaymentNotePlaceholder' | abpLocalization"
+                  [ngModel]="paymentNote()"
+                  (ngModelChange)="paymentNote.set($event)"
+                />
+              </div>
+
+              <!-- In hóa đơn checkbox -->
+              <div class="form-check mb-2">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="printInvoiceCheck"
+                  [ngModel]="printInvoice()"
+                  (ngModelChange)="printInvoice.set($event)"
+                />
+                <label class="form-check-label small text-dark" for="printInvoiceCheck">
+                  {{ '::AutoPrintInvoiceAfterCheckout' | abpLocalization }}
+                </label>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="modal-footer bg-light border-top">
+        <button type="button" class="btn btn-outline-secondary px-4" (click)="close()">
+          {{ '::Cancel' | abpLocalization }}
+        </button>
+        <button
+          type="button"
+          class="btn btn-success px-4 font-weight-bold"
+          [disabled]="isSubmitting() || (paymentMethod() === 'Cash' && isCashShortage())"
+          (click)="confirmPayment()"
+        >
+          @if (isSubmitting()) {
+            <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+          } @else {
+            <i class="fas fa-check-circle me-1"></i>
+          }
+          <span>{{ '::ConfirmPaymentAndCloseOrder' | abpLocalization }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

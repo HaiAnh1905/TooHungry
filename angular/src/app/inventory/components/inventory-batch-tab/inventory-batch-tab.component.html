@@ -104,11 +104,11 @@
             <th class="ingredient-name-col">{{ '::Ingredient' | abpLocalization }}</th>
             <th class="storage-type-col">{{ '::StorageType' | abpLocalization }}</th>
             <th class="received-date-col">{{ '::ReceivedDate' | abpLocalization }}</th>
-            <th class="expiry-date-col">{{ '::ExpiryDate' | abpLocalization }} (FEFO)</th>
+            <th class="expiry-date-col">{{ '::ExpiryDate' | abpLocalization }}</th>
             <th class="shelf-life-col">{{ '::ShelfLifeTimeline' | abpLocalization }}</th>
             <th class="remaining-col text-end">{{ '::RemainingQuantity' | abpLocalization }}</th>
             <th class="unit-price-col text-end">{{ '::UnitPrice' | abpLocalization }}</th>
-            <th class="batch-status-col">{{ '::BatchStatus' | abpLocalization }}</th>
+            <th class="batch-status-col text-center">{{ '::BatchStatus' | abpLocalization }}</th>
             <th class="actions-col pe-4 text-center">{{ '::Actions' | abpLocalization }}</th>
           </tr>
         </thead>
@@ -202,27 +202,27 @@
                   <span class="fw-bold fs-6" [class.text-danger]="batch.remainingQuantity <= 0">
                     {{ batch.remainingQuantity }}
                   </span>
-                  <span class="text-muted small ms-1">{{ batch.unitName }}</span>
+                  <span class="text-muted small ms-1">{{ getUnitAbbr(batch.unitName) }}</span>
                 </td>
                 <td class="unit-price-col text-end font-monospace text-slate-700">
                   {{ batch.unitPrice ? (batch.unitPrice | number:'1.0-0') + ' ₫' : '—' }}
                 </td>
-                <td class="batch-status-col">
+                <td class="batch-status-col text-center">
                   @if (!batch.isActive) {
-                    <span class="fefo-badge badge-locked" [title]="batch.deactivationReason || ('::StatusSuspended' | abpLocalization)">
-                      <i class="fa fa-lock me-1"></i>{{ '::StatusSuspended' | abpLocalization }}
+                    <span class="fefo-badge badge-locked icon-only" [title]="batch.deactivationReason || ('::StatusSuspended' | abpLocalization)">
+                      <i class="fa fa-lock"></i>
                     </span>
                   } @else if (batch.fefoStatus === BatchFefoStatusEnum.Expired) {
-                    <span class="fefo-badge badge-expired">
-                      <i class="fa fa-triangle-exclamation me-1"></i>{{ '::BatchExpired' | abpLocalization }}
+                    <span class="fefo-badge badge-expired icon-only" [title]="'::BatchExpired' | abpLocalization">
+                      <i class="fa fa-triangle-exclamation"></i>
                     </span>
                   } @else if (batch.fefoStatus === BatchFefoStatusEnum.ExpiringSoon) {
-                    <span class="fefo-badge badge-expiring">
-                      <i class="fa fa-clock-rotate-left me-1"></i>{{ '::BatchExpiringSoon' | abpLocalization }}
+                    <span class="fefo-badge badge-expiring icon-only" [title]="'::BatchExpiringSoon' | abpLocalization">
+                      <i class="fa fa-clock-rotate-left"></i>
                     </span>
                   } @else {
-                    <span class="fefo-badge badge-safe">
-                      <i class="fa fa-shield-halved me-1"></i>{{ '::BatchSafe' | abpLocalization }}
+                    <span class="fefo-badge badge-safe icon-only" [title]="'::BatchSafe' | abpLocalization">
+                      <i class="fa fa-shield-halved"></i>
                     </span>
                   }
                 </td>

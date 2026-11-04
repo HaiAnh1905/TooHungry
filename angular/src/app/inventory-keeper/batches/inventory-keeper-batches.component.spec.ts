@@ -7,6 +7,7 @@ import { Injector } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { of, Subject } from 'rxjs';
 import { ToasterService } from '@abp/ng.theme.shared';
+import { LocalizationService } from '@abp/ng.core';
 import { InventoryKeeperBatchesComponent } from './inventory-keeper-batches.component';
 import { InventoryService } from '../../proxy/inventories/inventory.service';
 import { InventoryKeeperSidebarService } from '../services/inventory-keeper-sidebar.service';
@@ -57,6 +58,10 @@ describe('InventoryKeeperBatchesComponent', () => {
       info: vi.fn(),
     };
 
+    const mockLocalizationService = {
+      instant: vi.fn((k: string) => k),
+    };
+
     const injector = Injector.create({
       providers: [
         { provide: InventoryKeeperBatchesComponent, useClass: InventoryKeeperBatchesComponent },
@@ -65,6 +70,7 @@ describe('InventoryKeeperBatchesComponent', () => {
         { provide: InventoryAlertStateService, useValue: mockAlertStateService },
         { provide: BarcodeScannerService, useValue: mockBarcodeService },
         { provide: ToasterService, useValue: mockToaster },
+        { provide: LocalizationService, useValue: mockLocalizationService },
         {
           provide: ActivatedRoute,
           useValue: {

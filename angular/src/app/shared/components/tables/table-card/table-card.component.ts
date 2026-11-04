@@ -23,6 +23,7 @@ export class TableCardComponent {
   @Input({ required: true }) table!: TableDto;
   @Input() isWaiterMode: boolean = false;
   @Input() currentTimestamp: number = Date.now();
+  @Input() isFocused: boolean = false;
 
   @Output() seatGuests = new EventEmitter<TableDto>();
   @Output() checkIn = new EventEmitter<TableDto>();

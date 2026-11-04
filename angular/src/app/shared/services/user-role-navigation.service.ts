@@ -40,14 +40,7 @@ export interface IUserRoleNavigationService {
 
 export const ADMIN_POLICIES: string[] = [
   'TooHungry.Dashboard',
-  'TooHungry.Dishes',
-  'TooHungry.DishCategories',
-  'TooHungry.Recipes',
-  'TooHungry.DiningAreas',
   'TooHungry.Forecasts',
-  'TooHungry.Tables.Create',
-  'TooHungry.Tables.Edit',
-  'TooHungry.Tables.Delete',
   'AbpIdentity.Users',
   'AbpIdentity.Roles',
 ];
@@ -55,6 +48,7 @@ export const ADMIN_POLICIES: string[] = [
 export const MANAGER_ADMIN_PERMISSIONS_FALLBACK: { policy: string; route: string; labelKey: string }[] = [
   { policy: 'TooHungry.Dashboard', route: '/', labelKey: 'ErrorPages.BackToDashboard' },
   { policy: 'TooHungry.Tables', route: '/tables', labelKey: 'ErrorPages.BackToTableManagement' },
+  { policy: 'TooHungry.Tables.Create', route: '/tables', labelKey: 'ErrorPages.BackToTableManagement' },
   { policy: 'TooHungry.Orders', route: '/orders', labelKey: 'ErrorPages.BackToOrders' },
   { policy: 'TooHungry.Dishes', route: '/dishes', labelKey: 'ErrorPages.BackToDishes' },
   { policy: 'TooHungry.Inventories', route: '/inventory', labelKey: 'ErrorPages.BackToInventory' },
@@ -71,15 +65,20 @@ export class UserRoleNavigationService implements IUserRoleNavigationService {
   private readonly router = inject(Router);
 
   /**
-   * Kiểm tra xem người dùng có quyền quản trị (theo policy hoặc role quản trị)
+   * Kiểm tra xem người dùng có quyền quản trị (theo policy quản trị cấp cao hoặc role quản trị)
    */
   canNavigateToAdmin(): boolean {
-    if (ADMIN_POLICIES.some(p => this.permissionService.getGrantedPolicy(p))) {
-      return true;
-    }
     const currentUser = this.configState.getOne('currentUser') as any;
     const roles: string[] = currentUser?.roles || [];
-    return roles.some(r => ['Manager', 'Administrator', 'admin'].includes(r));
+    const isExplicitAdmin = roles.some(r =>
+      ['Manager', 'Administrator', 'admin'].some(adm => adm.toLowerCase() === r.toLowerCase())
+    );
+
+    if (isExplicitAdmin) {
+      return true;
+    }
+
+    return ADMIN_POLICIES.some(p => this.permissionService.getGrantedPolicy(p));
   }
 
   /**
@@ -110,9 +109,12 @@ export class UserRoleNavigationService implements IUserRoleNavigationService {
 
     const currentUser = this.configState.getOne('currentUser') as any;
     const roles: string[] = currentUser?.roles || [];
+    const isExplicitAdmin = roles.some(r =>
+      ['Manager', 'Administrator', 'admin'].some(adm => adm.toLowerCase() === r.toLowerCase())
+    );
 
-    // Ưu tiên 1: Người dùng có quyền Quản trị / Quản lý
-    if (this.canNavigateToAdmin()) {
+    // Ưu tiên 1: Người dùng có vai trò Quản lý / Quản trị viên
+    if (isExplicitAdmin) {
       if (this.permissionService.getGrantedPolicy('TooHungry.Dashboard')) {
         return '/';
       }
@@ -128,23 +130,34 @@ export class UserRoleNavigationService implements IUserRoleNavigationService {
       return '/account/login';
     }
 
-    // Ưu tiên 2: Nhân viên phục vụ bàn (Waiter)
-    if (roles.includes('Waiter')) {
+    // Ưu tiên 2: Nhân viên thu ngân (Cashier)
+    if (this.hasRole('Cashier') || this.permissionService.getGrantedPolicy('TooHungry.Cashier')) {
+      return '/cashier/tables';
+    }
+
+    // Ưu tiên 3: Nhân viên phục vụ bàn (Waiter)
+    if (this.hasRole('Waiter')) {
       return '/waiter/tables';
     }
 
-    // Ưu tiên 3: Nhân viên thu ngân (Cashier)
-    if (roles.includes('Cashier')) {
-      const canAdminTables =
-        this.permissionService.getGrantedPolicy('TooHungry.Tables.Create') ||
-        this.permissionService.getGrantedPolicy('TooHungry.Tables') ||
-        roles.some(r => ['Administrator', 'admin'].includes(r));
-      return canAdminTables ? '/tables' : '/waiter/tables';
+    // Ưu tiên 4: Nhân viên kho (InventoryStaff)
+    if (this.hasRole('InventoryStaff')) {
+      return '/inventory-keeper/dashboard';
     }
 
-    // Ưu tiên 4: Nhân viên kho (InventoryStaff)
-    if (roles.includes('InventoryStaff')) {
-      return '/inventory-keeper/dashboard';
+    // Ưu tiên 5: Người dùng có quyền Quản trị khác (không có vai trò Manager/Admin nhưng có permission quản trị)
+    if (this.canNavigateToAdmin()) {
+      if (this.permissionService.getGrantedPolicy('TooHungry.Dashboard')) {
+        return '/';
+      }
+
+      for (const item of MANAGER_ADMIN_PERMISSIONS_FALLBACK) {
+        if (item.policy !== 'TooHungry.Dashboard' && this.permissionService.getGrantedPolicy(item.policy)) {
+          return item.route;
+        }
+      }
+
+      return '/account/login';
     }
 
     return '/';
@@ -161,6 +174,10 @@ export class UserRoleNavigationService implements IUserRoleNavigationService {
     const route = this.getDefaultHomeRoute();
 
     switch (route) {
+      case '/cashier/tables':
+      case '/cashier/orders':
+      case '/cashier':
+        return '::CashierPortal';
       case '/waiter/tables':
         return 'ErrorPages.BackToTableList';
       case '/':
@@ -175,6 +192,7 @@ export class UserRoleNavigationService implements IUserRoleNavigationService {
         return 'ErrorPages.BackToInventory';
       case '/inventory-keeper/dashboard':
       case '/inventory-keeper':
+      case '/inventory-keeper/inventory':
         return '::InventoryKeeperPortal';
       case '/identity/users':
         return 'ErrorPages.BackToUserManagement';

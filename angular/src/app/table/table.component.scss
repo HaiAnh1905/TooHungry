@@ -80,7 +80,15 @@
       gap: 0.85rem;
       box-shadow: 0 3px 14px rgba(180, 150, 110, 0.05);
       cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+      * {
+        cursor: pointer;
+        user-select: none;
+        -webkit-user-select: none;
+      }
 
       .summary-icon {
         width: 44px;

@@ -47,6 +47,19 @@
             <span class="stat-value">{{ disabledCount() }}</span>
           </div>
         }
+
+        <!-- In-place Reload Tables Button (T017B) -->
+        <button
+          type="button"
+          class="btn btn-sm btn-outline-secondary btn-reload-in-place ms-1"
+          (click)="reloadTablesInPlace()"
+          [disabled]="isLoading() || isReloading()"
+          [title]="'::ReloadTablesTooltip' | abpLocalization"
+          id="btn-waiter-reload-tables"
+        >
+          <i class="fa fa-rotate" [class.fa-spin]="isLoading() || isReloading()"></i>
+          <span class="ms-1 d-none d-sm-inline">{{ '::ReloadTablesButton' | abpLocalization }}</span>
+        </button>
       </div>
     </div>
   </header>
@@ -194,6 +207,7 @@
         <app-table-card
           [table]="table"
           [isWaiterMode]="true"
+          [isFocused]="focusedTableId() === table.id"
           [currentTimestamp]="currentTime().getTime()"
           (seatGuests)="seatGuests($event)"
           (checkIn)="checkInReservation($event)"

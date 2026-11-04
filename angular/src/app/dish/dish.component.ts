@@ -10,7 +10,14 @@ import {
   HostListener,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormArray, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  FormArray,
+  FormBuilder,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import {
   CoreModule,
   ListService,
@@ -18,14 +25,22 @@ import {
   PagedResultDto,
   PermissionService,
 } from '@abp/ng.core';
-import { ConfirmationService, Confirmation, ThemeSharedModule, ToasterService } from '@abp/ng.theme.shared';
+import {
+  ConfirmationService,
+  Confirmation,
+  ThemeSharedModule,
+  ToasterService,
+} from '@abp/ng.theme.shared';
 import { DatatableComponent, NgxDatatableModule } from '@swimlane/ngx-datatable';
 import { Observable, Subscription, map, shareReplay, of } from 'rxjs';
 import { DishService } from '../proxy/controllers/dish.service';
 import { DishCategoryService } from '../proxy/dishes/dish-category.service';
 import { DishDto, DishCategoryDto } from '../proxy/dishes/models';
 import { MediaService } from '../proxy/controllers/media.service';
-import { CustomSelectComponent, CustomSelectOption } from '../shared/components/custom-select/custom-select.component';
+import {
+  CustomSelectComponent,
+  CustomSelectOption,
+} from '../shared/components/custom-select/custom-select.component';
 import { ImgFallbackDirective } from '../shared/directives/img-fallback.directive';
 import { RecipeModalComponent } from '../recipe/recipe-modal/recipe-modal.component';
 import { PagerComponent } from '../shared/components/pager/pager.component';
@@ -188,7 +203,7 @@ export class DishComponent implements OnInit, AfterViewInit, OnDestroy {
         sorting: this.sortBy,
         filter: this.searchTerm ? this.searchTerm.trim() : undefined,
         dishCategoryId: this.selectedCategoryId ? this.selectedCategoryId : undefined,
-        isActive: this.activeTab === 'all' ? undefined : (this.activeTab === 'active' ? true : false),
+        isActive: this.activeTab === 'all' ? undefined : this.activeTab === 'active' ? true : false,
       });
 
     this.listSubscription = this.list.hookToQuery(dishStreamCreator).subscribe(res => {
@@ -210,10 +225,12 @@ export class DishComponent implements OnInit, AfterViewInit, OnDestroy {
       this.activeCount = res.totalCount ?? 0;
       this.cdr.markForCheck();
     });
-    this.dishService.getList({ maxResultCount: 1, skipCount: 0, isActive: false }).subscribe(res => {
-      this.inactiveCount = res.totalCount ?? 0;
-      this.cdr.markForCheck();
-    });
+    this.dishService
+      .getList({ maxResultCount: 1, skipCount: 0, isActive: false })
+      .subscribe(res => {
+        this.inactiveCount = res.totalCount ?? 0;
+        this.cdr.markForCheck();
+      });
   }
 
   setTab(tab: 'all' | 'active' | 'inactive') {
@@ -225,6 +242,12 @@ export class DishComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   // Selection & Bulk Action helpers
+  getRowClass = (row: any) => {
+    return {
+      'row-selected': this.isSelected(row?.id),
+    };
+  };
+
   isSelected(id?: string): boolean {
     return !!id && this.selectedDishIds.has(id);
   }
@@ -287,29 +310,29 @@ export class DishComponent implements OnInit, AfterViewInit, OnDestroy {
       error: () => {
         this.isBulkOperating = false;
         this.cdr.markForCheck();
-      }
+      },
     });
   }
 
   loadCategories() {
-    const hasCategoryPermission = this.permissionService.getGrantedPolicy('TooHungry.DishCategories');
+    const hasCategoryPermission = this.permissionService.getGrantedPolicy(
+      'TooHungry.DishCategories',
+    );
     if (!hasCategoryPermission) {
       this.categoriesList = [];
       this.categories$ = of([]);
       return;
     }
 
-    this.categories$ = this.dishCategoryService
-      .getList({ maxResultCount: 100, skipCount: 0 })
-      .pipe(
-        map(res => {
-          this.categoriesList = res.items || [];
-          this.updateSelectedCategoryName();
-          this.cdr.markForCheck();
-          return this.categoriesList;
-        }),
-        shareReplay(1)
-      );
+    this.categories$ = this.dishCategoryService.getList({ maxResultCount: 100, skipCount: 0 }).pipe(
+      map(res => {
+        this.categoriesList = res.items || [];
+        this.updateSelectedCategoryName();
+        this.cdr.markForCheck();
+        return this.categoriesList;
+      }),
+      shareReplay(1),
+    );
 
     this.categoriesSubscription?.unsubscribe();
     this.categoriesSubscription = this.categories$.subscribe();
@@ -395,14 +418,28 @@ export class DishComponent implements OnInit, AfterViewInit, OnDestroy {
   toggleActive(dish: DishDto, event: Event) {
     event.stopPropagation();
     const previous = dish.isActive;
+    const nextState = !previous;
+
+    // Cập nhật lạc quan (optimistic) để giao diện phản hồi tức thì
+    dish.isActive = nextState;
+    this.cdr.markForCheck();
+
     this.dishService.toggleActive(dish.id!).subscribe({
-      next: (updated) => {
+      next: updated => {
         dish.isActive = updated.isActive;
         this.loadCounts();
         this.cdr.markForCheck();
       },
-      error: () => {
+      error: (err: any) => {
+        // Rollback nếu API lỗi
         dish.isActive = previous;
+        const target = event.target as HTMLInputElement;
+        if (target) {
+          target.checked = !!previous;
+        }
+        this.toaster.error(
+          err?.error?.error?.message || 'Có lỗi xảy ra khi cập nhật trạng thái món ăn!',
+        );
         this.cdr.markForCheck();
       },
     });
@@ -493,7 +530,8 @@ export class DishComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       error: err => {
         this.isUploadingImage = false;
-        this.uploadError = err?.error?.error?.message || err?.message || 'Tải ảnh lên Cloudinary thất bại!';
+        this.uploadError =
+          err?.error?.error?.message || err?.message || 'Tải ảnh lên Cloudinary thất bại!';
         this.cdr.markForCheck();
       },
     });
@@ -598,20 +636,22 @@ export class DishComponent implements OnInit, AfterViewInit, OnDestroy {
   confirmDeleteWithReason() {
     if (!this.deletingDish || !this.deletionReason.trim()) return;
     this.isDeletingDish = true;
-    this.dishService.deleteWithReason(this.deletingDish.id!, { deletionReason: this.deletionReason.trim() }).subscribe({
-      next: () => {
-        this.isDeletingDish = false;
-        this.isDeleteModalOpen = false;
-        this.deletingDish = null;
-        this.deletionReason = '';
-        this.list.get();
-        this.loadCounts();
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.isDeletingDish = false;
-        this.cdr.markForCheck();
-      }
-    });
+    this.dishService
+      .deleteWithReason(this.deletingDish.id!, { deletionReason: this.deletionReason.trim() })
+      .subscribe({
+        next: () => {
+          this.isDeletingDish = false;
+          this.isDeleteModalOpen = false;
+          this.deletingDish = null;
+          this.deletionReason = '';
+          this.list.get();
+          this.loadCounts();
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.isDeletingDish = false;
+          this.cdr.markForCheck();
+        },
+      });
   }
 }

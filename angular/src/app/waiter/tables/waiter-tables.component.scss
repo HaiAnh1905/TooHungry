@@ -40,9 +40,16 @@
         border-radius: 9999px;
         background: #ffffff;
         border: 1px solid #e2e8f0;
-        font-size: 0.8125rem;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
         transition: all 0.2s ease;
+        user-select: none;
+        -webkit-user-select: none;
+        cursor: default;
+
+        * {
+          user-select: none;
+          -webkit-user-select: none;
+        }
 
         .stat-label {
           color: #64748b;
@@ -79,6 +86,36 @@
         &.total {
           background: #f8fafc;
           border-color: #cbd5e1;
+        }
+      }
+
+      .btn-reload-in-place {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.35rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.825rem;
+        font-weight: 600;
+        min-height: 34px;
+        border-color: #cbd5e1;
+        background: #ffffff;
+        color: #475569;
+        transition: all 0.2s ease;
+
+        i {
+          color: #ea580c;
+        }
+
+        &:hover:not(:disabled) {
+          background: #fbf9f6;
+          border-color: #ea580c;
+          color: #ea580c;
+        }
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
         }
       }
     }

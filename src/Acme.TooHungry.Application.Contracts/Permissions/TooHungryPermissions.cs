@@ -110,4 +110,13 @@ public static class TooHungryPermissions
         public const string Delete = Default + ".Delete";
         public const string Approve = Default + ".Approve";
     }
+
+    public static class Cashier
+    {
+        public const string Default = GroupName + ".Cashier";
+        public const string ManageTables = Default + ".ManageTables";
+        public const string ManageOrders = Default + ".ManageOrders";
+        public const string ProcessPayment = Default + ".ProcessPayment";
+    }
 }
+

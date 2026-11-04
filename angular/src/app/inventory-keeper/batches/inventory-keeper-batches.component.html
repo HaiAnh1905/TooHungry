@@ -190,7 +190,7 @@
                 <!-- Tồn kho -->
                 <td class="text-end">
                   <span class="fw-bold text-dark fs-6">{{ batch.remainingQuantity }}</span>
-                  <span class="text-muted ms-1 small">{{ batch.purchaseUnit || '' }}</span>
+                  <span class="text-muted ms-1 small">{{ getUnitAbbr(batch.purchaseUnit) }}</span>
                 </td>
 
                 <!-- Đơn giá -->
