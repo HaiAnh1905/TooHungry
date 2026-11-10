@@ -80,6 +80,37 @@ export class TableTransferModalComponent implements OnChanges {
     return (this.selectedTargetTable.capacity ?? 0) < (this.sourceTable.capacity ?? 0);
   }
 
+  getAreaTableCount(areaId: string | null): number {
+    if (areaId === null) {
+      return this.tables.filter(
+        (t) => t.id !== this.sourceTable?.id && t.status === TableStatus.Available
+      ).length;
+    }
+    return this.tables.filter(
+      (t) =>
+        t.id !== this.sourceTable?.id &&
+        t.status === TableStatus.Available &&
+        t.diningAreaId === areaId
+    ).length;
+  }
+
+  clearSearch(): void {
+    this.searchQuery = '';
+  }
+
+  setQuickNoteByKey(key: string): void {
+    const text = this.localizationService.instant(key);
+    this.setQuickNote(text);
+  }
+
+  setQuickNote(tag: string): void {
+    if (!this.note) {
+      this.note = tag;
+    } else if (!this.note.includes(tag)) {
+      this.note = `${this.note.trim()}, ${tag}`;
+    }
+  }
+
   selectTarget(table: TableDto): void {
     this.selectedTargetTableId = table.id || null;
   }
@@ -92,10 +123,16 @@ export class TableTransferModalComponent implements OnChanges {
     this.isSubmitting = false;
   }
 
+  onVisibleChange(val: boolean): void {
+    this.visible = val;
+    this.visibleChange.emit(val);
+    if (!val) {
+      this.resetState();
+    }
+  }
+
   close(): void {
-    this.visible = false;
-    this.visibleChange.emit(false);
-    this.resetState();
+    this.onVisibleChange(false);
   }
 
   confirmTransfer(): void {

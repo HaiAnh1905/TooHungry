@@ -225,6 +225,9 @@
 .icon-action-btn {
   width: 32px; height: 32px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease;
   &.btn-edit { background-color: #fff4eb !important; border: 1.5px solid #ffcca8 !important; color: #ea4f10 !important; &:hover { background-color: #ff521b !important; color: #fff !important; } }
+  &.btn-lock { background-color: #f8fafc !important; border: 1.5px solid #cbd5e1 !important; color: #64748b !important; &:hover { background-color: #475569 !important; color: #fff !important; } }
+  &.btn-unlock { background-color: #fefce8 !important; border: 1.5px solid #fde047 !important; color: #ca8a04 !important; &:hover { background-color: #eab308 !important; color: #fff !important; } }
+  &.btn-delete { background-color: #fef2f2 !important; border: 1.5px solid #fecaca !important; color: #dc2626 !important; &:hover { background-color: #ef4444 !important; color: #fff !important; } }
 }
 
 .custom-table-footer {
@@ -253,3 +256,4 @@
     color: #ff521b;
   }
 }
+

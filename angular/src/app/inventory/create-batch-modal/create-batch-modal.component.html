@@ -107,7 +107,7 @@
                     required
                   />
                   <span class="input-group-text addon-badge">
-                    {{ selectedIngredient?.baseUnit || selectedIngredient?.unitName || 'đơn vị' }}
+                    {{ selectedIngredient?.baseUnit || selectedIngredient?.unitName || ('::Unit' | abpLocalization) }}
                   </span>
                 </div>
               </div>

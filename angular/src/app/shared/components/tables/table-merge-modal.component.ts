@@ -62,10 +62,16 @@ export class TableMergeModalComponent implements OnChanges {
     this.isSubmitting = false;
   }
 
+  onVisibleChange(val: boolean): void {
+    this.visible = val;
+    this.visibleChange.emit(val);
+    if (!val) {
+      this.resetState();
+    }
+  }
+
   close(): void {
-    this.visible = false;
-    this.visibleChange.emit(false);
-    this.resetState();
+    this.onVisibleChange(false);
   }
 
   confirmMerge(): void {

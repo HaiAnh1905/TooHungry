@@ -71,7 +71,7 @@
             </div>
             <div class="restaurant-info">
               <h3 class="brand-name">TooHungry Restaurant</h3>
-              <p class="brand-sub">Hệ thống Nhà hàng & Quản lý ẩm thực</p>
+              <p class="brand-sub">{{ '::RestaurantSystemSubtitle' | abpLocalization }}</p>
             </div>
           </div>
           <div class="bill-tag">{{ '::OrderInvoice' | abpLocalization }}</div>
@@ -219,7 +219,7 @@
                 <div class="qr-frame">
                   <img
                     [src]="vietQrUrl()"
-                    alt="Mã QR Chuyển khoản VietQR"
+                    [alt]="'::VietQRImageAlt' | abpLocalization"
                     class="qr-image"
                     (load)="isQrLoaded.set(true)"
                   />

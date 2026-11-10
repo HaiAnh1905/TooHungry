@@ -105,22 +105,22 @@
           @if (isLoadingBatches) {
             <div class="text-center py-4 bg-white rounded-3">
               <div class="spinner-border spinner-border-sm text-warning me-2"></div>
-              <span class="small text-muted">Đang tải danh sách lô hàng...</span>
+              <span class="small text-muted">{{ '::LoadingBatches' | abpLocalization }}</span>
             </div>
           } @else if (availableBatches.length === 0) {
             <div class="alert alert-warning py-2 mb-0 small rounded-3">
               <i class="fa fa-triangle-exclamation me-1"></i>
-              Không tìm thấy lô hàng khả dụng nào để trừ hao hụt.
+              {{ '::NoAvailableBatchesToDeduct' | abpLocalization }}
             </div>
           } @else {
             <div class="table-responsive bg-white rounded-3 shadow-sm border">
               <table class="table table-sm deduction-table align-middle mb-0">
                 <thead>
                   <tr>
-                    <th class="ps-3">Mã Lô</th>
-                    <th>Hạn sử dụng</th>
-                    <th class="text-end">Tồn kho lô</th>
-                    <th class="text-end pe-3" style="width: 190px;">Số lượng trừ</th>
+                    <th class="ps-3">{{ '::BatchCode' | abpLocalization }}</th>
+                    <th>{{ '::ExpiryDate' | abpLocalization }}</th>
+                    <th class="text-end">{{ '::BatchStock' | abpLocalization }}</th>
+                    <th class="text-end pe-3" style="width: 190px;">{{ '::DeductionQuantity' | abpLocalization }}</th>
                   </tr>
                 </thead>
                 <tbody formArrayName="batchDeductions">
@@ -133,7 +133,7 @@
                       </td>
                       <td class="small text-muted">
                         <i class="fa fa-calendar-alt me-1 text-muted"></i>
-                        {{ availableBatches[$index]?.expiryDate ? (availableBatches[$index].expiryDate | date:'dd/MM/yyyy') : 'Không hạn' }}
+                        {{ availableBatches[$index]?.expiryDate ? (availableBatches[$index].expiryDate | date:'dd/MM/yyyy') : ('::NoExpiry' | abpLocalization) }}
                       </td>
                       <td class="text-end fw-bold text-dark">
                         {{ row.get('remainingQuantity')?.value }}
@@ -153,7 +153,7 @@
                             type="button"
                             class="btn btn-btn-max"
                             (click)="setMaxDeduction($index)"
-                            title="Trừ tối đa cho lô này và tự cân đối các lô khác"
+                            [title]="'::AutoDeductMaxTooltip' | abpLocalization"
                           >
                             Max
                           </button>
@@ -169,9 +169,9 @@
               <div class="alert alert-danger py-2 px-3 mt-2 mb-0 small rounded-3 d-flex align-items-center gap-2">
                 <i class="fa fa-circle-exclamation fs-6"></i>
                 <div>
-                  Tổng số lượng trừ (<strong>{{ totalDeductionFromBatches }}</strong>) phải khớp chính xác lượng thiếu hụt (<strong>{{ shortageAmount }}</strong>).
+                  {{ '::DeductionMustMatchShortage' | abpLocalization }} (<strong>{{ totalDeductionFromBatches }}</strong> / <strong>{{ shortageAmount }}</strong>)
                   <a href="javascript:void(0)" (click)="autoAllocateFifo()" class="alert-link ms-1 text-decoration-underline">
-                    Bấm vào đây để tự động khớp
+                    {{ '::ClickToAutoBalance' | abpLocalization }}
                   </a>
                 </div>
               </div>
@@ -187,15 +187,9 @@
             {{ '::AdjustmentReason' | abpLocalization }} <span class="text-danger">*</span>
           </label>
           <div class="d-flex gap-1 flex-wrap">
-            <button type="button" class="btn btn-quick-tag" (click)="setQuickReason('Kiểm kê định kỳ')">
-              Kiểm kê định kỳ
-            </button>
-            <button type="button" class="btn btn-quick-tag" (click)="setQuickReason('Hao hụt tự nhiên / hỏng')">
-              Hao hụt / Hỏng
-            </button>
-            <button type="button" class="btn btn-quick-tag" (click)="setQuickReason('Sai lệch khi nhập kho')">
-              Sai lệch nhập kho
-            </button>
+            <button type="button" class="btn btn-quick-tag" (click)="setQuickReasonByKey('::QuickReasonPeriodicAudit')">{{ '::QuickReasonPeriodicAudit' | abpLocalization }}</button>
+            <button type="button" class="btn btn-quick-tag" (click)="setQuickReasonByKey('::QuickReasonLossOrDamage')">{{ '::QuickReasonLossOrDamage' | abpLocalization }}</button>
+            <button type="button" class="btn btn-quick-tag" (click)="setQuickReasonByKey('::QuickReasonInboundDiscrepancy')">{{ '::QuickReasonInboundDiscrepancy' | abpLocalization }}</button>
           </div>
         </div>
 
@@ -226,7 +220,7 @@
       [disabled]="form.invalid || (difference < 0 && isDeductionMismatch) || isSubmitting"
     >
       @if (isSubmitting) {
-        <i class="fa fa-spinner fa-spin me-1"></i> Đang lưu...
+        <i class="fa fa-spinner fa-spin me-1"></i> {{ '::Saving' | abpLocalization }}
       } @else {
         <i class="fa fa-check me-1"></i>
         <span>{{ '::Save' | abpLocalization }}</span>

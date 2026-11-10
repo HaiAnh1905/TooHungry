@@ -118,5 +118,13 @@ public static class TooHungryPermissions
         public const string ManageOrders = Default + ".ManageOrders";
         public const string ProcessPayment = Default + ".ProcessPayment";
     }
+
+    public static class Identity
+    {
+        public static class Users
+        {
+            public const string ManageLockout = GroupName + ".Identity.Users.ManageLockout";
+        }
+    }
 }
 

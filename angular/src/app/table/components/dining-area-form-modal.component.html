@@ -1,4 +1,4 @@
-<abp-modal [(visible)]="visible" [busy]="isSaving">
+<abp-modal [visible]="visible" (visibleChange)="onVisibleChange($event)" [busy]="isSaving">
   <ng-template #abpHeader>
     <div class="modal-header-areaform d-flex align-items-center gap-3">
       <div class="header-icon-box">

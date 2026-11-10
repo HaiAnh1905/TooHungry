@@ -49,7 +49,7 @@
             style="text-transform: uppercase;"
             formControlName="code"
             (input)="onCodeInput($event)"
-            placeholder="Ví dụ: ING-BEEF-01"
+            [placeholder]="'::ExampleIngredientCode' | abpLocalization"
           />
         </div>
         <div class="col-md-6">

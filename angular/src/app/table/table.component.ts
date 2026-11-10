@@ -520,6 +520,9 @@ export class TableComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onEndMeal(table: TableDto) {
     this.selectedEndMealTable = table;
+    if (this.isEndMealModalOpen) {
+      this.isEndMealModalOpen = false;
+    }
     this.isEndMealModalOpen = true;
   }
 

@@ -2,7 +2,7 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
-import { CoreModule, AuthService, ConfigStateService } from '@abp/ng.core';
+import { CoreModule, AuthService, ConfigStateService, LocalizationService } from '@abp/ng.core';
 import { ThemeSharedModule, ToasterService } from '@abp/ng.theme.shared';
 import { AccountService } from '@abp/ng.account.core/proxy';
 import { finalize } from 'rxjs';
@@ -18,6 +18,7 @@ export class RegisterComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
   private readonly accountService = inject(AccountService);
+  private readonly localization = inject(LocalizationService);
   private readonly authService = inject(AuthService);
   private readonly configState = inject(ConfigStateService);
   private readonly toaster = inject(ToasterService);
@@ -212,12 +213,16 @@ export class RegisterComponent implements OnInit {
       )
       .subscribe({
         next: () => {
-          this.toaster.success('Đăng ký tài khoản thành công! Bạn có thể đăng nhập ngay.', 'Thành công', { life: 5000 });
+          this.toaster.success(
+            String(this.localization.instant('::RegisterSuccess')),
+            String(this.localization.instant('::Success')),
+            { life: 5000 }
+          );
           this.router.navigate(['/account/login']);
         },
         error: err => {
           const errMsg = err?.error?.error_description || err?.error?.error?.message || err?.message || 'Có lỗi xảy ra trong quá trình đăng ký!';
-          this.toaster.error(errMsg, 'Đăng ký thất bại', { life: 7000 });
+          this.toaster.error(errMsg, String(this.localization.instant('::RegisterFailed')), { life: 7000 });
         },
       });
   }

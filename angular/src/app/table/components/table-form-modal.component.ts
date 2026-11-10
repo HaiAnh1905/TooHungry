@@ -142,9 +142,13 @@ export class TableFormModalComponent implements OnChanges {
     return opt ? opt.icon : 'fa-circle';
   }
 
+  onVisibleChange(val: boolean): void {
+    this.visible = val;
+    this.visibleChange.emit(val);
+  }
+
   close(): void {
-    this.visible = false;
-    this.visibleChange.emit(false);
+    this.onVisibleChange(false);
   }
 
   save(): void {

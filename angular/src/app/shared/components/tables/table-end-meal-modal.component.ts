@@ -66,9 +66,16 @@ export class TableEndMealModalComponent implements OnChanges {
     return `${remMins}m`;
   }
 
+  onVisibleChange(val: boolean): void {
+    this.visible = val;
+    this.visibleChange.emit(val);
+    if (!val) {
+      this.isSubmitting = false;
+    }
+  }
+
   close(): void {
-    this.visible = false;
-    this.visibleChange.emit(false);
+    this.onVisibleChange(false);
   }
 
   confirm(): void {

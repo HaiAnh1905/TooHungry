@@ -266,7 +266,7 @@
                     <span class="font-monospace fw-bold text-dark">{{ batch.batchCode }}</span>
                   </td>
                   <td>
-                    <div class="fw-bold text-dark">{{ batch.ingredientName || 'Nguyên liệu' }}</div>
+                    <div class="fw-bold text-dark">{{ batch.ingredientName || ('::Ingredient' | abpLocalization) }}</div>
                   </td>
                   <td>
                     <span class="text-muted font-monospace">

@@ -48,6 +48,9 @@ public class DashboardSummaryDto
 public class DashboardKpiDto
 {
     public decimal TotalRevenue { get; set; }
+    public decimal TotalExpense { get; set; }
+    public int InboundBatchesCount { get; set; }
+    public decimal ExpenseGrowthPercentage { get; set; }
     public int TotalOrdersCount { get; set; }
     public int CompletedOrdersCount { get; set; }
     public int PendingOrdersCount { get; set; }
