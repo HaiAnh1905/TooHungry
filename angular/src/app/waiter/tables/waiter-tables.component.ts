@@ -164,7 +164,7 @@ export class WaiterTablesComponent implements OnInit, AfterViewInit, OnDestroy {
     const areaMap = new Map<string, { id: string; name: string; tableCount: number; isActive: boolean }>();
     for (const t of matchingTables) {
       if (t.diningAreaId) {
-        const areaName = t.diningAreaName || t.location || 'Khu vực khác';
+        const areaName = t.diningAreaName || t.location || this.localizationService.instant('::OtherArea');
         const existing = areaMap.get(t.diningAreaId);
         if (existing) {
           existing.tableCount++;
@@ -773,8 +773,12 @@ export class WaiterTablesComponent implements OnInit, AfterViewInit, OnDestroy {
   endMeal(table: TableDto) {
     if (!table.id) return;
     this.selectedEndMealTable = table;
+    if (this.isEndMealModalOpen) {
+      this.isEndMealModalOpen = false;
+      this.cdr.detectChanges();
+    }
     this.isEndMealModalOpen = true;
-    this.cdr.markForCheck();
+    this.cdr.detectChanges();
   }
 
   onMealEnded(event: { table: TableDto; action: 'freed' | 'payment'; orderId?: string }) {

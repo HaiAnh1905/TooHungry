@@ -1,12 +1,12 @@
 # Roadmap Build — Acme.TooHungry (Restaurant Management)
 
 **Mục tiêu**: thứ tự build/hoàn thiện từng màn/chức năng.
-**Cập nhật**: 2026-10-26
+**Cập nhật**: 2026-11-09
 **Trạng thái item**: `chưa` (mặc định) / `đang` / `xong`.
 
 > **Nguồn liệt-kê-được**: File Entities trong thư mục `src/Acme.TooHungry.Domain` kết hợp với thư mục `specs` và tài liệu rà soát mã nguồn toàn diện `CODE_REVIEW.md`.
 > Đơn vị "màn/chức năng" = Quản lý (CRUD) một Entity, một chức năng dùng chung hoặc một gói giải pháp củng cố/ổn định hệ thống.
-> Tổng 28 item sau khi gộp và ánh xạ (từ RM-001 đến RM-021 đã hoàn thành; Wave 5 gồm RM-022 đến RM-027 giải quyết toàn diện 68 vấn đề phát hiện từ `CODE_REVIEW.md` và kiểm định nghiệm thu; bổ sung Wave 6 với RM-028: Phân hệ Thu ngân & Đồng bộ vận hành thời gian thực giữa Waiter và Cashier).
+> Tổng 29 item sau khi gộp và ánh xạ (từ RM-001 đến RM-021 đã hoàn thành; Wave 5 gồm RM-022 đến RM-027 giải quyết toàn diện 68 vấn đề phát hiện từ `CODE_REVIEW.md` và kiểm định nghiệm thu; Wave 6 gồm RM-028: Phân hệ Thu ngân & Đồng bộ vận hành thời gian thực giữa Waiter và Cashier, cùng RM-029: Chống Brute-Force & Bảo vệ Xác thực Đăng nhập).
 >
 > **Chiến lược đã chốt (interview 2026-10-06 & cập nhật 2026-10-22)**:
 > 1. **Granularity**: 1 màn cho 1 Entity hoặc cụm tính năng liên quan chặt chẽ.
@@ -56,8 +56,8 @@
 > - Settings, Data, OpenIddict — phụ trợ hệ thống, không làm màn hình riêng hoặc gộp vào Identity.
 > - DailyMenus — thực đơn theo ngày (loại khỏi roadmap do gọi món POS lấy trực tiếp từ Master Data món ăn RM-006).
 >
-> **Cột `Spec`** = thư mục đặc tả SỞ HỮU item trong `specs/`, `—` = chưa có. Hiện **28/28 item có spec (100% độ phủ)**.
-> Các item Wave 5 (`RM-022` đến `RM-027`) đã có đặc tả chi tiết và thực thi theo Spec-Kit. Wave 6 mở rộng phân hệ Thu ngân & liên kết thời gian thực với Waiter (`RM-028`).
+> **Cột `Spec`** = thư mục đặc tả SỞ HỮU item trong `specs/`, `—` = chưa có. Hiện **29/29 item có spec (100% độ phủ)**.
+> Các item Wave 5 (`RM-022` đến `RM-027`) đã có đặc tả chi tiết và thực thi theo Spec-Kit. Wave 6 mở rộng phân hệ Thu ngân & liên kết thời gian thực với Waiter (`RM-028`), cùng giải pháp an ninh chống Brute-force & Rate Limiting đăng nhập (`RM-029`).
 
 ## Bảng tổng (thứ tự build)
 
@@ -91,6 +91,7 @@
 | RM-026 | Bộ Kiểm Thử Tự Động Phân Quyền & Bất Biến (Automated Testing: Auth, Concurrency & Idempotency) | testing | 5 | RM-022, RM-023, RM-024, RM-025 | [026-rm-026-automated-testing-auth-concurrency-idempotency](../specs/026-rm-026-automated-testing-auth-concurrency-idempotency/spec.md) | hoàn thành |
 | RM-027 | Kiểm định & Đối soát Toàn diện Mã nguồn so với Code Review (Code Review Verification & Audit) | quality | 5 | RM-022, RM-023, RM-024, RM-025, RM-026 | [027-rm-027-code-review-validation](../specs/027-rm-027-code-review-validation/spec.md) | hoàn thành |
 | RM-028 | Phân hệ Thu ngân: Quản lý Bàn, Đơn hàng & Đồng bộ Thời gian thực (Cashier Portal: Table & Order Management with Real-time Sync) | cashier | 6 | RM-001, RM-002, RM-003, RM-008, RM-010, RM-015, RM-016 | [028-rm-028-cashier-portal-order-sync](../specs/028-rm-028-cashier-portal-order-sync/spec.md) | chưa |
+| RM-029 | Chống Tấn công Brute-Force & Bảo vệ Xác thực Đăng nhập (Login Anti-Brute-Force & Rate Limiting) | security | 6 | RM-001, RM-023 | [029-rm-029-login-anti-brute-force](../specs/029-rm-029-login-anti-brute-force/spec.md) | chưa |
 
 ## Chi tiết
 
@@ -105,6 +106,7 @@
 - **Nợ phát sinh**:
   - (2026-10-22 · từ CODE_REVIEW.md) Secret commit vào git: `CertificatePassPhrase` và `StringEncryption:DefaultPassPhrase` trong `appsettings.json`, `ShowPII = true`, Swagger bật ở production → Giao xử lý tại RM-023.
   - (2026-10-22 · từ CODE_REVIEW.md) `app.component.ts`: Memory leak do `currentUser` subscribe thiếu `take(1)` tích lũy qua mỗi lần visibility change → Giao xử lý tại RM-024.
+  - (2026-11-09 · yêu cầu củng cố bảo mật) Tăng cường bảo vệ chống tấn công Brute-Force & Credential Stuffing khi đăng nhập (Khóa tài khoản theo bậc thang lũy tiến 5m → 10m → 15m → 30m, Rate limiting IP/endpoint, cơ chế CAPTCHA/delay lũy tiến, audit log cảnh báo) → Giao xử lý tại RM-029.
 
 ### RM-002 — Shared UI / design system (shared, Wave 0)
 - **Mô tả**: Xây dựng các component UI cơ bản (table, form, modal) và cấu trúc layout hệ thống.
@@ -757,6 +759,44 @@
 - **Spec**: [specs/028-rm-028-cashier-portal-order-sync/](../specs/028-rm-028-cashier-portal-order-sync/spec.md)
 - **Trạng thái**: chưa
 - **Nợ phát sinh**: Chưa ghi nhận.
+
+### RM-029 — Chống Tấn công Brute-Force & Bảo vệ Xác thực Đăng nhập (Login Anti-Brute-Force & Rate Limiting) (security, Wave 6)
+- **Mô tả**: Thiết lập cơ chế phòng thủ chuyên sâu nhiều tầng (Defense-in-depth) nhằm bảo vệ triệt để các endpoint xác thực và đăng nhập khỏi các cuộc tấn công dò đoán mật khẩu tự động (Brute-Force), tấn công rà quét mật khẩu phổ biến diện rộng (Password Spraying) và chiếm đoạt tài khoản (Credential Stuffing):
+  - **1. Khóa tài khoản theo bậc thang lũy tiến khi đăng nhập sai (Escalating Account Lockout Policy - User-level Defense)**:
+    + Kích hoạt ràng buộc `lockoutOnFailure: true` đồng bộ trên toàn bộ các kênh xác thực: OpenIddict Token Endpoint (`/connect/token` grant type `password`), ABP Account Controller (`/api/account/login`), và trang MVC Login.
+    + Triển khai cơ chế khóa bậc thang lũy tiến (Escalating Lockout Ladder) sau mỗi 5 lần đăng nhập sai liên tiếp (`MaxFailedAccessAttempts = 5`):
+      * **Lần vi phạm 1**: Khóa tạm thời **5 phút**.
+      * **Lần vi phạm 2**: Khóa tạm thời **10 phút**.
+      * **Lần vi phạm 3**: Khóa tạm thời **15 phút**.
+      * **Lần vi phạm 4 trở đi**: Khóa tạm thời tối đa **30 phút** cho các lần vi phạm kế tiếp.
+    + Tự động xóa sạch bộ đếm sai (`AccessFailedCount = 0`) và đặt lại cấp độ phạt về ban đầu ngay khi người dùng đăng nhập thành công với mật khẩu chính xác.
+    + Chuẩn hóa thông báo lỗi chung, an toàn: Tuyệt đối không tiết lộ tài khoản có tồn tại trong hệ thống hay không nhằm triệt tiêu nguy cơ rà quét tài khoản (Username/Account Enumeration).
+  - **2. Giới hạn tần suất gọi API theo IP & Endpoint (IP-based & Endpoint Rate Limiting - Network-level Defense)**:
+    + Triển khai ASP.NET Core RateLimiter Middleware (Fixed Window / Sliding Window) gắn trực tiếp cho các route nhạy cảm: `/connect/token`, `/api/account/login`, `/Account/Login`.
+    + Giới hạn an toàn (ví dụ: tối đa 5 - 10 lần thử / 1 phút / Client IP).
+    + Tự động trả về HTTP `429 Too Many Requests` kèm tiêu đề `Retry-After` khi vượt ngưỡng, ngăn chặn việc kẻ tấn công đổi username liên tục để né Account Lockout.
+  - **3. Trễ lũy tiến & Chống Timing Attack (Progressive Delay & Constant-time Evaluation)**:
+    + Áp dụng độ trễ có chủ đích (artificial progressive delay / backoff) tăng dần sau mỗi lần đăng nhập sai từ cùng một IP/client để làm vô hiệu hóa công cụ brute-force tự động.
+    + Chuẩn hóa thời gian phản hồi giữa các trường hợp user tồn tại và không tồn tại, ngăn chặn kẻ tấn công suy đoán user thông qua chênh lệch thời gian xử lý (Timing Attacks).
+  - **4. Cơ chế Thử thách Động (Dynamic CAPTCHA / Proof-of-Human Challenge)**:
+    + Tự động kích hoạt thử thách CAPTCHA (Turnstile / Cloudflare / reCAPTCHA / Math Challenge nội bộ) trên giao diện khi phát hiện 3 lần đăng nhập thất bại từ cùng một IP hoặc tài khoản.
+    + Chặn đứng hoàn toàn bot tự động hóa và script khai thác từ xa.
+  - **5. Ghi vết kiểm toán & Cảnh báo an ninh tức thời (Security Audit Logging & Real-time Alerts)**:
+    + Ghi nhận Security Audit Log chi tiết (kết hợp ABP AuditLogging và Serilog) lưu vết: IP nguồn, User-Agent, thời điểm, loại thất bại (sai pass / tài khoản bị khóa / vi phạm rate limit).
+    + Phát cảnh báo mức độ cao (High-severity security alert) tới Quản trị viên khi phát hiện dấu hiệu tấn công dồn dập hoặc bất thường từ một IP hoặc dải mạng.
+  - **6. Giao diện & Trải nghiệm Người dùng An toàn (UX & i18n)**:
+    + Cảnh báo trực quan số lần thử còn lại trước khi tài khoản bị khóa tạm thời.
+    + Hiển thị đồng hồ đếm ngược (Cooldown Countdown Timer) và tạm khóa nút Đăng nhập khi bị Rate Limit hoặc Account Lockout.
+    + 100% các thông báo lỗi, cảnh báo và nhãn giao diện được bản địa hóa đầy đủ trong `vi.json` và `en.json`.
+- **Nguồn**: `TooHungryHttpApiHostModule.cs`, `TooHungryDomainModule.cs`, OpenIddict Configuration, `angular/src/app/`, ASP.NET Core Rate Limiting.
+- **Thực thể/CRUD**: `IdentityUser` (Lockout state & AccessFailedCount), `SecurityAuditLog`, `RateLimitRule`.
+- **Backend**: Xây dựng cơ chế khóa bậc thang lũy tiến (5 phút → 10 phút → 15 phút → 30 phút) cho `IdentityOptions.Lockout`/User Lockout Handler, tích hợp ASP.NET Core RateLimiter middleware / Sliding Window policy trên `/connect/token` và login endpoints, cập nhật `lockoutOnFailure: true`, Progressive Delay, Security Audit Logging.
+- **Frontend**: Hiển thị cảnh báo số lần thử, countdown timer tương ứng với từng bậc khóa (5m/10m/15m/30m), tích hợp CAPTCHA challenge khi kích hoạt ngưỡng rủi ro, cập nhật i18n (`vi.json`, `en.json`).
+- **Phụ thuộc**: RM-001, RM-023
+- **Spec**: [specs/029-rm-029-login-anti-brute-force/](../specs/029-rm-029-login-anti-brute-force/spec.md)
+- **Trạng thái**: chưa
+- **Nợ phát sinh**: Chưa ghi nhận.
+
 
 
 

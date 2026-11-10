@@ -28,6 +28,9 @@ export interface DashboardSummaryDto {
 
 export interface DashboardKpiDto {
   totalRevenue: number;
+  totalExpense: number;
+  inboundBatchesCount: number;
+  expenseGrowthPercentage: number;
   totalOrdersCount: number;
   completedOrdersCount: number;
   pendingOrdersCount: number;

@@ -1,4 +1,4 @@
-<abp-modal [(visible)]="visible" [busy]="isSubmitting">
+<abp-modal [visible]="visible" (visibleChange)="onVisibleChange($event)" [busy]="isSubmitting">
   <ng-template #abpHeader>
     <div class="modal-header-merge d-flex align-items-center gap-3">
       <div class="header-icon-box">

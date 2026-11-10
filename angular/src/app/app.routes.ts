@@ -14,6 +14,10 @@ export const APP_ROUTES: Routes = [
     canActivate: [dashboardGuard],
   },
   {
+    path: 'account/login',
+    loadComponent: () => import('./account/login/login.component').then(c => c.LoginComponent),
+  },
+  {
     path: 'account/register',
     loadComponent: () => import('./account/register/register.component').then(c => c.RegisterComponent),
   },

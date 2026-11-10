@@ -58,8 +58,8 @@
                 </div>
                 <div class="meta-body">
                   <div class="meta-label">{{ '::TableAndArea' | abpLocalization }}</div>
-                  <div class="meta-value">{{ table.tableNumber || order()?.tableName || 'Bàn ăn' }}</div>
-                  <div class="meta-subtext">{{ table.diningAreaName || ('::MainArea' | abpLocalization) }}{{ table.capacity ? (' • ' + table.capacity + ' chỗ') : '' }}</div>
+                  <div class="meta-value">{{ table.tableNumber || order()?.tableName || ('::DiningTable' | abpLocalization) }}</div>
+                  <div class="meta-subtext">{{ table.diningAreaName || ('::MainArea' | abpLocalization) }}{{ table.capacity ? (' • ' + table.capacity + ' ' + ('::Seats' | abpLocalization)) : '' }}</div>
                 </div>
               </div>
             </div>

@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormArray, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { CoreModule } from '@abp/ng.core';
+import { CoreModule, LocalizationService } from '@abp/ng.core';
 import { ThemeSharedModule, ToasterService } from '@abp/ng.theme.shared';
 import { InventoryService } from '../../proxy/inventories/inventory.service';
 import { BatchDeductionItemDto, InventoryBatchDto } from '../../proxy/inventories/models';
@@ -19,6 +19,7 @@ export class StockAdjustmentModalComponent implements OnChanges {
   private readonly inventoryService = inject(InventoryService);
   private readonly toaster = inject(ToasterService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly localization = inject(LocalizationService);
 
   @Input() ingredient?: IngredientDto;
   @Input() visible = false;
@@ -164,6 +165,10 @@ export class StockAdjustmentModalComponent implements OnChanges {
 
   setQuickReason(reason: string): void {
     this.form.patchValue({ reason });
+  }
+
+  setQuickReasonByKey(key: string): void {
+    this.form.patchValue({ reason: String(this.localization.instant(key)) });
   }
 
   submit(): void {

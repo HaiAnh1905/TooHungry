@@ -1,4 +1,9 @@
-<abp-modal [(visible)]="visible" [busy]="isSubmitting">
+<abp-modal
+  [visible]="visible"
+  (visibleChange)="onVisibleChange($event)"
+  [busy]="isSubmitting"
+  [options]="{ modalDialogClass: 'transfer-table-modal-dialog', centered: true }"
+>
   <ng-template #abpHeader>
     <div class="modal-header-transfer d-flex align-items-center gap-3">
       <div class="header-icon-box">
@@ -17,89 +22,137 @@
 
   <ng-template #abpBody>
     <div class="transfer-modal-body">
-      <!-- 1. THẺ TÓM TẮT BÀN NGUỒN -->
+      <!-- 1. THẺ TRỰC QUAN HÓA LUỒNG CHUYỂN BÀN (TRANSFER FLOW HERO CARD) -->
       @if (sourceTable) {
-        <div class="source-table-card mb-3">
-          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-            <div class="d-flex align-items-center gap-2">
-              <span class="source-badge">
-                <i class="fas fa-chair"></i>
-                <span class="ms-1">{{ sourceTable.name }}</span>
-              </span>
-              <span class="badge-area text-muted">
-                <i class="fas fa-layer-group me-1"></i>{{ sourceTable.diningAreaName || ('::UnassignedArea' | abpLocalization) }}
-              </span>
-              <span class="badge-seats text-muted">
-                <i class="fas fa-users me-1"></i>{{ sourceTable.capacity }} {{ '::Seats' | abpLocalization }}
+        <div class="transfer-flow-card mb-3">
+          <!-- Bàn nguồn (Current Table) -->
+          <div class="flow-endpoint source">
+            <div class="endpoint-header">
+              <span class="endpoint-role-tag source-tag">
+                <i class="fas fa-arrow-up-from-bracket me-1"></i>
+                {{ '::CurrentTable' | abpLocalization }}
               </span>
             </div>
+            <div class="endpoint-body">
+              <div class="table-name-badge source-name">
+                <i class="fas fa-chair me-1"></i>
+                <span>{{ sourceTable.name }}</span>
+              </div>
+              <div class="table-meta-pills">
+                <span class="meta-pill">
+                  <i class="fas fa-layer-group me-1"></i>{{ sourceTable.diningAreaName || ('::UnassignedArea' | abpLocalization) }}
+                </span>
+                <span class="meta-pill">
+                  <i class="fas fa-users me-1"></i>{{ sourceTable.capacity }} {{ '::Seats' | abpLocalization }}
+                </span>
+              </div>
+            </div>
+          </div>
 
-            <div class="order-status-pill">
-              @if (sourceTable.hasActiveOrder) {
-                <span class="pill-active-order">
-                  <i class="fas fa-receipt me-1"></i>
-                  {{ '::HasActiveOrder' | abpLocalization }}
-                </span>
+          <!-- Mũi tên chuyển giao giữa 2 bàn -->
+          <div class="flow-connector" [class.active]="!!selectedTargetTable">
+            <div class="connector-track">
+              <div class="connector-arrow-circle">
+                <i class="fas fa-arrow-right"></i>
+              </div>
+            </div>
+            <span class="connector-text">
+              {{ selectedTargetTable ? ('::TransferTo' | abpLocalization) : ('::SelectDestination' | abpLocalization) }}
+            </span>
+          </div>
+
+          <!-- Bàn đích (Destination Table) -->
+          <div class="flow-endpoint target" [class.has-selection]="!!selectedTargetTable">
+            <div class="endpoint-header">
+              <span class="endpoint-role-tag target-tag">
+                <i class="fas fa-arrow-down-to-bracket me-1"></i>
+                {{ '::DestinationTable' | abpLocalization }}
+              </span>
+            </div>
+            <div class="endpoint-body">
+              @if (selectedTargetTable) {
+                <div class="table-name-badge target-name">
+                  <i class="fas fa-bullseye me-1"></i>
+                  <span>{{ selectedTargetTable.name }}</span>
+                </div>
+                <div class="table-meta-pills">
+                  <span class="meta-pill">
+                    <i class="fas fa-layer-group me-1"></i>{{ selectedTargetTable.diningAreaName || ('::UnassignedArea' | abpLocalization) }}
+                  </span>
+                  <span class="meta-pill">
+                    <i class="fas fa-users me-1"></i>{{ selectedTargetTable.capacity }} {{ '::Seats' | abpLocalization }}
+                  </span>
+                </div>
               } @else {
-                <span class="pill-no-order">
-                  <i class="fas fa-clock me-1"></i>
-                  {{ '::NoOrderYet' | abpLocalization }}
-                </span>
+                <div class="endpoint-empty-placeholder">
+                  <div class="placeholder-icon-circle">
+                    <i class="fas fa-plus"></i>
+                  </div>
+                  <span class="placeholder-msg">{{ '::ChooseTableBelow' | abpLocalization }}</span>
+                </div>
               }
             </div>
           </div>
         </div>
       }
 
-      <!-- 2. BỘ LỌC KHU VỰC VÀ TÌM KIẾM BÀN ĐÍCH -->
-      <div class="target-selection-header mb-3">
+      <!-- 2. THANH CÔNG CỤ: TÌM KIẾM & BỘ LỌC KHU VỰC -->
+      <div class="target-toolbar mb-3">
         <div class="d-flex align-items-center justify-content-between gap-2 mb-2 flex-wrap">
-          <label class="section-label m-0 font-weight-bold">
-            <i class="fas fa-bullseye me-1 text-primary-orange"></i>
-            {{ '::SelectTargetTable' | abpLocalization }}
+          <label class="section-label m-0 font-weight-bold d-flex align-items-center gap-2">
+            <span class="section-icon-dot"></span>
+            <span>{{ '::SelectTargetTable' | abpLocalization }}</span>
           </label>
-          <span class="available-count-badge">
+          <span class="available-count-pill">
+            <i class="fas fa-check me-1"></i>
             {{ availableTargetTables.length }} {{ '::AvailableTablesCount' | abpLocalization }}
           </span>
         </div>
 
-        <div class="d-flex align-items-center gap-2 flex-wrap">
-          <!-- Area Pills -->
-          <div class="area-filter-pills d-flex align-items-center gap-1 flex-wrap">
+        <!-- Search Bar -->
+        <div class="search-bar-modern mb-2">
+          <i class="fas fa-magnifying-glass search-icon"></i>
+          <input
+            type="text"
+            class="form-control form-control-sm modern-input"
+            [(ngModel)]="searchQuery"
+            [placeholder]="'::SearchTablePlaceholder' | abpLocalization"
+          />
+          @if (searchQuery.trim()) {
+            <button type="button" class="btn-clear-search" (click)="clearSearch()">
+              <i class="fas fa-times"></i>
+            </button>
+          }
+        </div>
+
+        <!-- Area Filter Chips -->
+        <div class="area-filter-scroll">
+          <div class="area-chips-container d-flex align-items-center gap-1">
             <button
               type="button"
-              class="pill-btn"
+              class="area-chip-btn"
               [class.active]="selectedAreaFilter === null"
               (click)="selectedAreaFilter = null"
             >
-              {{ '::AllAreas' | abpLocalization }}
+              <span>{{ '::AllAreas' | abpLocalization }}</span>
+              <span class="chip-count">{{ getAreaTableCount(null) }}</span>
             </button>
             @for (area of availableAreas; track area.id) {
               <button
                 type="button"
-                class="pill-btn"
+                class="area-chip-btn"
                 [class.active]="selectedAreaFilter === area.id"
                 (click)="selectedAreaFilter = area.id"
               >
-                {{ area.name }}
+                <span>{{ area.name }}</span>
+                <span class="chip-count">{{ getAreaTableCount(area.id) }}</span>
               </button>
             }
-          </div>
-
-          <!-- Search Input -->
-          <div class="search-target-box ms-auto">
-            <i class="fas fa-search search-icon"></i>
-            <input
-              type="text"
-              class="form-control form-control-sm search-input"
-              [(ngModel)]="searchQuery"
-              [placeholder]="'::SearchTablePlaceholder' | abpLocalization"
-            />
           </div>
         </div>
       </div>
 
-      <!-- 3. DANH SÁCH BÀN TRỐNG (GRID VIEW) -->
+      <!-- 3. LƯỚI BÀN TRỐNG (TARGET TABLES GRID) -->
       <div class="target-tables-grid-wrap mb-3">
         @if (availableTargetTables.length > 0) {
           <div class="target-tables-grid">
@@ -107,19 +160,46 @@
               <div
                 class="target-table-card"
                 [class.selected]="selectedTargetTableId === table.id"
+                [class.has-smaller-capacity]="sourceTable && (table.capacity ?? 0) < (sourceTable.capacity ?? 0)"
                 (click)="selectTarget(table)"
               >
-                <div class="card-radio-indicator">
-                  <i class="fas" [class.fa-check-circle]="selectedTargetTableId === table.id" [class.fa-circle]="selectedTargetTableId !== table.id"></i>
+                <!-- Radio indicator top-right -->
+                <div class="card-radio-wrap">
+                  <div class="custom-radio-dot" [class.checked]="selectedTargetTableId === table.id">
+                    @if (selectedTargetTableId === table.id) {
+                      <i class="fas fa-check"></i>
+                    }
+                  </div>
                 </div>
-                <div class="card-table-name font-weight-bold">
-                  {{ table.name }}
+
+                <!-- Table Icon & Name -->
+                <div class="card-table-header">
+                  <div class="table-icon-badge">
+                    <i class="fas fa-chair"></i>
+                  </div>
+                  <div class="card-table-name font-weight-bold">
+                    {{ table.name }}
+                  </div>
                 </div>
-                <div class="card-table-meta text-muted small">
-                  <span><i class="fas fa-users me-1"></i>{{ table.capacity }} {{ '::Seats' | abpLocalization }}</span>
-                  <span class="meta-dot">•</span>
-                  <span>{{ table.diningAreaName || ('::UnassignedArea' | abpLocalization) }}</span>
+
+                <!-- Table Meta info -->
+                <div class="card-table-meta text-muted">
+                  <span class="meta-capacity">
+                    <i class="fas fa-users me-1"></i>{{ table.capacity }} {{ '::Seats' | abpLocalization }}
+                  </span>
+                  <span class="meta-divider">•</span>
+                  <span class="meta-area" [title]="table.diningAreaName || ''">
+                    {{ table.diningAreaName || ('::UnassignedArea' | abpLocalization) }}
+                  </span>
                 </div>
+
+                <!-- Capacity Warning mini badge -->
+                @if (sourceTable && (table.capacity ?? 0) < (sourceTable.capacity ?? 0)) {
+                  <div class="smaller-capacity-tag">
+                    <i class="fas fa-triangle-exclamation me-1"></i>
+                    <span>{{ '::CapacitySmallerTag' | abpLocalization }} ({{ table.capacity }})</span>
+                  </div>
+                }
               </div>
             }
           </div>
@@ -128,8 +208,11 @@
             <div class="empty-icon-circle mb-2">
               <i class="fas fa-chair"></i>
             </div>
-            <p class="empty-text text-muted m-0">
+            <h6 class="font-weight-bold mb-1 text-dark">
               {{ '::NoAvailableTablesFound' | abpLocalization }}
+            </h6>
+            <p class="empty-text text-muted small m-0">
+              {{ '::NoAvailableTablesFoundDesc' | abpLocalization }}
             </p>
           </div>
         }
@@ -138,25 +221,45 @@
       <!-- 4. CẢNH BÁO SỨC CHỨA (NẾU BÀN ĐÍCH NHỎ HƠN) -->
       @if (isCapacityWarning) {
         <div class="alert alert-warning capacity-warning-alert d-flex align-items-center gap-2 mb-3">
-          <i class="fas fa-triangle-exclamation fs-5 text-warning"></i>
-          <div>
-            <strong>{{ '::CapacityWarningTitle' | abpLocalization }}</strong>
-            <span class="ms-1">
+          <div class="warning-icon-box">
+            <i class="fas fa-triangle-exclamation"></i>
+          </div>
+          <div class="warning-content">
+            <strong class="d-block">{{ '::CapacityWarningTitle' | abpLocalization }}</strong>
+            <span class="small text-secondary">
               {{ '::CapacityWarningDesc' | abpLocalization: (selectedTargetTable?.capacity || 0).toString(): (sourceTable?.capacity || 0).toString() }}
             </span>
           </div>
         </div>
       }
 
-      <!-- 5. GHI CHÚ CHUYỂN BÀN -->
+      <!-- 5. GHI CHÚ CHUYỂN BÀN & QUICK TAGS -->
       <div class="transfer-note-group">
-        <label for="transfer-note" class="form-label small font-weight-bold">
-          <i class="fas fa-comment-dots me-1 text-muted"></i>
-          {{ '::TransferNoteLabel' | abpLocalization }}
-        </label>
+        <div class="d-flex align-items-center justify-content-between mb-1">
+          <label for="transfer-note" class="form-label small font-weight-bold m-0 d-flex align-items-center gap-1">
+            <i class="fas fa-pen-to-square text-muted"></i>
+            <span>{{ '::TransferNoteLabel' | abpLocalization }}</span>
+          </label>
+          <div class="quick-tags d-flex align-items-center gap-1">
+            <button
+              type="button"
+              class="btn-quick-tag"
+              (click)="setQuickNoteByKey('::QuickNoteCustomerRequest')"
+            >
+              + {{ '::QuickNoteCustomerRequest' | abpLocalization }}
+            </button>
+            <button
+              type="button"
+              class="btn-quick-tag"
+              (click)="setQuickNoteByKey('::QuickNoteBetterView')"
+            >
+              + {{ '::QuickNoteBetterView' | abpLocalization }}
+            </button>
+          </div>
+        </div>
         <textarea
           id="transfer-note"
-          class="form-control"
+          class="form-control modern-textarea"
           rows="2"
           [(ngModel)]="note"
           [placeholder]="'::TransferNotePlaceholder' | abpLocalization"
@@ -169,7 +272,7 @@
     <div class="d-flex align-items-center justify-content-end gap-2 w-100">
       <button
         type="button"
-        class="btn btn-outline-secondary btn-cancel"
+        class="btn btn-cancel-modern"
         (click)="close()"
         [disabled]="isSubmitting"
       >
@@ -177,7 +280,7 @@
       </button>
       <button
         type="button"
-        class="btn btn-primary btn-confirm-transfer"
+        class="btn btn-confirm-transfer-modern"
         [disabled]="!selectedTargetTableId || isSubmitting"
         (click)="confirmTransfer()"
       >

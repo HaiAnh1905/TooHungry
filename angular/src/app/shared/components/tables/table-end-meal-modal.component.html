@@ -1,5 +1,6 @@
 <abp-modal
-  [(visible)]="visible"
+  [visible]="visible"
+  (visibleChange)="onVisibleChange($event)"
   [busy]="isSubmitting"
   [options]="{ modalDialogClass: 'end-meal-modal-dialog', centered: true }"
 >

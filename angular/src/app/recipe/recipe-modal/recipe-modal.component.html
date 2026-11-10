@@ -45,7 +45,7 @@
         <div class="spinner-border text-orange" role="status">
           <span class="visually-hidden">Loading...</span>
         </div>
-        <p class="text-muted small mt-2 mb-0">Đang tải thông tin công thức...</p>
+        <p class="text-muted small mt-2 mb-0">{{ '::LoadingRecipeInfo' | abpLocalization }}</p>
       </div>
     } @else {
       <form [formGroup]="form" (ngSubmit)="save()" class="recipe-modal-container">

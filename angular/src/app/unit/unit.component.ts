@@ -353,7 +353,7 @@ export class UnitComponent implements OnInit, AfterViewInit, OnDestroy {
           this.cdr.markForCheck();
         },
         error: (err: any) => {
-          const errorMsg = err?.error?.message || err?.message || 'Không thể cập nhật trạng thái!';
+          const errorMsg = err?.error?.message || err?.message || this.localizationService.instant('::CannotUpdateStatus');
           this.toaster.error(errorMsg);
           this.cdr.markForCheck();
         },
@@ -403,7 +403,7 @@ export class UnitComponent implements OnInit, AfterViewInit, OnDestroy {
             },
             error: (err: any) => {
               this.isBulkProcessing = false;
-              const errorMsg = err?.error?.message || err?.message || 'Có lỗi xảy ra!';
+              const errorMsg = err?.error?.message || err?.message || this.localizationService.instant('::ActionFailed');
               this.toaster.error(errorMsg);
               this.loadData();
               this.cdr.markForCheck();

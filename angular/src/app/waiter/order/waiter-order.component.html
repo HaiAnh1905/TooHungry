@@ -519,7 +519,7 @@
                     {{ item.dishName }}
                   </div>
                   <div class="cart-item-unit-price text-muted small mt-0.5">
-                    {{ item.unitPrice | currency:'VND':'symbol':'1.0-0' }} / phần
+                    {{ item.unitPrice | currency:'VND':'symbol':'1.0-0' }} / {{ '::Portion' | abpLocalization }}
                   </div>
                 </div>
 
@@ -600,7 +600,7 @@
                             type="button"
                             class="btn-chip-close"
                             (click)="removeItemNoteTag(item, $index)"
-                            title="Xóa yêu cầu này"
+                            [title]="'::RemoveThisRequest' | abpLocalization"
                           >
                             <i class="fas fa-times"></i>
                           </button>
@@ -614,7 +614,7 @@
                             type="button"
                             class="btn-chip-close"
                             (click)="removeItemNoteTag(item, $index)"
-                            title="Xóa yêu cầu này"
+                            [title]="'::RemoveThisRequest' | abpLocalization"
                           >
                             <i class="fas fa-times"></i>
                           </button>
@@ -951,7 +951,7 @@
             {{ '::CancelOrderTitle' | abpLocalization }}
           </h5>
           @if (currentTable()?.name) {
-            <span class="text-muted smaller">Bàn {{ currentTable()?.name }}</span>
+            <span class="text-muted smaller">{{ '::Table' | abpLocalization }} {{ currentTable()?.name }}</span>
           }
         </div>
       </div>
@@ -1003,7 +1003,7 @@
           <h5 class="fw-bold text-dark mb-0">
             {{ '::UnsavedChangesTitle' | abpLocalization }}
           </h5>
-          <span class="text-muted smaller">Bạn có thay đổi chưa được lưu</span>
+          <span class="text-muted smaller">{{ '::UnsavedChangesNotice' | abpLocalization }}</span>
         </div>
       </div>
 

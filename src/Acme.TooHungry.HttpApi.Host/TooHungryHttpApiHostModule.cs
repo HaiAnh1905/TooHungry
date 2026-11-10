@@ -3,10 +3,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -19,6 +22,8 @@ using Acme.TooHungry.HealthChecks;
 using Microsoft.OpenApi;
 using Acme.TooHungry.Tables;
 using Acme.TooHungry.Hubs;
+using Acme.TooHungry.Security;
+using Acme.TooHungry.Identity;
 using Volo.Abp;
 using Volo.Abp.Studio;
 using Volo.Abp.Account;
@@ -43,7 +48,6 @@ using Volo.Abp.Studio.Client.AspNetCore;
 using Volo.Abp.Security.Claims;
 
 using Volo.Abp.AspNetCore.SignalR;
-using Acme.TooHungry.Hubs;
 
 namespace Acme.TooHungry;
 
@@ -150,6 +154,13 @@ public class TooHungryHttpApiHostModule : AbpModule
         ConfigureSwagger(context, configuration);
         ConfigureVirtualFileSystem(context);
         ConfigureCors(context, configuration);
+
+        context.Services.AddRateLimiter(options =>
+        {
+            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            options.AddPolicy<string, SlidingWindowIpRateLimiterPolicy>("LoginRateLimitPolicy");
+        });
+        context.Services.AddSingleton<IAntiTimingAttackDummyHasher, AntiTimingAttackDummyHasher>();
 
         context.Services.AddTransient<ITableRealtimeNotifier, TableRealtimeNotifier>();
     }
@@ -299,6 +310,8 @@ public class TooHungryHttpApiHostModule : AbpModule
         }
 
         app.UseRouting();
+        app.UseRateLimiter();
+        app.UseMiddleware<LoginSecurityMiddleware>();
         app.MapAbpStaticAssets();
         app.UseAbpStudioLink();
         app.UseAbpSecurityHeaders();

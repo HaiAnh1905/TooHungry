@@ -194,7 +194,7 @@
                 </td>
                 <td>
                   @if (dish.isLoadingRecipe) {
-                    <span class="text-muted small">Đang tải...</span>
+                    <span class="text-muted small">{{ '::Loading' | abpLocalization }}</span>
                   } @else if (
                     dish.recipe && dish.recipe.ingredients && dish.recipe.ingredients.length > 0
                   ) {
@@ -206,7 +206,7 @@
                       }
                       @if (dish.recipe.ingredients.length > 3) {
                         <span class="badge bg-light text-muted border small">
-                          +{{ dish.recipe.ingredients.length - 3 }} nữa
+                          +{{ dish.recipe.ingredients.length - 3 }} {{ '::More' | abpLocalization }}
                         </span>
                       }
                     </div>

@@ -1,0 +1,153 @@
+.cooldown-bento-card {
+  background: #FFF3E8;
+  border: 1.5px solid #EA580C;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 16px rgba(234, 88, 12, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.3s ease;
+}
+
+.cooldown-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.lock-icon-container {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #FFEDD5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.lock-icon-pulse {
+  width: 22px;
+  height: 22px;
+  color: #EA580C;
+  animation: gentle-pulse 2s infinite ease-in-out;
+}
+
+@keyframes gentle-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.85;
+  }
+}
+
+.cooldown-text {
+  flex: 1;
+}
+
+.cooldown-title {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #9A3412;
+}
+
+.cooldown-subtitle {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #C2410C;
+}
+
+.cooldown-timer-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(234, 88, 12, 0.25);
+}
+
+.timer-badge {
+  font-size: 12px;
+  font-weight: 600;
+  color: #C2410C;
+  background: #FFE4D6;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.timer-digits {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 24px;
+  font-weight: 800;
+  color: #EA580C;
+  letter-spacing: 1px;
+}
+
+.cooldown-bento-card.admin-locked {
+  background: #FEF2F2;
+  border-color: #DC2626;
+  box-shadow: 0 4px 16px rgba(220, 38, 38, 0.1);
+
+  .cooldown-title {
+    color: #991B1B;
+  }
+
+  .cooldown-subtitle {
+    color: #B91C1C;
+  }
+
+  .admin-icon {
+    background: #FEE2E2;
+  }
+
+  .lock-icon-shield {
+    width: 22px;
+    height: 22px;
+    color: #DC2626;
+  }
+
+  .btn-back-to-login {
+    background: #FEE2E2;
+    color: #991B1B;
+    border-color: #FCA5A5;
+
+    &:hover {
+      background: #FCA5A5;
+      color: #7F1D1D;
+    }
+  }
+}
+
+.cooldown-actions {
+  display: flex;
+  justify-content: center;
+  padding-top: 6px;
+}
+
+.btn-back-to-login {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #FFEDD5;
+  color: #9A3412;
+  border: 1px solid #FDBA74;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+
+  &:hover {
+    background: #FDBA74;
+    color: #7C2D12;
+  }
+}
+

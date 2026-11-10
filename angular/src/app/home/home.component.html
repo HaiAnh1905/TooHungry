@@ -175,7 +175,39 @@
         </div>
       </div>
 
-      <!-- KPI 2: Tổng Đơn Hàng -->
+      <!-- KPI 2: Tổng Chi Tiêu (Đặt cạnh Tổng Doanh Thu) -->
+      <div class="col-sm-6 col-xl-3">
+        <a routerLink="/inventory" class="card bento-card kpi-card h-100 border-0 shadow-sm rounded-4 p-3 text-decoration-none">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="kpi-label text-muted small fw-bold text-uppercase">
+              {{ { key: '::ExpensesCardTitle', defaultValue: 'Tổng Chi Tiêu' } | abpLocalization }}
+            </span>
+            <div class="kpi-icon-badge bg-rose-subtle text-rose">
+              <i class="fas fa-wallet"></i>
+            </div>
+          </div>
+          <div class="kpi-value-wrapper my-1">
+            <h3 class="fw-bold mb-0 text-dark">
+              {{ (summary()?.kpi?.totalExpense || 0) | number:'1.0-0' }} <span class="fs-6 text-muted">đ</span>
+            </h3>
+          </div>
+          <div class="kpi-subtext mt-2 pt-2 border-top d-flex align-items-center justify-content-between small">
+            <span class="text-muted">
+              {{ summary()?.kpi?.inboundBatchesCount || 0 }} {{ { key: '::InboundBatchesLabel', defaultValue: 'lô nhập kho' } | abpLocalization }}
+            </span>
+            <span
+              class="badge rounded-pill fw-semibold"
+              [ngClass]="(summary()?.kpi?.expenseGrowthPercentage || 0) <= 0 ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'"
+              [title]="{ key: '::ExpenseGrowthTooltip', defaultValue: 'Tăng trưởng chi phí nhập kho so với kỳ trước' } | abpLocalization"
+            >
+              <i class="fas" [ngClass]="(summary()?.kpi?.expenseGrowthPercentage || 0) <= 0 ? 'fa-arrow-down' : 'fa-arrow-up'"></i>
+              {{ (summary()?.kpi?.expenseGrowthPercentage || 0) > 0 ? '+' : '' }}{{ summary()?.kpi?.expenseGrowthPercentage || 0 }}%
+            </span>
+          </div>
+        </a>
+      </div>
+
+      <!-- KPI 3: Tổng Đơn Hàng -->
       <div class="col-sm-6 col-xl-3">
         <a routerLink="/orders" class="card bento-card kpi-card h-100 border-0 shadow-sm rounded-4 p-3 text-decoration-none">
           <div class="d-flex align-items-center justify-content-between mb-2">
@@ -206,33 +238,6 @@
         </a>
       </div>
 
-      <!-- KPI 3: Tỷ Lệ Lấp Đầy Bàn -->
-      <div class="col-sm-6 col-xl-3">
-        <a routerLink="/tables" class="card bento-card kpi-card h-100 border-0 shadow-sm rounded-4 p-3 text-decoration-none">
-          <div class="d-flex align-items-center justify-content-between mb-2">
-            <span class="kpi-label text-muted small fw-bold text-uppercase">
-              {{ { key: '::TableOccupancyCardTitle', defaultValue: 'Tỷ Lệ Lấp Đầy Bàn' } | abpLocalization }}
-            </span>
-            <div class="kpi-icon-badge bg-emerald-subtle text-emerald">
-              <i class="fas fa-chair"></i>
-            </div>
-          </div>
-          <div class="kpi-value-wrapper my-1 d-flex align-items-baseline gap-1">
-            <h3 class="fw-bold mb-0 text-dark">
-              {{ (summary()?.tables?.occupancyRate || 0) | number:'1.1-1' }}%
-            </h3>
-          </div>
-          <div class="kpi-subtext mt-2 pt-2 border-top d-flex align-items-center justify-content-between small">
-            <span class="text-muted">
-              <strong class="text-dark">{{ summary()?.tables?.occupiedTables || 0 }}</strong> / {{ summary()?.tables?.totalTables || 0 }} bàn có khách
-            </span>
-            <span class="badge bg-emerald-subtle text-emerald rounded-pill px-2">
-              {{ summary()?.tables?.availableTables || 0 }} bàn trống
-            </span>
-          </div>
-        </a>
-      </div>
-
       <!-- KPI 4: Cảnh Báo Kho & Nguyên Liệu -->
       <div class="col-sm-6 col-xl-3">
         <a routerLink="/inventory" class="card bento-card kpi-card h-100 border-0 shadow-sm rounded-4 p-3 text-decoration-none">
@@ -257,13 +262,13 @@
           </div>
           <div class="kpi-subtext mt-2 pt-2 border-top d-flex align-items-center justify-content-between small">
             <span class="text-muted">
-              {{ (summary()?.alerts?.length || 0) > 0 ? 'Cần kiểm tra ngay' : 'Kho đạt chuẩn an toàn' }}
+              {{ ((summary()?.alerts?.length || 0) > 0 ? ('::InventoryNeedImmediateCheck' | abpLocalization) : ('::InventorySafeStatus' | abpLocalization)) }}
             </span>
             <span
               class="badge rounded-pill px-2"
               [ngClass]="(summary()?.alerts?.length || 0) > 0 ? 'bg-danger text-white' : 'bg-success-subtle text-success'"
             >
-              {{ (summary()?.alerts?.length || 0) > 0 ? 'Cảnh báo' : 'Ổn định' }}
+              {{ ((summary()?.alerts?.length || 0) > 0 ? ('::Warning' | abpLocalization) : ('::Stable' | abpLocalization)) }}
             </span>
           </div>
         </a>
@@ -387,7 +392,7 @@
             <div class="d-flex align-items-center gap-3">
               <span class="badge bg-light text-muted border px-2 py-1 small">
                 <i class="far fa-clock me-1"></i>
-                {{ selectedPeriod() === DashboardPeriod.Today || selectedPeriod() === DashboardPeriod.Yesterday ? 'Theo từng giờ' : 'Theo từng ngày' }}
+                {{ (selectedPeriod() === DashboardPeriod.Today || selectedPeriod() === DashboardPeriod.Yesterday ? ('::ByHourly' | abpLocalization) : ('::ByDaily' | abpLocalization)) }}
               </span>
             </div>
           </div>
@@ -423,31 +428,31 @@
                   class="progress-bar bg-orange"
                   role="progressbar"
                   [style.width.%]="tablePercent().occupied"
-                  title="Đang phục vụ"
+                  [title]="'::TableStatusOccupied' | abpLocalization"
                 ></div>
                 <div
                   class="progress-bar bg-blue"
                   role="progressbar"
                   [style.width.%]="tablePercent().reserved"
-                  title="Đã đặt"
+                  [title]="'::TableStatusReserved' | abpLocalization"
                 ></div>
                 <div
                   class="progress-bar bg-amber"
                   role="progressbar"
                   [style.width.%]="tablePercent().cleaning"
-                  title="Đang dọn"
+                  [title]="'::TableStatusCleaning' | abpLocalization"
                 ></div>
                 <div
                   class="progress-bar bg-emerald"
                   role="progressbar"
                   [style.width.%]="tablePercent().available"
-                  title="Bàn trống"
+                  [title]="'::TableStatusAvailable' | abpLocalization"
                 ></div>
                 <div
                   class="progress-bar bg-slate"
                   role="progressbar"
                   [style.width.%]="tablePercent().disabled"
-                  title="Tạm ngưng"
+                  [title]="'::TableStatusDisabled' | abpLocalization"
                 ></div>
               </div>
             </div>
@@ -647,7 +652,7 @@
                           'bg-danger-subtle text-danger': order.status === 3
                         }"
                       >
-                        {{ order.status === 2 ? 'Đã hoàn tất' : order.status === 1 ? 'Đang phục vụ' : order.status === 0 ? 'Mới tạo' : 'Đã hủy' }}
+                        {{ order.status === 2 ? ('::OrderStatusCompleted' | abpLocalization) : order.status === 1 ? ('::OrderStatusProcessing' | abpLocalization) : order.status === 0 ? ('::OrderStatusPending' | abpLocalization) : ('::OrderStatusCancelled' | abpLocalization) }}
                       </span>
                     </td>
                     <td class="pe-4 text-end fw-bold text-orange small">

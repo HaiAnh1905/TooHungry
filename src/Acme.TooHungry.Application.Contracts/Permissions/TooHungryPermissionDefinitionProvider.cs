@@ -85,6 +85,9 @@ public class TooHungryPermissionDefinitionProvider : PermissionDefinitionProvide
         cashier.AddChild(TooHungryPermissions.Cashier.ManageTables, L("Permission:Cashier.ManageTables"));
         cashier.AddChild(TooHungryPermissions.Cashier.ManageOrders, L("Permission:Cashier.ManageOrders"));
         cashier.AddChild(TooHungryPermissions.Cashier.ProcessPayment, L("Permission:Cashier.ProcessPayment"));
+
+        // Identity Lockout Management (RM-029)
+        myGroup.AddPermission(TooHungryPermissions.Identity.Users.ManageLockout, L("Permission:Identity.Users.ManageLockout"));
     }
     private static LocalizableString L(string name)
     {

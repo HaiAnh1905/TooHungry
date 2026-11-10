@@ -3387,6 +3387,106 @@ abp-confirmation-dialog,
 }
 
 /* ==========================================================================
+   CONFIRM ACTION MODAL (Security & Admin Actions)
+   ========================================================================== */
+.confirm-action-modal {
+  .modal-dialog {
+    max-width: 520px !important;
+    
+  }
+  .modal-content {
+    border-radius: 18px !important;
+    border: none !important;
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.16) !important;
+    overflow: hidden;
+  }
+  .modal-header {
+    border-bottom: 1px solid #f1ece4 !important;
+    padding: 1.25rem 1.6rem !important;
+    background-color: #ffffff !important;
+  }
+  .modal-body {
+    padding: 1.4rem 1.6rem !important;
+  }
+  .modal-footer {
+    border-top: 1px solid #f1ece4 !important;
+    padding: 1rem 1.6rem !important;
+    background-color: #faf8f5 !important;
+  }
+
+  .confirm-prompt-text {
+    font-size: 1.02rem !important;
+    font-weight: 500 !important;
+    color: #1e293b !important;
+    line-height: 1.65 !important;
+  }
+
+  .user-highlight-name {
+    display: inline-flex !important;
+    align-items: center !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    background: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    padding: 0.15rem 0.65rem !important;
+    border-radius: 8px !important;
+    margin: 0 0.25rem !important;
+    vertical-align: middle !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+    letter-spacing: 0.2px !important;
+  }
+
+  /* Warning Callout Box voi nen mau vang am chuan UI */
+  .confirm-notice-card {
+    border-radius: 12px !important;
+    font-size: 0.9rem !important;
+    line-height: 1.55 !important;
+    gap: 0.85rem !important;
+    padding: 0.9rem 1.25rem !important;
+    background-color: #fff8e7 !important;
+    border: 1.5px solid #fde047 !important;
+    color: #854d0e !important;
+    box-shadow: 0 2px 6px rgba(245, 158, 11, 0.08) !important;
+
+    .notice-icon {
+      font-size: 1.2rem !important;
+      line-height: 1.2 !important;
+      color: #d97706 !important;
+    }
+
+    .notice-text {
+      font-weight: 500 !important;
+      color: #854d0e !important;
+    }
+
+    &.notice-warning,
+    &.notice-danger {
+      background-color: #fff8e7 !important;
+      border: 1.5px solid #fde047 !important;
+      color: #854d0e !important;
+      .notice-icon { color: #d97706 !important; }
+      .notice-text { color: #854d0e !important; }
+    }
+
+    &.notice-secondary {
+      background-color: #f8fafc !important;
+      border: 1.5px solid #e2e8f0 !important;
+      color: #475569 !important;
+      .notice-icon { color: #64748b !important; }
+      .notice-text { color: #475569 !important; }
+    }
+
+    &.notice-success {
+      background-color: #f0fdf4 !important;
+      border: 1.5px solid #bbf7d0 !important;
+      color: #166534 !important;
+      .notice-icon { color: #16a34a !important; }
+      .notice-text { color: #166534 !important; }
+    }
+  }
+}
+
+/* ==========================================================================
    BENTO GRID SYSTEM ERROR OVERLAY: #abp-http-error-container
    Tái thiết kế toàn diện màn hình lỗi HTTP / Network của ABP sang chuẩn Bento Cam & Trắng (#EA580C)
    ========================================================================== */
@@ -3699,5 +3799,38 @@ abp-confirmation-dialog,
     padding: 1.25rem 1.75rem !important;
     border-top: 1px solid #f1f5f9 !important;
     background: #fbfcfe !important;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* TABLE TRANSFER MODAL (DIALOG SPACING & ELEVATION)                          */
+/* -------------------------------------------------------------------------- */
+.modal:has(.transfer-modal-body) .modal-dialog,
+.transfer-table-modal-dialog.modal-dialog,
+.transfer-table-modal-dialog {
+  max-width: 720px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+
+  .modal-content {
+    border-radius: 20px !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 24px 48px -12px rgba(15, 23, 42, 0.14) !important;
+    overflow: hidden !important;
+  }
+
+  .modal-header {
+    padding: 1.25rem 1.75rem 1rem !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+  }
+
+  .modal-body {
+    padding: 13px 1.75rem !important;
+  }
+
+  .modal-footer {
+    padding: 13px 1.75rem 1.25rem !important;
+    border-top: 1px solid #f1f5f9 !important;
+    background: #fafaf9 !important;
   }
 }

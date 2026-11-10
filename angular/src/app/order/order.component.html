@@ -316,7 +316,7 @@
                     type="button"
                     class="btn-clear-search"
                     (click)="onDishSearchInput('')"
-                    title="Xóa tìm kiếm"
+                    [title]="'::ClearSearch' | abpLocalization"
                   >
                     <i class="fa fa-times-circle"></i>
                   </button>
@@ -458,7 +458,7 @@
                 <div class="col-6">
                   <div class="d-flex align-items-center justify-content-between">
                     <label class="form-label-xs m-0 text-muted">{{ '::OrderNumber' | abpLocalization }}</label>
-                    <i class="fa fa-lock text-muted" style="font-size: 0.68rem" title="Mã đơn tự động, chỉ đọc"></i>
+                    <i class="fa fa-lock text-muted" style="font-size: 0.68rem" [title]="'::OrderNumberReadOnly' | abpLocalization"></i>
                   </div>
                   <input
                     type="text"
@@ -533,7 +533,7 @@
                         class="stepper-btn btn-minus"
                         [disabled]="isOrderLocked"
                         (click)="decreaseQuantity($index)"
-                        title="Giảm"
+                        [title]="'::Decrease' | abpLocalization"
                       >
                         <i class="fa fa-minus"></i>
                       </button>
@@ -550,7 +550,7 @@
                         class="stepper-btn btn-plus"
                         [disabled]="isOrderLocked"
                         (click)="increaseQuantity($index)"
-                        title="Tăng"
+                        [title]="'::Increase' | abpLocalization"
                       >
                         <i class="fa fa-plus"></i>
                       </button>

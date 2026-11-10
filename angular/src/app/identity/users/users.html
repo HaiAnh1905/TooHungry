@@ -73,6 +73,12 @@
               <i class="fa fa-user"></i>
             </div>
             <span class="fw-bold text-dark">{{ row.userName }}</span>
+            <span *ngIf="isUserAdminLocked(row)" class="badge bg-danger ms-1 text-white">
+              <i class="fa fa-user-shield me-1"></i>{{ '::UserAdminLockedBadge' | abpLocalization }}
+            </span>
+            <span *ngIf="!isUserAdminLocked(row) && isUserLockedOut(row)" class="badge bg-warning text-dark ms-1">
+              <i class="fa fa-clock me-1"></i>{{ '::UserLockedOutBadge' | abpLocalization }}
+            </span>
           </div>
         </ng-template>
       </ngx-datatable-column>
@@ -116,12 +122,14 @@
               type="checkbox"
               role="switch"
               [checked]="row.isActive"
+              [disabled]="isAdminUser(row)"
               (click)="toggleActive(row, $event)"
-              style="cursor: pointer;"
+              [style.cursor]="isAdminUser(row) ? 'not-allowed' : 'pointer'"
+              [title]="isAdminUser(row) ? ('::CannotDeactivateAdmin' | abpLocalization) : ''"
             />
             <span class="status-indicator-label text-nowrap" [class.active]="row.isActive">
               <ng-container *ngIf="row.isActive">{{ '::AccountStatusActive' | abpLocalization }}</ng-container>
-              <ng-container *ngIf="!row.isActive">{{ '::AccountStatusLocked' | abpLocalization }}</ng-container>
+              <ng-container *ngIf="!row.isActive">{{ '::AccountStatusInactive' | abpLocalization }}</ng-container>
             </span>
           </div>
         </ng-template>
@@ -129,9 +137,9 @@
 
       <!-- Cột Thao tác (Actions) -->
       <ngx-datatable-column
-        [width]="100"
-        [minWidth]="90"
-        [maxWidth]="120"
+        [width]="140"
+        [minWidth]="130"
+        [maxWidth]="160"
         [canAutoResize]="false"
         [sortable]="false"
       >
@@ -140,14 +148,53 @@
         </ng-template>
         <ng-template let-row="row" ngx-datatable-cell-template>
           <div class="actions-container d-flex justify-content-center gap-2">
+            <!-- Nút Khóa / Mở khóa (chỉ hiển thị cho tài khoản không phải Admin) -->
+            <ng-container *ngIf="!isAdminUser(row)">
+              <ng-container *abpPermission="'TooHungry.Identity.Users.ManageLockout || AbpIdentity.Users.Update'">
+                <button
+                  *ngIf="isUserLockedOut(row)"
+                  type="button"
+                  class="icon-action-btn btn-unlock text-warning border-0 bg-transparent"
+                  (click)="unlockUser(row)"
+                  [title]="'::UnlockUserAccount' | abpLocalization"
+                >
+                  <i class="fa fa-unlock"></i>
+                </button>
+                <button
+                  *ngIf="!isUserLockedOut(row)"
+                  type="button"
+                  class="icon-action-btn btn-lock text-secondary border-0 bg-transparent"
+                  (click)="lockUser(row)"
+                  [title]="'::LockUserAccount' | abpLocalization"
+                >
+                  <i class="fa fa-lock"></i>
+                </button>
+              </ng-container>
+            </ng-container>
+
+            <!-- Nút Chỉnh sửa (Edit) -->
             <button
               *abpPermission="'AbpIdentity.Users.Update || AbpIdentity.Users.Edit'"
               type="button"
               class="icon-action-btn btn-edit text-primary border-0 bg-transparent"
               (click)="openModal(row)"
+              [title]="'::Edit' | abpLocalization"
             >
               <i class="fa fa-pen"></i>
             </button>
+
+            <!-- Nút Xóa (Delete) - không hiển thị cho Admin -->
+            <ng-container *ngIf="!isAdminUser(row)">
+              <button
+                *abpPermission="'AbpIdentity.Users.Delete'"
+                type="button"
+                class="icon-action-btn btn-delete text-danger border-0 bg-transparent"
+                (click)="deleteUser(row)"
+                [title]="'::Delete' | abpLocalization"
+              >
+                <i class="fa fa-trash"></i>
+              </button>
+            </ng-container>
           </div>
         </ng-template>
       </ngx-datatable-column>
@@ -353,6 +400,50 @@
       <i *ngIf="!modalLoading" class="fa fa-check me-1"></i>
       {{ '::SaveChanges' | abpLocalization }}
     </button>
+  </ng-template>
+</abp-modal>
+
+<!-- Modal Xác nhận hành động bảo mật (Khóa / Mở khóa / Vô hiệu hóa / Xóa) -->
+<abp-modal [(visible)]="isConfirmModalVisible" [options]="{ size: 'md', windowClass: 'confirm-action-modal' }">
+  <ng-template #abpHeader>
+    <div class="d-flex align-items-center gap-3">
+      <div [class]="confirmModalIconClass" class="rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 38px; height: 38px; font-size: 1.1rem;">
+        <i [class]="confirmModalIcon"></i>
+      </div>
+      <h5 class="m-0 fw-bold text-dark">{{ confirmModalTitle }}</h5>
+    </div>
+  </ng-template>
+
+  <ng-template #abpBody>
+    <div class="confirm-modal-body py-1" *ngIf="confirmTargetUser">
+      <p class="confirm-prompt-text mb-3">
+        <span>{{ confirmPromptPrefix }}</span> <span class="user-highlight-name"><i class="fa fa-user me-1 text-muted"></i>{{ confirmTargetUser.userName }}</span><span>{{ confirmPromptSuffix }}</span>
+      </p>
+
+      <div class="confirm-notice-card d-flex align-items-center gap-2 p-3 rounded-3" [ngClass]="confirmNoticeClass">
+        <i [class]="confirmNoticeIcon" class="notice-icon flex-shrink-0"></i>
+        <span class="notice-text">{{ confirmModalNotice }}</span>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #abpFooter>
+    <div class="d-flex justify-content-end align-items-center gap-2 w-100">
+      <button type="button" class="btn btn-outline-secondary px-3" (click)="closeConfirmModal()" [disabled]="confirmLoading">
+        {{ '::Cancel' | abpLocalization }}
+      </button>
+      <button
+        type="button"
+        class="btn px-4 d-inline-flex align-items-center gap-2 shadow-sm"
+        [ngClass]="confirmButtonClass"
+        (click)="executeConfirmedAction()"
+        [disabled]="confirmLoading"
+      >
+        <span *ngIf="confirmLoading" class="spinner-border spinner-border-sm"></span>
+        <i *ngIf="!confirmLoading" [class]="confirmButtonIcon"></i>
+        <span>{{ confirmButtonText }}</span>
+      </button>
+    </div>
   </ng-template>
 </abp-modal>
 

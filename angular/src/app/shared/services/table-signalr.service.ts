@@ -36,6 +36,13 @@ export interface TableOrderUpdatedEvent {
   activeOrderId?: string | null;
 }
 
+export interface SecurityAlertEvent {
+  clientIp: string;
+  failedCount: number;
+  timestamp: string;
+  message?: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -50,6 +57,7 @@ export class TableSignalrService {
   private orderPlacedOrUpdatedSubject = new Subject<OrderPlacedOrUpdatedDto>();
   private billRequestedSubject = new Subject<BillRequestedDto>();
   private paymentCompletedSubject = new Subject<PaymentCompletedDto>();
+  private securityAlertSubject = new Subject<SecurityAlertEvent>();
 
   public tableStatusChanged$: Observable<TableStatusChangedEvent> =
     this.tableStatusChangedSubject.asObservable();
@@ -61,6 +69,8 @@ export class TableSignalrService {
     this.billRequestedSubject.asObservable();
   public paymentCompleted$: Observable<PaymentCompletedDto> =
     this.paymentCompletedSubject.asObservable();
+  public securityAlert$: Observable<SecurityAlertEvent> =
+    this.securityAlertSubject.asObservable();
 
   constructor() {
     this.initAuthLifecycle();
@@ -169,6 +179,15 @@ export class TableSignalrService {
         paymentMethod: data.paymentMethod || data.PaymentMethod || 'CASH',
         cashierName: data.cashierName || data.CashierName || '',
         completedTime: data.completedTime || data.CompletedTime || new Date().toISOString(),
+      });
+    });
+
+    this.hubConnection.on('SecurityAlertTriggered', (data: any) => {
+      this.securityAlertSubject.next({
+        clientIp: data.clientIp || data.ClientIp,
+        failedCount: data.failedCount !== undefined ? data.failedCount : data.FailedCount,
+        timestamp: data.timestamp || data.Timestamp || new Date().toISOString(),
+        message: data.message || data.Message,
       });
     });
 

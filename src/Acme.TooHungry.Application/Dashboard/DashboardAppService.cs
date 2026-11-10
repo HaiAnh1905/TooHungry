@@ -25,6 +25,7 @@ public class DashboardAppService : TooHungryAppService, IDashboardAppService
     private readonly IRepository<Dish, Guid> _dishRepository;
     private readonly IRepository<DishCategory, Guid> _categoryRepository;
     private readonly IInventoryAppService _inventoryAppService;
+    private readonly IRepository<InventoryBatch, Guid> _batchRepository;
 
     public DashboardAppService(
         IRepository<Order, Guid> orderRepository,
@@ -32,7 +33,8 @@ public class DashboardAppService : TooHungryAppService, IDashboardAppService
         IRepository<RestaurantTable, Guid> tableRepository,
         IRepository<Dish, Guid> dishRepository,
         IRepository<DishCategory, Guid> categoryRepository,
-        IInventoryAppService inventoryAppService)
+        IInventoryAppService inventoryAppService,
+        IRepository<InventoryBatch, Guid> batchRepository)
     {
         _orderRepository = orderRepository;
         _orderItemRepository = orderItemRepository;
@@ -40,6 +42,7 @@ public class DashboardAppService : TooHungryAppService, IDashboardAppService
         _dishRepository = dishRepository;
         _categoryRepository = categoryRepository;
         _inventoryAppService = inventoryAppService;
+        _batchRepository = batchRepository;
     }
 
     public async Task<DashboardSummaryDto> GetSummaryAsync(GetDashboardInput input)
@@ -66,6 +69,31 @@ public class DashboardAppService : TooHungryAppService, IDashboardAppService
 
         var totalRevenue = currentCompletedList.Sum(o => o.TotalAmount);
         var completedOrdersCount = currentCompletedList.Count;
+
+        // 2b. Chi tiêu nhập kho trong kỳ (kèm fallback EstimatedPrice nếu UnitCost chưa nhập)
+        var batchesQuery = await _batchRepository.WithDetailsAsync(b => b.Ingredient!);
+        var batchesInPeriod = batchesQuery.Where(b =>
+            b.ReceivedAt >= fromDate &&
+            b.ReceivedAt <= toDate);
+        var currentBatches = await AsyncExecuter.ToListAsync(
+            batchesInPeriod.Select(b => new {
+                b.Quantity,
+                Cost = b.UnitCost > 0 ? b.UnitCost : (b.Ingredient != null ? b.Ingredient.EstimatedPrice : 0)
+            }));
+        var totalExpense = currentBatches.Sum(b => b.Quantity * b.Cost);
+        var inboundBatchesCount = currentBatches.Count;
+
+        // Chi tiêu kỳ trước để tính tăng trưởng chi phí
+        var prevBatches = batchesQuery.Where(b =>
+            b.ReceivedAt >= prevFromDate &&
+            b.ReceivedAt <= prevToDate);
+        var prevBatchesList = await AsyncExecuter.ToListAsync(
+            prevBatches.Select(b => new {
+                b.Quantity,
+                Cost = b.UnitCost > 0 ? b.UnitCost : (b.Ingredient != null ? b.Ingredient.EstimatedPrice : 0)
+            }));
+        var prevExpense = prevBatchesList.Sum(b => b.Quantity * b.Cost);
+        var expenseGrowthPercentage = CalculateGrowthPercentage(totalExpense, prevExpense);
 
         // Đơn hàng đang phục vụ (Pending hoặc Processing)
         var pendingOrdersCount = await AsyncExecuter.CountAsync(
@@ -144,6 +172,9 @@ public class DashboardAppService : TooHungryAppService, IDashboardAppService
             Kpi = new DashboardKpiDto
             {
                 TotalRevenue = totalRevenue,
+                TotalExpense = totalExpense,
+                InboundBatchesCount = inboundBatchesCount,
+                ExpenseGrowthPercentage = expenseGrowthPercentage,
                 TotalOrdersCount = totalOrdersCount,
                 CompletedOrdersCount = completedOrdersCount,
                 PendingOrdersCount = pendingOrdersCount,
